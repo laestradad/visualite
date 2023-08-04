@@ -1,4 +1,5 @@
 *.csv
 *.html
 *.xlsx
+VisuaLite/modules/__pycache__/*.pyc
 .ipynb_checkpoints/
