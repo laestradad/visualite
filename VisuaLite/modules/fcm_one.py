@@ -93,11 +93,36 @@ def check_files (files):
         if mch_info != mch_info_check:
             print('File ' + file + ' does not correspond to the same machine')
             print(mch_info_check)
-            return 0, mch_info_check
+            return 0, file
     
     print('All files correspond to the same machine')
     print(mch_info_check)
     return 1, mch_info_check
+
+def import_data(DataFiles, AlarmFiles, EventFiles):
+    #Check if all files are from the same machine / flag_files=1 if all good
+    files = DataFiles + AlarmFiles + EventFiles
+    flag_files, mch_info = check_files(files)
+
+    # Import data and creat DataFrames
+    if flag_files == 1:
+
+        # LOGS STANDARD
+        if DataFiles:
+            LogsStandard = Format_DF_SLogs(DataFiles)
+            COs = IdentifyCOs(LogsStandard)
+
+        # ALARMS
+        if AlarmFiles:
+            LogsAlarms = Format_DF_ALogs(AlarmFiles)
+
+        # EVENTS
+        if EventFiles:
+            LogsEvents = Format_DF_ELogs(EventFiles)
+        return 1, mch_info, COs, LogsStandard, LogsAlarms, LogsEvents
+    
+    else:
+        return 0, mch_info, None, None, None, None  
 
 def Format_DF_SLogs(list_files):
 
