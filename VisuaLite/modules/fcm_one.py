@@ -100,6 +100,12 @@ def check_files (files):
     return 1, mch_info_check
 
 def import_data(DataFiles, AlarmFiles, EventFiles):
+    mch_info = None
+    LogsStandard = None
+    COs = []
+    LogsAlarms = None
+    LogsEvents = None
+
     #Check if all files are from the same machine / flag_files=1 if all good
     files = DataFiles + AlarmFiles + EventFiles
     flag_files, mch_info = check_files(files)
@@ -522,12 +528,16 @@ def Plot_ChangeOver(df, mch_info, LogsAlarms, LogsEvents):
     mindate = df['DateTime'].min()
     maxdate = df['DateTime'].max()
     print(mindate,maxdate)
-
-    alm = pd.DataFrame()
-    alm = LogsAlarms[(LogsAlarms['DateTime'] > mindate) & (LogsAlarms['DateTime'] <= maxdate)]
-
-    eve = pd.DataFrame()
-    eve = LogsEvents[(LogsEvents['DateTime'] > mindate) & (LogsEvents['DateTime'] <= maxdate)]
+    
+    if LogsAlarms is not None:
+        alm = LogsAlarms[(LogsAlarms['DateTime'] > mindate) & (LogsAlarms['DateTime'] <= maxdate)]
+    else:
+        alm = pd.DataFrame()
+    
+    if LogsEvents is not None:
+        eve = LogsEvents[(LogsEvents['DateTime'] > mindate) & (LogsEvents['DateTime'] <= maxdate)]
+    else:
+        eve = pd.DataFrame()
 
     fig = make_subplots(
         rows=8, cols=1,
