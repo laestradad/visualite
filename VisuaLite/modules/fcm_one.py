@@ -281,6 +281,8 @@ def Format_DF_ALogs(list_files):
         1005: "Fuel viscosity Low limit alarm"
     })
 
+    LogsAlarms['Alm_Code_Label'] = "A" + LogsAlarms['AlarmNumber'].astype(str) + "_" + LogsAlarms['Label'] 
+
     return(LogsAlarms)
 
 def Format_DF_ELogs(list_files):
@@ -308,6 +310,8 @@ def Format_DF_ELogs(list_files):
                 (LogsEvents['EventNumber'] == 7) | 
                 (LogsEvents['EventNumber'] == 8), 'Label'] = LogsEvents['Label'].astype(str) + ": " + LogsEvents['Data'].astype(str)
     
+    LogsEvents['Evn_Code_Label'] = "E" + LogsEvents['EventNumber'].astype(str) + "_" + LogsEvents['Label'] 
+
     return(LogsEvents)
 
 def IdentifyCOs(logs):

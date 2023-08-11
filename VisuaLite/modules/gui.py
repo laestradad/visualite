@@ -112,8 +112,14 @@ class ProgressFrame(ctk.CTkFrame):
         self.progressbar_1.start()
         
 class TabsFrame(ctk.CTkFrame):
-    def __init__(self, master, COs, **kwargs):
+    def __init__(self, master, app_instance, **kwargs):
         super().__init__(master, **kwargs)
+
+        self.app = app_instance
+
+        self.COs = self.app.COs
+        self.alm_list = self.app.LogsAlarms['Alm_Code_Label'].unique().tolist()
+        self.eve_list = self.app.LogsEvents['Evn_Code_Label'].unique().tolist()
 
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(0, weight=1)
@@ -121,39 +127,119 @@ class TabsFrame(ctk.CTkFrame):
         # create tabview
         self.tabview = ctk.CTkTabview(self, width=250)
         self.tabview.grid(row=0, column=0, padx=20, pady=20, sticky="nsew")
+        #-----------------------------------TAB1
         self.tabview.add("Change Overs")
         self.tabview.tab("Change Overs").grid_columnconfigure(0, weight=1)
-        self.label1 = ctk.CTkLabel(self.tabview.tab("Change Overs"))
+        self.tabview.tab("Change Overs").grid_rowconfigure(0, weight=1)
+        
+        self.results_t1 = ctk.CTkScrollableFrame(self.tabview.tab("Change Overs"))
+        self.results_t1.grid(row=0, column=0, padx=20, pady=20, sticky = 'nsew')
+
+        self.label1 = ctk.CTkLabel(self.results_t1)
         self.label1.grid(row=0, column=0, padx=20, pady=20, sticky = 'nw')
 
-        self.plot_sel = ctk.CTkButton(self.tabview.tab("Change Overs"), text="Save plots for selection")
-        self.plot_all = ctk.CTkButton(self.tabview.tab("Change Overs"), text="Save all plots")
+        self.plot_sel = ctk.CTkButton(self.results_t1, text="Save plots for selection")
+        self.plot_all = ctk.CTkButton(self.results_t1, text="Save all plots")
 
-        if COs:
+        if self.COs:
             self.checkbox_list = []
-            self.label1.configure(text="In the logs imported there are " + str(len(COs)) + " changeovers. Please select the ")
-            for i, CO in enumerate(COs):
+            self.label1.configure(text="In the logs imported there are " + str(len(self.COs)) + " changeovers. Please select the ")
+            for i, CO in enumerate(self.COs):
                 text= str(i+1) + '. From ' + str(CO['Start']) + ' to ' + str(CO['Finish']) + '. Duration: ' + str(CO['Duration'])
-                self.add_item(text)
+                self.add_checkbox_t1(text)
 
             self.plot_sel.grid(row=len(self.checkbox_list)+2, column=0, padx=20, pady=10, sticky="w")
             self.plot_all.grid(row=len(self.checkbox_list)+2, column=0, padx=20, pady=10, sticky="e")
 
         else:
             self.label1.configure(text="No Change Overs detected in data inserted")
-
+        
+        #-----------------------------------TAB2
         self.tabview.add("Search Event/Alarm")
-        self.tabview.tab("Search Event/Alarm").grid_columnconfigure(0, weight=1)
-        self.label_tab_2 = ctk.CTkLabel(self.tabview.tab("Search Event/Alarm"), text="CTkLabel on Tab 2")
-        self.label_tab_2.grid(row=0, column=0, padx=20, pady=20)
+        self.tabview.tab("Search Event/Alarm").grid_rowconfigure(2, weight=1)
+        self.tabview.tab("Search Event/Alarm").grid_columnconfigure((0,1,2,3,4), weight=0)
+        self.tabview.tab("Search Event/Alarm").grid_columnconfigure(5, weight=1)
+        
+        # Label
+        self.label2 = ctk.CTkLabel(self.tabview.tab("Search Event/Alarm"), text="Please select an event/alarm bla bla")
+        self.label2.grid(row=0, column=0, columnspan=5, padx=20, pady=5, sticky="nw")
 
+        # Radio buttons to select Alarm or Event
+        self.radio_var = tk.IntVar(value=0)
+        self.radio_button_1 = ctk.CTkRadioButton(self.tabview.tab("Search Event/Alarm"), variable=self.radio_var, text="Alarm" ,value=0,
+            command=self.update_optionmenu)
+        self.radio_button_1.grid(row=1, column=0, pady=5, padx=20, sticky="w")
+        self.radio_button_2 = ctk.CTkRadioButton(self.tabview.tab("Search Event/Alarm"), variable=self.radio_var, text="Event" , value=1,
+            command=self.update_optionmenu)
+        self.radio_button_2.grid(row=1, column=1, pady=5, padx=5, sticky="w")
+
+        # Dropdown
+        self.search_var = ctk.StringVar(value="")
+        self.optionmenu_1 = ctk.CTkOptionMenu(self.tabview.tab("Search Event/Alarm"), dynamic_resizing=False, variable=self.search_var)
+        self.optionmenu_1.grid(row=1, column=2, columnspan=2, padx=5, pady=5, sticky="ew")
+        self.update_optionmenu()
+
+        # Search Button
+        self.search_bt = ctk.CTkButton(self.tabview.tab("Search Event/Alarm"), text="Search", command=self.searchAE)
+        self.search_bt.grid(row=1, column=4, padx=(5,10), pady=5, sticky="w")
+
+        #Variable Selection
+        self.label3 = ctk.CTkLabel(self.tabview.tab("Search Event/Alarm"), text="Variable list",font=ctk.CTkFont(weight="bold"))
+        self.label3.grid(row=1, column=5, padx=20, pady=5, sticky="w")
+
+        self.results_t2 = ctk.CTkScrollableFrame(self.tabview.tab("Search Event/Alarm"))
+        self.results_t2.grid(row=2, column=0, columnspan=5, padx=(20,10), pady=5, sticky="nsew")
+        self.var_sel = ctk.CTkScrollableFrame(self.tabview.tab("Search Event/Alarm"))
+        self.var_sel.grid(row=2, column=5, padx=(10,20), pady=5, sticky="nsew")
+
+        #Dropdowns and Label for time interval
+        self.label6 = ctk.CTkLabel(self.tabview.tab("Search Event/Alarm"), text="Please select the time before/after the selected alarm/event to generate your report")
+        self.label6.grid(row=3, column=0, columnspan=5, padx=20, pady=5, sticky="nw")
+
+        self.low_limit = ctk.StringVar(value="")
+        self.label4 = ctk.CTkLabel(self.tabview.tab("Search Event/Alarm"), text="Time before: ")
+        self.label4.grid(row=4, column=0, padx=5, pady=(5,20), sticky="e")
+        self.optionmenu_2 = ctk.CTkOptionMenu(self.tabview.tab("Search Event/Alarm"), dynamic_resizing=False, variable=self.low_limit,
+                                                        values=["1 hour", "2 hours", "4 hours", "8 hours", "1 day"])
+        self.optionmenu_2.grid(row=4, column=1, padx=5, pady=(5,20), sticky="ew")
+        self.optionmenu_2.set("Select")
+
+        self.high_limit = ctk.StringVar(value="")
+        self.label5 = ctk.CTkLabel(self.tabview.tab("Search Event/Alarm"), text="Time after: ")
+        self.label5.grid(row=4, column=2, padx=5, pady=(5,20), sticky="e")
+        self.optionmenu_3 = ctk.CTkOptionMenu(self.tabview.tab("Search Event/Alarm"), dynamic_resizing=False, variable=self.high_limit,
+                                                        values=["1 hour", "2 hours", "4 hours", "8 hours", "1 day"])
+        self.optionmenu_3.grid(row=4, column=3, padx=5, pady=(5,20), sticky="ew")
+        self.optionmenu_3.set("Select")
+
+        #Action Button
+        self.action_t2 = ctk.CTkButton(self.tabview.tab("Search Event/Alarm"), text="Generate and Save Plot", command=self.searchAE)
+        self.action_t2.grid(row=4, column=5, padx=(5,20), pady=(5,20), sticky="e")
+
+        #-----------------------------------TAB3
         self.tabview.add("Personalized Analysis")
         self.tabview.tab("Personalized Analysis").grid_columnconfigure(0, weight=1)
         self.label_tab_3 = ctk.CTkLabel(self.tabview.tab("Personalized Analysis"), text="CTkLabel on Tab 3")
         self.label_tab_3.grid(row=0, column=0, padx=20, pady=20)
-      
-    def add_item(self, item):
-            checkbox = ctk.CTkCheckBox(self.tabview.tab("Change Overs"), text=item)
+
+    def searchAE(self):
+
+        if self.search_var.get() == "Search value":
+            tk.messagebox.showwarning(title='No option selected!', message='Select an Alarm o Event to search')
+        else:
+            tk.messagebox.showinfo(title='No option selected!', message="let's search")
+
+    def update_optionmenu(self):
+        print(self.radio_var.get())
+        if self.radio_var.get() == 0:
+            self.optionmenu_1.configure(values=self.alm_list)
+        elif self.radio_var.get() == 1:
+            self.optionmenu_1.configure(values=self.eve_list)
+
+        self.optionmenu_1.set("Search value")
+
+    def add_checkbox_t1(self, item):
+            checkbox = ctk.CTkCheckBox(self.results_t1, text=item)
             checkbox.grid(row=len(self.checkbox_list)+1, column=0, padx=5, pady=10, sticky="w")
             self.checkbox_list.append(checkbox)
 
@@ -282,7 +368,7 @@ class App(ctk.CTk):
         App.frames["CSFrame"].action_bt.grid_forget()
         
         #WorkSpace: TabFrame
-        App.frames["TFrame"] = TabsFrame(self.right_side_panel, self.COs)
+        App.frames["TFrame"] = TabsFrame(self.right_side_panel, self) # Pass the instance of App to TabsFrame
         self.show_frame("TFrame")
         App.frames["TFrame"].plot_all.configure(command= self.plot_all_COs)
         App.frames["TFrame"].plot_sel.configure(command= self.plot_sel_COs)
@@ -331,10 +417,11 @@ class App(ctk.CTk):
 
     def __init__(self):
         super().__init__()
-
+        
         # configure window
         self.title("VisuaLite V0.1")
-        self.geometry(f"{1100}x{800}")
+        self.geometry(f"{1300}x{800}")
+        self.iconbitmap("ad_logo.ico")
 
         self.grid_columnconfigure(0, weight=0)
         self.grid_columnconfigure(1, weight=1)
