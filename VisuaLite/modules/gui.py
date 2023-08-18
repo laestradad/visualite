@@ -1,14 +1,22 @@
 import tkinter as tk
 import customtkinter as ctk
 import tkinter.filedialog as fd
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import tkcalendar
 from PIL import Image
 import os
 
 from modules import fcm_one as fcm 
 # use fcm.bla bla to use data analysis functions
 
+#execution path
 PATH = os.getcwd()
-print(PATH)
+
+# Get the path to the current script
+script_path = os.path.dirname(os.path.abspath(__file__))
+print(script_path)
+# Construct the path to the file.txt in the resources directory
+icon_path = os.path.join(script_path, '..', 'resources', 'ad_logo.ico')
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("dark-blue")
@@ -18,15 +26,15 @@ class BreadcrumbFrame(ctk.CTkFrame):
         super().__init__(master, **kwargs)
 
         # Load the images 1, 2, 3
-        image1_path = os.path.join(PATH, "number-1.png")
+        image1_path = os.path.join(script_path, '..', 'resources', 'number-1.png')
         self.step1_img = Image.open(image1_path).resize((30, 30))
         self.step1_img_tk = ctk.CTkImage(self.step1_img)
 
-        image2_path = os.path.join(PATH, "number-2.png")
+        image2_path = os.path.join(script_path, '..', 'resources', 'number-2.png')
         self.step2_img = Image.open(image2_path).resize((30, 30))
         self.step2_img_tk = ctk.CTkImage(self.step2_img)
 
-        image3_path = os.path.join(PATH, "number-3.png")
+        image3_path = os.path.join(script_path, '..', 'resources', 'number-3.png')
         self.step3_img = Image.open(image3_path).resize((30, 30))
         self.step3_img_tk = ctk.CTkImage(self.step3_img)
 
@@ -77,17 +85,31 @@ class EmptyFrame(ctk.CTkFrame):
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
     
-class ScrollableCheckBoxFrame(ctk.CTkScrollableFrame):
+class CheckBoxFrame(ctk.CTkFrame):
     def __init__(self, master, item_list, command=None, **kwargs):
         super().__init__(master, **kwargs)
     
         self.command = command
+
+        self.checkboxesFrame = ctk.CTkScrollableFrame(self)
+        self.checkboxesFrame.grid(row=0, column=0, padx=5, pady=5, sticky="nsew")
+
+        self.btnsFrame = ctk.CTkFrame(self)
+        self.btnsFrame.grid(row=1, column=0, padx=5, pady=(0,5), sticky="nsew")
+        self.select_all = ctk.CTkButton(self.btnsFrame, text="Select all", command=self.select_all)
+        self.select_all.grid(row=0, column=0, padx=15, pady=5, sticky="w")
+        self.deselect_all = ctk.CTkButton(self.btnsFrame, text="Deselect all", command=self.deselect_all)
+        self.deselect_all.grid(row=0, column=1, padx=10, pady=5, sticky="e")
+
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(0, weight=1)
+
         self.checkbox_list = []
-        for i, item in enumerate(item_list):
+        for item in item_list:
             self.add_item(item)
 
     def add_item(self, item):
-        checkbox = ctk.CTkCheckBox(self, text=item)
+        checkbox = ctk.CTkCheckBox(self.checkboxesFrame, text=item)
         if self.command is not None:
             checkbox.configure(command=self.command)
         checkbox.grid(row=len(self.checkbox_list), column=0, padx=5, pady=10, sticky="w")
@@ -96,6 +118,14 @@ class ScrollableCheckBoxFrame(ctk.CTkScrollableFrame):
 
     def get_checked_items(self):
         return [checkbox.cget("text") for checkbox in self.checkbox_list if checkbox.get() == 1]
+    
+    def select_all (self):
+        for checkbox in self.checkbox_list:
+            checkbox.select()
+
+    def deselect_all (self):
+        for checkbox in self.checkbox_list:
+            checkbox.deselect()
 
 class ProgressFrame(ctk.CTkFrame):
     def __init__(self, master, **kwargs):
@@ -117,16 +147,13 @@ class TabsFrame(ctk.CTkFrame):
 
         self.app = app_instance
 
-        self.COs = self.app.COs
-        self.alm_list = self.app.LogsAlarms['Alm_Code_Label'].unique().tolist()
-        self.eve_list = self.app.LogsEvents['Evn_Code_Label'].unique().tolist()
-
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(0, weight=1)
 
         # create tabview
         self.tabview = ctk.CTkTabview(self, width=250)
         self.tabview.grid(row=0, column=0, padx=20, pady=20, sticky="nsew")
+
         #-----------------------------------TAB1
         self.tabview.add("Change Overs")
         self.tabview.tab("Change Overs").grid_columnconfigure(0, weight=1)
@@ -140,8 +167,11 @@ class TabsFrame(ctk.CTkFrame):
 
         self.plot_sel = ctk.CTkButton(self.results_t1, text="Save plots for selection")
         self.plot_all = ctk.CTkButton(self.results_t1, text="Save all plots")
+        
+        self.COs = []
+        if self.app.COs:  
+            self.COs = self.app.COs
 
-        if self.COs:
             self.checkbox_list = []
             self.label1.configure(text="In the logs imported there are " + str(len(self.COs)) + " changeovers. Please select the ")
             for i, CO in enumerate(self.COs):
@@ -154,12 +184,41 @@ class TabsFrame(ctk.CTkFrame):
         else:
             self.label1.configure(text="No Change Overs detected in data inserted")
         
+
         #-----------------------------------TAB2
         self.tabview.add("Search Event/Alarm")
         self.tabview.tab("Search Event/Alarm").grid_rowconfigure(2, weight=1)
         self.tabview.tab("Search Event/Alarm").grid_columnconfigure((0,1,2,3,4), weight=0)
         self.tabview.tab("Search Event/Alarm").grid_columnconfigure(5, weight=1)
-        
+
+        # Get arrays of options from dataframes
+        self.columns = []
+        if not self.app.LogsAlarms.empty:
+            self.alm_list = self.app.LogsAlarms['Alm_Code_Label'].unique().tolist()
+            self.columns = self.columns + self.app.LogsAlarms.columns.tolist()
+            self.columns.remove('DateTime')
+            self.columns.remove('Alm_Code_Label')
+            self.columns.remove('Label')
+        else:
+            self.alm_list = []
+
+        if not self.app.LogsEvents.empty:
+            self.eve_list = self.app.LogsEvents['Evn_Code_Label'].unique().tolist()
+            self.columns = self.columns + self.app.LogsEvents.columns.tolist()
+            self.columns.remove('DateTime')
+            self.columns.remove('Evn_Code_Label')
+            self.columns.remove('Label')
+            self.columns.remove('Data')
+            self.columns.remove('GpsPos')
+
+        else:
+            self.eve_list = []
+
+        if not self.app.LogsStandard.empty:
+            self.columns = self.columns + self.app.LogsStandard.columns.tolist()
+            self.columns.remove('DateTime')
+            self.columns.remove('GpsPos')
+
         # Label
         self.label2 = ctk.CTkLabel(self.tabview.tab("Search Event/Alarm"), text="Please select an event/alarm bla bla")
         self.label2.grid(row=0, column=0, columnspan=5, padx=20, pady=5, sticky="nw")
@@ -183,14 +242,20 @@ class TabsFrame(ctk.CTkFrame):
         self.search_bt = ctk.CTkButton(self.tabview.tab("Search Event/Alarm"), text="Search", command=self.searchAE)
         self.search_bt.grid(row=1, column=4, padx=(5,10), pady=5, sticky="w")
 
-        #Variable Selection
+        # Variable Selection
         self.label3 = ctk.CTkLabel(self.tabview.tab("Search Event/Alarm"), text="Variable list",font=ctk.CTkFont(weight="bold"))
         self.label3.grid(row=1, column=5, padx=20, pady=5, sticky="w")
-
-        self.results_t2 = ctk.CTkScrollableFrame(self.tabview.tab("Search Event/Alarm"))
-        self.results_t2.grid(row=2, column=0, columnspan=5, padx=(20,10), pady=5, sticky="nsew")
         self.var_sel = ctk.CTkScrollableFrame(self.tabview.tab("Search Event/Alarm"))
         self.var_sel.grid(row=2, column=5, padx=(10,20), pady=5, sticky="nsew")
+        self.switch_list_t2 = []
+        for column_name in self.columns:
+            self.add_switch_t2(column_name)
+
+        # Search results
+        self.results_t2 = ctk.CTkScrollableFrame(self.tabview.tab("Search Event/Alarm"))
+        self.results_t2.grid(row=2, column=0, columnspan=5, padx=(20,10), pady=5, sticky="nsew")
+        self.label_results_t2 = ctk.CTkLabel(self.results_t2, text="Search results shown here")
+        self.label_results_t2.grid(row=0, column=0, padx=10, pady=10, sticky="nw")
 
         #Dropdowns and Label for time interval
         self.label6 = ctk.CTkLabel(self.tabview.tab("Search Event/Alarm"), text="Please select the time before/after the selected alarm/event to generate your report")
@@ -213,41 +278,183 @@ class TabsFrame(ctk.CTkFrame):
         self.optionmenu_3.set("Select")
 
         #Action Button
-        self.action_t2 = ctk.CTkButton(self.tabview.tab("Search Event/Alarm"), text="Generate and Save Plot", command=self.searchAE)
+        self.action_t2 = ctk.CTkButton(self.tabview.tab("Search Event/Alarm"), text="Generate and Save Plot", command=self.generate_search_ae_plot)
         self.action_t2.grid(row=4, column=5, padx=(5,20), pady=(5,20), sticky="e")
+        self.action_t2.configure(state="disabled")
+
+        # Enable or disable buttons based on alarms/events not imported
+        if (not self.alm_list) and (not self.eve_list):
+            self.search_bt.configure(state="disabled")
+            self.radio_button_1.configure(state="disabled")
+            self.radio_button_2.configure(state="disabled")
+        
+        if (not self.alm_list) and (self.eve_list):
+            self.radio_var.set(1)
+            self.radio_button_1.configure(state="disabled")
+
+        if (not self.eve_list) and (self.alm_list):
+            self.radio_var.set(0)
+            self.radio_button_2.configure(state="disabled")
 
         #-----------------------------------TAB3
         self.tabview.add("Personalized Analysis")
-        self.tabview.tab("Personalized Analysis").grid_columnconfigure(0, weight=1)
-        self.label_tab_3 = ctk.CTkLabel(self.tabview.tab("Personalized Analysis"), text="CTkLabel on Tab 3")
-        self.label_tab_3.grid(row=0, column=0, padx=20, pady=20)
+        self.tabview.tab("Personalized Analysis").grid_columnconfigure(1, weight=1)
+        self.tabview.tab("Personalized Analysis").grid_rowconfigure(1, weight=1)
 
-    def searchAE(self):
+        self.aux_plot = ctk.CTkButton(self.tabview.tab("Personalized Analysis"), text="Show Auxiliary Plot", command=self.show_plot)
+        self.aux_plot.grid(row=0, column=0, columnspan=2, padx=20, pady=5)
 
-        if self.search_var.get() == "Search value":
-            tk.messagebox.showwarning(title='No option selected!', message='Select an Alarm o Event to search')
-        else:
-            tk.messagebox.showinfo(title='No option selected!', message="let's search")
+        self.frame_left_t3 = ctk.CTkFrame(self.tabview.tab("Personalized Analysis"))
+        self.frame_left_t3.grid(row=1, column=0, padx=20, pady=10, sticky="nsew")
 
-    def update_optionmenu(self):
-        print(self.radio_var.get())
-        if self.radio_var.get() == 0:
-            self.optionmenu_1.configure(values=self.alm_list)
-        elif self.radio_var.get() == 1:
-            self.optionmenu_1.configure(values=self.eve_list)
+        self.label_tab_3 = ctk.CTkLabel(self.frame_left_t3, text="Left side description")
+        self.label_tab_3.grid(row=0, column=0, padx=20, columnspan=2, pady=5, sticky="nw")
+        self.cal1_text = ctk.CTkLabel(self.frame_left_t3, text='From:')
+        self.cal1_text.grid(row=1, column=0, padx=20, pady=2, sticky="nw") 
+        self.cal1d = tkcalendar.Calendar(self.frame_left_t3)
+        self.cal1d.grid(row=2, column=0, padx=20, pady=2)
+        self.cal1t = ctk.CTkOptionMenu(self.frame_left_t3)
+        self.cal1t.grid(row=3, column=0, padx=20, pady=(10,20))
 
-        self.optionmenu_1.set("Search value")
+        self.cal1_text = ctk.CTkLabel(self.frame_left_t3, text='To:')
+        self.cal1_text.grid(row=1, column=1, padx=20, pady=2, sticky="nw")
+        self.cal2d = tkcalendar.Calendar(self.frame_left_t3)
+        self.cal2d.grid(row=2, column=1, padx=20, pady=2)
+        self.cal2t = ctk.CTkOptionMenu(self.frame_left_t3)
+        self.cal2t.grid(row=3, column=1, padx=20, pady=(10,20))
 
+        self.action_t3 = ctk.CTkButton(self.tabview.tab("Personalized Analysis"), text="Generate and save Plot", command=self.show_plot)
+        self.action_t3.grid(row=2, column=1, padx=20, pady=20, sticky="se")
+
+        self.var_sel_t3 = ctk.CTkScrollableFrame(self.tabview.tab("Personalized Analysis"))
+        self.var_sel_t3.grid(row=1, column=1, padx=20, pady=10, sticky="nsew")
+        self.switch_list_t3 = []
+        for column_name in self.columns:
+            self.add_switch_t3(column_name)
+
+    #TAB1 functions
     def add_checkbox_t1(self, item):
-            checkbox = ctk.CTkCheckBox(self.results_t1, text=item)
-            checkbox.grid(row=len(self.checkbox_list)+1, column=0, padx=5, pady=10, sticky="w")
-            self.checkbox_list.append(checkbox)
+        checkbox = ctk.CTkCheckBox(self.results_t1, text=item)
+        checkbox.grid(row=len(self.checkbox_list)+1, column=0, padx=5, pady=10, sticky="w")
+        self.checkbox_list.append(checkbox)
 
     def get_checked_items(self):
         COs_sts = []
         for checkbox in self.checkbox_list:
             COs_sts.append(checkbox.get())
         return COs_sts
+        
+    #TAB2 functions
+    def update_optionmenu(self): 
+        
+        if self.radio_var.get() == 0:
+            print("Alarm selected")
+            self.optionmenu_1.configure(values=self.alm_list)
+        elif self.radio_var.get() == 1:
+            print("Event selected")
+            self.optionmenu_1.configure(values=self.eve_list)
+
+        self.optionmenu_1.set("Search value")
+
+    def searchAE(self):
+        if self.search_var.get() == "Search value":
+            tk.messagebox.showwarning(title='No option selected!', message='Select an Alarm o Event to search')
+        else:
+            self.action_t2.configure(state="enabled")
+
+            selected_item = self.search_var.get()
+            self.ae_number= int(selected_item[1:selected_item.index('_')]) 
+            #text.index('_') returns position of _ char / or int(text.split('_')[0][1:]) this function splits string by _
+            
+            self.timestamps = []
+            if selected_item[0] == 'A':
+                print("Searching Alarm ", self.ae_number)
+                self.timestamps = self.app.LogsAlarms[self.app.LogsAlarms['AlarmNumber'] == self.ae_number]['DateTime'].tolist()
+                
+            elif selected_item[0] == 'E':
+                print("Searching Event ", self.ae_number)
+                self.timestamps = self.app.LogsEvents[self.app.LogsEvents['EventNumber'] == self.ae_number]['DateTime'].tolist()
+            
+            print(self.timestamps)
+            for t in self.timestamps:
+                text=str(t.date()) + " at " + str(t.time())
+                print(text)
+            
+            self.result_selection = tk.IntVar(value=0)
+            if self.timestamps:
+
+                self.radiobtn_list = []
+                self.label_results_t2.configure(text="In the imported logs there are " + str(len(self.timestamps)) + " occurrences of " + selected_item + "." +
+                                                "\n\nPlease select the occurence you want to plot:", justify='left')
+                
+                for i, t in enumerate(self.timestamps):
+                    text= str(i+1) + ". " + str(t.date()) + " at " + str(t.time())
+                    self.add_radiobtn_t2(text, i)
+
+            tk.messagebox.showinfo(title='Search results', message="Found " + str(len(self.timestamps)) + " occurrences of " + selected_item)
+
+    def add_radiobtn_t2(self, item, i):
+        radiobtn = ctk.CTkRadioButton(self.results_t2, text=item, variable=self.result_selection, value=i)
+        radiobtn.grid(row=len(self.radiobtn_list)+1, column=0, padx=15, pady=5, sticky="w")
+        self.radiobtn_list.append(radiobtn)
+
+    def add_switch_t2(self, label):
+        switch = ctk.CTkSwitch(self.var_sel, text=label)
+        switch.grid(row=len(self.switch_list_t2), column=0, padx=10, pady=5, sticky="w")
+        self.switch_list_t2.append(switch)
+
+    def get_selected_vars(self):
+        return [switch.cget("text") for switch in self.switch_list if switch.get() == 1]
+
+    def generate_search_ae_plot (self):
+        if (self.high_limit.get() == "Select") or (self.low_limit.get()== "Select"):
+            tk.messagebox.showwarning(title='No option selected!', message='Select time boundaries for the report')
+            return #Stop
+        
+        cols = self.get_selected_vars()
+
+        dest_folder = fd.askdirectory(parent=self,initialdir=PATH,title='Select a destination directory')
+        if dest_folder =='': #no folder selected
+            print('no folder selected')
+            return #Stop
+        
+        now_dt = fcm.datetime.datetime.now()
+        format_dt = now_dt.strftime('%Y.%m.%d_%H%M%S')
+        if self.radio_var.get() == 0:
+            name_file="Custom_Plot_A{}_{}".format(self.ae_number, format_dt)
+        elif self.radio_var.get() == 1:
+            name_file="Custom_Plot_E{}_{}".format(self.ae_number, format_dt)
+
+        file_path = os.path.join(dest_folder, (name_file + ".html"))
+        print(file_path)
+
+        date1, date2 = fcm.date_limits(self.timestamps[self.result_selection.get()],self.low_limit.get(), self.high_limit.get())
+        fig = fcm.custom_plot1 (self.app.LogsStandard, self.app.LogsAlarms, self.app.LogsEvents, cols, date1, date2, name_file)
+        try:
+            fig.write_html(file_path, config={'displaylogo': False})
+            print("File saved successfully.")
+            tk.messagebox.showinfo(title='Plot saved!', message="Plot saved in destination folder")
+
+        except Exception as e:
+            tk.messagebox.showwarning(title='Error saving file', message="Error saving file:" + e)
+            print("Error saving file:", e)
+
+    #TAB3 functions
+    def show_plot(self):
+        plot_fig = fcm.create_aux_plot(self.app.LogsStandard, self.app.LogsAlarms, self.app.LogsEvents)
+        plot_window = ctk.CTkToplevel(self.app)
+        plot_window.resizable(width=False, height=False)
+        plot_window.title("Auxiliary Plot")
+        
+        canvas = FigureCanvasTkAgg(plot_fig, master=plot_window)
+        canvas.draw()
+        canvas.get_tk_widget().pack()
+
+    def add_switch_t3(self, label):
+        switch = ctk.CTkSwitch(self.var_sel_t3, text=label)
+        switch.grid(row=len(self.switch_list_t3), column=0, padx=10, pady=5, sticky="w")
+        self.switch_list_t3.append(switch)
+
 
 class ResultsFrame(ctk.CTkFrame):
     def __init__(self, master, **kwargs):
@@ -287,9 +494,9 @@ class App(ctk.CTk):
     import_success = 0 # bool of import data result
     mch_info = None # First 3 rows of csv files
     COs = None # List of changeovers
-    LogsStandard = None #DataFrame with process logs
-    LogsAlarms = None #DataFrame with alarm logs
-    LogsEvents = None #DataFrame with event logs
+    LogsStandard = fcm.pd.DataFrame() #DataFrame with process logs
+    LogsAlarms = fcm.pd.DataFrame() #DataFrame with alarm logs
+    LogsEvents = fcm.pd.DataFrame() #DataFrame with event logs
 
     def step_00_init(self):
         #Update breadcrumb
@@ -325,7 +532,7 @@ class App(ctk.CTk):
         App.frames["CSFrame"].text.configure(text="Folder selected" + str(self.dirname))
 
         #WorkSpace: Scrollable frame
-        App.frames["FilesUpload"] = ScrollableCheckBoxFrame(self.right_side_panel, command=self.checkbox_frame_event,
+        App.frames["FilesUpload"] = CheckBoxFrame(self.right_side_panel, command=self.checkbox_frame_event,
                                                                  item_list=self.csv_files_list)
         self.show_frame("FilesUpload")
 
@@ -420,8 +627,8 @@ class App(ctk.CTk):
         
         # configure window
         self.title("VisuaLite V0.1")
-        self.geometry(f"{1300}x{800}")
-        self.iconbitmap("ad_logo.ico")
+        self.geometry(f"{1300}x{820}")
+        self.iconbitmap(icon_path)
 
         self.grid_columnconfigure(0, weight=0)
         self.grid_columnconfigure(1, weight=1)
@@ -514,9 +721,6 @@ class App(ctk.CTk):
         return self.frames['FilesUpload'].get_checked_items()
     
     def importing_data(self):
-        # Get file names selected
-        self.csv_files_list = self.checkbox_frame_event()
-        print(self.csv_files_list)
         DataFiles = [self.dirname + '/' + x for x in self.csv_files_list if x.startswith('S')]
         AlarmFiles = [self.dirname + '/' + x for x in self.csv_files_list if x.startswith('A')]
         EventFiles = [self.dirname + '/' + x for x in self.csv_files_list if x.startswith('E')]
@@ -545,7 +749,16 @@ class App(ctk.CTk):
     def import_data_cmd(self):
         # Bypass state to show progressBar
         self.step_20_importingData()
-        self.after(1000, self.importing_data) #wait 1000ms and next step
+
+        # Get file names selected
+        self.csv_files_list = self.checkbox_frame_event()
+        print(self.csv_files_list)
+
+        if self.csv_files_list == []:
+            tk.messagebox.showerror(title='Import failed', message='Please select at least one log file')
+            self.step_10_folderSelected()
+        else:
+            self.after(1000, self.importing_data) #wait 1000ms and next step
     
     def plot_all_COs(self):
         dest_folder = fd.askdirectory(parent=self,initialdir=PATH,title='Select a destination directory')
@@ -568,10 +781,10 @@ class App(ctk.CTk):
     def plot_sel_COs(self):
         
         COs = App.frames["TFrame"].get_checked_items()
-        print(COs)
-
+        
         flag = 0
         for i, CO_sts in enumerate(COs):
+            print(i)
             if CO_sts == 1:
                 #first plot
                 if flag == 0: 

@@ -6,10 +6,17 @@ PATH = os.getcwd()
 print(PATH)
 # read files
 from csv import reader
+import json
 # plot library
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+import matplotlib.pyplot as plt
+from PIL import Image
 
+# Get the path to the current script
+script_path = os.path.dirname(os.path.abspath(__file__))
+
+#----------------------------------------------------------- COLOR LIBRARIES
 greens = ['rgba(0, 128, 0, 0.1)', #green opacity 10%
           'rgba(196, 180, 84, 1)', #vegas gold
           'rgba(64, 224, 208, 1)', #turquoise
@@ -46,12 +53,33 @@ ALcolors = ['rgba(17, 56, 127, 1)', #AL blue
             'rgba(0, 127, 200, 1)', #AL innovation
             ]
 
+# Define custom style for matplotlib
+custom_dark_style = {
+    'axes.facecolor': '#24242424',  # Custom background color / DEFAULT '#1e1e1e'
+    'axes.edgecolor': '#ffffff',  # Color of axes edges / DEFAULT '#ffffff'
+    'axes.labelcolor': '#ffffff',  # Color of axes labels / DEFAULT 
+    'text.color': '#ffffff',  # Color of text / DEFAULT '#ffffff'
+    'xtick.color': '#ffffff',  # Color of x-axis ticks / DEFAULT '#ffffff'
+    'ytick.color': '#ffffff',  # Color of y-axis ticks / DEFAULT '#ffffff'
+    'figure.facecolor': '#1e1e1e',  # Figure background color / DEFAULT '#1e1e1e'
+    'figure.edgecolor': '#1e1e1e',  # Figure edge color / DEFAULT '#1e1e1e'
+    'axes.grid': True,  # Show grid / DEFAULT True
+    'grid.color': '#333333',  # Color of grid lines / DEFAULT '#333333'
+}
+
+#----------------------------------------------------------- IMPORT UNITS FOR FCM ONE LOG FILES
+# Get the path to the current script
+script_path = os.path.dirname(os.path.abspath(__file__))
+# Construct the path to the file.txt in the resources directory
+file_path = os.path.join(script_path, '..', 'resources', 'units.txt')
+with open(file_path, 'r') as file:
+    units = json.load(file)
+
+#----------------------------------------------------------- FUNCTIONS
+
 def concat_files(AllFilesNames):
    # Create an empty list to store the dataframes
     ListDataframe = list()
-
-    # Total file number
-    NoFiles = len(AllFilesNames)
 
     # For each file in the specified directory import the data and add it in the list
     for Filename in AllFilesNames:
@@ -101,10 +129,10 @@ def check_files (files):
 
 def import_data(DataFiles, AlarmFiles, EventFiles):
     mch_info = None
-    LogsStandard = None
+    LogsStandard = pd.DataFrame()
     COs = []
-    LogsAlarms = None
-    LogsEvents = None
+    LogsAlarms = pd.DataFrame()
+    LogsEvents = pd.DataFrame()
 
     #Check if all files are from the same machine / flag_files=1 if all good
     files = DataFiles + AlarmFiles + EventFiles
@@ -133,6 +161,7 @@ def import_data(DataFiles, AlarmFiles, EventFiles):
 def Format_DF_SLogs(list_files):
 
     LogsStandard = concat_files(list_files)
+    print("Standard Logs imported ----------------")
     print(LogsStandard.columns)
     print(LogsStandard.shape)
 
@@ -197,11 +226,13 @@ def Format_DF_SLogs(list_files):
     # Create column with value change
     LogsStandard['ChangeoverCMDchange'] = LogsStandard['ChangeOverInProgress'].diff()
 
+    print("Standard Logs formatted ----------------")
     return(LogsStandard)
 
 def Format_DF_ALogs(list_files):
 
     LogsAlarms = concat_files(list_files)
+    print("Alarm Logs imported ----------------")
     print(LogsAlarms.columns)
     print(LogsAlarms.shape)
 
@@ -282,11 +313,13 @@ def Format_DF_ALogs(list_files):
     })
 
     LogsAlarms['Alm_Code_Label'] = "A" + LogsAlarms['AlarmNumber'].astype(str) + "_" + LogsAlarms['Label'] 
-
+    
+    print("Alarm Logs formatted ----------------")
     return(LogsAlarms)
 
 def Format_DF_ELogs(list_files):
     LogsEvents = concat_files(list_files)
+    print("Event Logs imported ----------------")
     print(LogsEvents.columns)
     print(LogsEvents.shape)
 
@@ -312,6 +345,7 @@ def Format_DF_ELogs(list_files):
     
     LogsEvents['Evn_Code_Label'] = "E" + LogsEvents['EventNumber'].astype(str) + "_" + LogsEvents['Label'] 
 
+    print("Event Logs formatted ----------------")
     return(LogsEvents)
 
 def IdentifyCOs(logs):
@@ -917,8 +951,8 @@ def Plot_ChangeOver(df, mch_info, LogsAlarms, LogsEvents):
 
 
     # Add image
-    from PIL import Image
-    alLogo = Image.open(PATH + "\\resources\ALlogo.png")
+    img_path = os.path.join(script_path, '..', 'resources', 'ALlogo.png')
+    alLogo = Image.open(img_path)
     fig.add_layout_image(
         dict(
             source=alLogo,
@@ -930,3 +964,200 @@ def Plot_ChangeOver(df, mch_info, LogsAlarms, LogsEvents):
     )
 
     return(fig)
+
+# custom plot funcions
+def classify_cols(selected):
+    filter_unit_cols = {col : unit for col, unit in units.items() if col in selected}
+    # {key_expression: value_expression for item in iterable if condition}
+
+    classified_cols = {}
+    for col, unit in filter_unit_cols.items():
+        if unit not in classified_cols:
+            classified_cols[unit] = [] #if first column of this unit, create key and an empty array as value
+        classified_cols[unit].append(col)
+
+    return classified_cols
+
+def date_limits (timestamp, lower, upper):
+    date1 = timestamp
+    date2 = timestamp
+
+    if lower == "1 hour":
+        date1 = timestamp - datetime.timedelta(hours=1)
+    elif lower == "2 hours":
+        date1 = timestamp - datetime.timedelta(hours=2)
+    elif lower == "4 hours":
+        date1 = timestamp - datetime.timedelta(hours=4)
+    elif lower == "8 hours":
+        date1 = timestamp - datetime.timedelta(hours=8)
+    elif lower == "1 day":
+        date1 = timestamp - datetime.timedelta(days=1)
+
+    if upper == "1 hour":
+        date2 = timestamp + datetime.timedelta(hours=1)
+    elif upper == "2 hours":
+        date2 = timestamp + datetime.timedelta(hours=2)
+    elif upper == "4 hours":
+        date2 = timestamp + datetime.timedelta(hours=4)
+    elif upper == "8 hours":
+        date2 = timestamp + datetime.timedelta(hours=8)
+    elif upper == "1 day":
+        date2 = timestamp + datetime.timedelta(days=1)
+    
+    return date1, date2
+
+def custom_plot1 (dfs, dfa, dfe, cols, date1, date2, tittle): # n rows, one for each unit
+    
+    dfs = dfs[(dfs['DateTime'] >= date1) & (dfs['DateTime'] <= date2)]
+    dfa = dfa[(dfa['DateTime'] >= date1) & (dfa['DateTime'] <= date2)]
+    dfe = dfe[(dfe['DateTime'] >= date1) & (dfe['DateTime'] <= date2)]
+
+    cols2 = classify_cols(cols)
+
+    fig = make_subplots(rows=len(cols2), cols=1, shared_xaxes=True, vertical_spacing=0.02)
+
+    for i, (unit, cols) in enumerate(cols2.items()):
+        print(i, unit, cols)
+        fig.update_yaxes(title_text=unit,row=i+1)
+
+        for col in cols:
+            if col == 'AlarmNumber':
+                trace = go.Scatter(x=dfa['DateTime'], y=dfa['AlarmNumber'].astype(str),
+                        name=col,
+                        mode='markers', marker_symbol='x',
+                        marker_line_color=ALcolors[2], marker_color=ALcolors[3],
+                        marker_line_width=1, marker_size=8,
+                        legendgroup=unit,legendgrouptitle_text=unit,
+                        hovertext=dfa['Label'])
+                 
+            elif col == 'EventNumber':
+                trace = go.Scatter(x=dfe['DateTime'], y=dfe['EventNumber'].astype(str),
+                        name='Event Number',
+                        mode='markers',marker_symbol='star',
+                        marker_line_color=ALcolors[5], marker_color=ALcolors[5],
+                        marker_line_width=1, marker_size=8,
+                        legendgroup="Events",legendgrouptitle_text="Events",
+                        hovertext=dfe['Label'])
+            else:
+                trace = go.Scatter(
+                    x=dfs['DateTime'],
+                    y=dfs[col],
+                    name=col,
+                    legendgroup=unit,legendgrouptitle_text=unit,
+                )
+                
+            fig.add_trace(trace, row=i+1, col=1)
+
+    # Update layout properties
+    fig.update_layout(hovermode="x unified", hoverlabel=dict(bgcolor='rgba(255,255,255,0.75)', namelength = -1, font=dict(color='black')),  
+        legend=dict(groupclick="toggleitem"), #avoid grouping all traces #orientation="v", x = 1.1, 
+        title_text=tittle , title_x=0.5
+    )
+
+    # Add image
+    img_path = os.path.join(script_path, '..', 'resources', 'ALlogo.png')
+    alLogo = Image.open(img_path)
+    fig.add_layout_image(
+        dict(
+            source=alLogo,
+            xref="paper", yref="paper",
+            x=0, y=1.025,
+            sizex=0.14, sizey=0.14,
+            xanchor="left", yanchor="bottom"
+        )
+    )
+    
+    return fig
+
+def create_aux_plot(LogsStandard, LogsAlarms, LogsEvents):
+
+    plt.style.use(custom_dark_style)
+    #plt.style.use('default')
+    #plt.style.use('dark_background')
+
+    # Create a two-row plot
+    fig, axes = plt.subplots(nrows=2, ncols=1, figsize=(10, 6), gridspec_kw={'height_ratios': [1, 5]})
+
+    # ---------------------------------------------------------------------------- Row 1: Line plots
+    axes[0].set_title('Date range of Log files')
+    axes[0].plot(LogsStandard['DateTime'], [3] * len(LogsStandard), color='#FFCC00', linewidth=8, label='LogsStandard')
+
+    axes[0].plot(LogsAlarms['DateTime'], [2] * len(LogsAlarms), color='#ec6066ff', linewidth=8, label='LogsAlarms')
+    axes[0].plot(LogsEvents['DateTime'], [1] * len(LogsEvents), color='#6699ccff', linewidth=8, label='LogsEvents')
+
+    axes[0].grid(axis='both', linestyle='--', linewidth=0.5, alpha=0.7)  # Add auxiliary x-axis grid
+
+    #Get min and max date for each dataframe
+    mindateS = LogsStandard['DateTime'].min()
+    maxdateS = LogsStandard['DateTime'].max()
+
+    mindateA = LogsAlarms['DateTime'].min()
+    maxdateA = LogsAlarms['DateTime'].max()
+
+    mindateE = LogsEvents['DateTime'].min()
+    maxdateE = LogsEvents['DateTime'].max()
+
+    # Filter datetime values to get unique dates ignoring time
+    dates = [mindateS, mindateA, mindateE, maxdateS, maxdateA, maxdateE]
+    ticks = list(set(dt.date() for dt in dates))
+    ticks.sort()
+
+    # Create a new list to store filtered dates
+    filtered_dates = [ticks[0]]
+    # Iterate through the sorted date list and delete dates near less than x days
+    for i in range(1, len(ticks)):
+        if (ticks[i] - filtered_dates[-1]).days >= 2:
+            filtered_dates.append(ticks[i])
+    # Format the unique dates as "01/01/23" strings
+    xtick_labels = [date.strftime('%m/%d/%y') for date in filtered_dates]
+
+    axes[0].set_xticks(filtered_dates)
+    axes[0].set_xticklabels(xtick_labels, rotation=45)
+    axes[0].set_yticks([1, 2, 3])
+    axes[0].set_yticklabels(['Events Logs', 'Alarms Logs', 'Standard Logs'])
+
+    # ----------------------------------------------------------------------------- Row 2: Multiple y-axes
+    ax1 = axes[1]
+    ax1.set_title('Main variables trend')
+    ax1.grid(axis='both', linestyle='--', linewidth=0.5, alpha=0.7)  # Add auxiliary x-axis grid
+
+    # Data
+    x = LogsStandard['DateTime']
+    y1 = LogsStandard['FT_VolumeFlow']
+    y2 = LogsStandard['TT2']
+    y3 = LogsStandard['VT']
+
+    #y1
+    ax1.plot(x, y1, color='#6699ccff', label='FT_VolumeFlow')
+    ax1.set_ylabel('FT_VolumeFlow', color='#6699ccff')
+    ax1.tick_params(axis='y', labelcolor='#6699ccff')
+
+    #y2
+    ax2 = ax1.twinx()
+    ax2.plot(x, y2, color='#ec6066ff', label='TT2')
+    ax2.set_ylabel('TT2', color='#ec6066ff')
+    ax2.tick_params(axis='y', labelcolor='#ec6066ff')
+
+    #y3
+    ax3 = ax1.twinx()
+    ax3.spines['right'].set_position(('outward', 50))
+    ax3.plot(x, y3, color='#FFCC00', label='VT')
+    ax3.set_ylabel('Viscosity', color='#FFCC00')
+    ax3.tick_params(axis='y', labelcolor='#FFCC00')
+
+    # Set fewer ticks on the x-axis
+    min_date = LogsStandard['DateTime'].min()
+    max_date = LogsStandard['DateTime'].max()
+    num_ticks = 10  # Choose the number of ticks you prefer
+    x_ticks = pd.date_range(start=min_date, end=max_date, freq='D')
+    x_ticks = x_ticks[::len(x_ticks) // num_ticks]  # Select every Nth tick
+
+    # Set custom tick positions and labels on the x-axis
+    ax1.set_xticks(x_ticks)
+    ax1.set_xticklabels(x_ticks.strftime('%m/%d/%y'), rotation=45)  # Format and rotate tick labels
+
+    # Adjust layout
+    plt.tight_layout()
+    plt.subplots_adjust(hspace=0.5)  # Adjust vertical spacing between rows
+
+    return fig
