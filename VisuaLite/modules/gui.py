@@ -20,6 +20,12 @@ icon_path = os.path.join(script_path, '..', 'resources', 'ad_logo.ico')
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("dark-blue")
+
+TIMES = ['00:00', '01:00', '02:00', '03:00', '04:00', '05:00',
+         '06:00', '07:00', '08:00', '09:00', '10:00', '11:00',
+         '12:00', '13:00', '14:00', '15:00', '16:00', '17:00',
+         '18:00', '19:00', '20:00', '21:00', '22:00', '23:00'
+         ]
     
 class BreadcrumbFrame(ctk.CTkFrame):
     def __init__(self, master, **kwargs):
@@ -196,28 +202,26 @@ class TabsFrame(ctk.CTkFrame):
         if not self.app.LogsAlarms.empty:
             self.alm_list = self.app.LogsAlarms['Alm_Code_Label'].unique().tolist()
             self.columns = self.columns + self.app.LogsAlarms.columns.tolist()
-            self.columns.remove('DateTime')
-            self.columns.remove('Alm_Code_Label')
-            self.columns.remove('Label')
+            remove_cols = ['DateTime', 'Alm_Code_Label', 'Label']
+            for col in remove_cols:
+                self.columns.remove(col)
         else:
             self.alm_list = []
 
         if not self.app.LogsEvents.empty:
             self.eve_list = self.app.LogsEvents['Evn_Code_Label'].unique().tolist()
             self.columns = self.columns + self.app.LogsEvents.columns.tolist()
-            self.columns.remove('DateTime')
-            self.columns.remove('Evn_Code_Label')
-            self.columns.remove('Label')
-            self.columns.remove('Data')
-            self.columns.remove('GpsPos')
-
+            remove_cols = ['DateTime', 'Evn_Code_Label', 'Label', 'Data', 'GpsPos']
+            for col in remove_cols:
+                self.columns.remove(col)
         else:
             self.eve_list = []
 
         if not self.app.LogsStandard.empty:
             self.columns = self.columns + self.app.LogsStandard.columns.tolist()
-            self.columns.remove('DateTime')
-            self.columns.remove('GpsPos')
+            remove_cols = ['DateTime', 'GpsPos', 'CV1_Label', 'CV2_Label', 'CV3_Label', 'CV4_Label', 'CV5_Label', 'ChangeoverCMDchange']
+            for col in remove_cols:
+                self.columns.remove(col)
 
         # Label
         self.label2 = ctk.CTkLabel(self.tabview.tab("Search Event/Alarm"), text="Please select an event/alarm bla bla")
@@ -311,19 +315,21 @@ class TabsFrame(ctk.CTkFrame):
         self.label_tab_3.grid(row=0, column=0, padx=20, columnspan=2, pady=5, sticky="nw")
         self.cal1_text = ctk.CTkLabel(self.frame_left_t3, text='From:')
         self.cal1_text.grid(row=1, column=0, padx=20, pady=2, sticky="nw") 
-        self.cal1d = tkcalendar.Calendar(self.frame_left_t3)
+        self.cal1d = tkcalendar.Calendar(self.frame_left_t3, selectmode="day", date_pattern="yyyy/MM/dd")
         self.cal1d.grid(row=2, column=0, padx=20, pady=2)
-        self.cal1t = ctk.CTkOptionMenu(self.frame_left_t3)
+        self.cal1t = ctk.CTkOptionMenu(self.frame_left_t3, dynamic_resizing=False, values=TIMES)
         self.cal1t.grid(row=3, column=0, padx=20, pady=(10,20))
+        self.cal1t.set("00:00")
 
         self.cal1_text = ctk.CTkLabel(self.frame_left_t3, text='To:')
         self.cal1_text.grid(row=1, column=1, padx=20, pady=2, sticky="nw")
-        self.cal2d = tkcalendar.Calendar(self.frame_left_t3)
+        self.cal2d = tkcalendar.Calendar(self.frame_left_t3, selectmode="day", date_pattern="yyyy/MM/dd")
         self.cal2d.grid(row=2, column=1, padx=20, pady=2)
-        self.cal2t = ctk.CTkOptionMenu(self.frame_left_t3)
+        self.cal2t = ctk.CTkOptionMenu(self.frame_left_t3, dynamic_resizing=False, values=TIMES)
         self.cal2t.grid(row=3, column=1, padx=20, pady=(10,20))
+        self.cal2t.set("00:00")
 
-        self.action_t3 = ctk.CTkButton(self.tabview.tab("Personalized Analysis"), text="Generate and save Plot", command=self.show_plot)
+        self.action_t3 = ctk.CTkButton(self.tabview.tab("Personalized Analysis"), text="Generate and save Plot", command=self.generate_personalized_plot)
         self.action_t3.grid(row=2, column=1, padx=20, pady=20, sticky="se")
 
         self.var_sel_t3 = ctk.CTkScrollableFrame(self.tabview.tab("Personalized Analysis"))
@@ -403,15 +409,15 @@ class TabsFrame(ctk.CTkFrame):
         switch.grid(row=len(self.switch_list_t2), column=0, padx=10, pady=5, sticky="w")
         self.switch_list_t2.append(switch)
 
-    def get_selected_vars(self):
-        return [switch.cget("text") for switch in self.switch_list if switch.get() == 1]
+    def get_selected_vars_t2(self):
+        return [switch.cget("text") for switch in self.switch_list_t2 if switch.get() == 1]
 
     def generate_search_ae_plot (self):
         if (self.high_limit.get() == "Select") or (self.low_limit.get()== "Select"):
             tk.messagebox.showwarning(title='No option selected!', message='Select time boundaries for the report')
             return #Stop
         
-        cols = self.get_selected_vars()
+        cols = self.get_selected_vars_t2()
 
         dest_folder = fd.askdirectory(parent=self,initialdir=PATH,title='Select a destination directory')
         if dest_folder =='': #no folder selected
@@ -445,6 +451,8 @@ class TabsFrame(ctk.CTkFrame):
         plot_window = ctk.CTkToplevel(self.app)
         plot_window.resizable(width=False, height=False)
         plot_window.title("Auxiliary Plot")
+        # Keep the toplevel window in front of the root window
+        plot_window.wm_transient(self.app)
         
         canvas = FigureCanvasTkAgg(plot_fig, master=plot_window)
         canvas.draw()
@@ -455,6 +463,51 @@ class TabsFrame(ctk.CTkFrame):
         switch.grid(row=len(self.switch_list_t3), column=0, padx=10, pady=5, sticky="w")
         self.switch_list_t3.append(switch)
 
+    def get_selected_vars_t3(self):
+        return [switch.cget("text") for switch in self.switch_list_t3 if switch.get() == 1]
+
+    def generate_personalized_plot(self):
+        date1 = self.cal1d.get_date()
+        time1 = self.cal1t.get()
+        date2 = self.cal2d.get_date()
+        time2 = self.cal2t.get() 
+        
+        datetime1 = fcm.datetime.datetime(int(date1.split('/')[0]), int(date1.split('/')[1]), int(date1.split('/')[2]), int(time1.split(':')[0]), 0, 0)  # Year, month, day, hour, minute, second
+        datetime2 = fcm.datetime.datetime(int(date2.split('/')[0]), int(date2.split('/')[1]), int(date2.split('/')[2]), int(time2.split(':')[0]), 0, 0)  # Year, month, day, hour, minute, second
+        print(datetime1, datetime2)
+
+        time_difference = datetime2 - datetime1
+
+        if (time_difference.days < 0):
+            tk.messagebox.showwarning(title='Incorrect dates', message='"From:" date is bigger than "To:" date')
+            return #Stop
+        elif (time_difference.days > 5):
+            tk.messagebox.showwarning(title='Date range too big', message='Please select a date range smaller than 5 days')
+            return #Stop:
+        
+        cols = self.get_selected_vars_t3()
+
+        dest_folder = fd.askdirectory(parent=self,initialdir=PATH,title='Select a destination directory')
+        if dest_folder =='': #no folder selected
+            print('no folder selected')
+            return #Stop
+        
+        now_dt = fcm.datetime.datetime.now()
+        format_dt = now_dt.strftime('%Y.%m.%d_%H%M%S')
+        name_file="Custom_Plot_{}".format(format_dt)
+        
+        file_path = os.path.join(dest_folder, (name_file + ".html"))
+        print(file_path)
+
+        fig = fcm.custom_plot1(self.app.LogsStandard, self.app.LogsAlarms, self.app.LogsEvents, cols, datetime1, datetime2, name_file)
+        try:
+            fig.write_html(file_path, config={'displaylogo': False})
+            print("File saved successfully.")
+            tk.messagebox.showinfo(title='Plot saved!', message="Plot saved in destination folder")
+
+        except Exception as e:
+            tk.messagebox.showwarning(title='Error saving file', message="Error saving file:" + e)
+            print("Error saving file:", e)
 
 class ResultsFrame(ctk.CTkFrame):
     def __init__(self, master, **kwargs):
@@ -627,7 +680,21 @@ class App(ctk.CTk):
         
         # configure window
         self.title("VisuaLite V0.1")
-        self.geometry(f"{1300}x{820}")
+        # set the dimensions of the screen 
+        w = 1300 # width
+        h = 820 # height
+
+        # get screen width and height
+        ws = self.winfo_screenwidth() # width of the screen
+        hs = self.winfo_screenheight() # height of the screen
+
+        # calculate x and y coordinates for the Tk root window
+        x = (ws/2) - (w/2)
+        y = (hs/2) - (h/2)
+
+        # and where it is placed
+        #self.geometry(f"{1300}x{820}")
+        self.geometry('%dx%d+%d+%d' % (w, h, x, y))
         self.iconbitmap(icon_path)
 
         self.grid_columnconfigure(0, weight=0)
