@@ -53,7 +53,7 @@ ALcolors = ['rgba(17, 56, 127, 1)', #AL blue
             'rgba(0, 127, 200, 1)', #AL innovation
             ]
 
-# Define custom style for matplotlib
+# Define custom dark style for matplotlib
 custom_dark_style = {
     'axes.facecolor': '#24242424',  # Custom background color / DEFAULT '#1e1e1e'
     'axes.edgecolor': '#ffffff',  # Color of axes edges / DEFAULT '#ffffff'

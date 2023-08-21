@@ -31,18 +31,20 @@ class BreadcrumbFrame(ctk.CTkFrame):
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
 
-        # Load the images 1, 2, 3
+        # Load the images
         image1_path = os.path.join(script_path, '..', 'resources', 'number-1.png')
         self.step1_img = Image.open(image1_path).resize((30, 30))
         self.step1_img_tk = ctk.CTkImage(self.step1_img)
+        image1g_path = os.path.join(script_path, '..', 'resources', 'number-one.png')
+        self.step1g_img = Image.open(image1g_path).resize((30, 30))
+        self.step1g_img_tk = ctk.CTkImage(self.step1g_img)
 
         image2_path = os.path.join(script_path, '..', 'resources', 'number-2.png')
         self.step2_img = Image.open(image2_path).resize((30, 30))
         self.step2_img_tk = ctk.CTkImage(self.step2_img)
-
-        image3_path = os.path.join(script_path, '..', 'resources', 'number-3.png')
-        self.step3_img = Image.open(image3_path).resize((30, 30))
-        self.step3_img_tk = ctk.CTkImage(self.step3_img)
+        image2g_path = os.path.join(script_path, '..', 'resources', 'number-two.png')
+        self.step2g_img = Image.open(image2g_path).resize((30, 30))
+        self.step2g_img_tk = ctk.CTkImage(self.step2g_img)
 
         # STEP 1
         self.step1 = ctk.CTkFrame(self)
@@ -53,14 +55,8 @@ class BreadcrumbFrame(ctk.CTkFrame):
         # STEP 2
         self.step2 = ctk.CTkFrame(self)
         self.step2.grid(row=0, column=1, padx=5, pady=5, sticky="nsew")
-        self.step2_label = ctk.CTkLabel(self.step2, text="   Analysis Type", image=self.step2_img_tk, compound="left")
+        self.step2_label = ctk.CTkLabel(self.step2, text="   Data Analysis", image=self.step2g_img_tk, compound="left")
         self.step2_label.grid(row=0, column=0, padx=20, pady=10)
-
-        # STEP 3
-        self.step3 = ctk.CTkFrame(self)
-        self.step3.grid(row=0, column=2, padx=5, pady=5, sticky="nsew")
-        self.step3_label = ctk.CTkLabel(self.step3, text="   Results", image=self.step3_img_tk, compound="left")
-        self.step3_label.grid(row=0, column=0, padx=20, pady=10)
 
         #configure grid
         self.grid_rowconfigure(0, weight=1)
@@ -92,28 +88,6 @@ class EmptyFrame(ctk.CTkFrame):
         self.grid_columnconfigure(0, weight=1)
     
 class CheckBoxFrame(ctk.CTkFrame):
-    def __init__(self, master, item_list, command=None, **kwargs):
-        super().__init__(master, **kwargs)
-    
-        self.command = command
-
-        self.checkboxesFrame = ctk.CTkScrollableFrame(self)
-        self.checkboxesFrame.grid(row=0, column=0, padx=5, pady=5, sticky="nsew")
-
-        self.btnsFrame = ctk.CTkFrame(self)
-        self.btnsFrame.grid(row=1, column=0, padx=5, pady=(0,5), sticky="nsew")
-        self.select_all = ctk.CTkButton(self.btnsFrame, text="Select all", command=self.select_all)
-        self.select_all.grid(row=0, column=0, padx=15, pady=5, sticky="w")
-        self.deselect_all = ctk.CTkButton(self.btnsFrame, text="Deselect all", command=self.deselect_all)
-        self.deselect_all.grid(row=0, column=1, padx=10, pady=5, sticky="e")
-
-        self.grid_columnconfigure(0, weight=1)
-        self.grid_rowconfigure(0, weight=1)
-
-        self.checkbox_list = []
-        for item in item_list:
-            self.add_item(item)
-
     def add_item(self, item):
         checkbox = ctk.CTkCheckBox(self.checkboxesFrame, text=item)
         if self.command is not None:
@@ -125,13 +99,35 @@ class CheckBoxFrame(ctk.CTkFrame):
     def get_checked_items(self):
         return [checkbox.cget("text") for checkbox in self.checkbox_list if checkbox.get() == 1]
     
-    def select_all (self):
+    def select_all_files(self):
         for checkbox in self.checkbox_list:
             checkbox.select()
 
-    def deselect_all (self):
+    def deselect_all_files(self):
         for checkbox in self.checkbox_list:
             checkbox.deselect()
+            
+    def __init__(self, master, item_list, command=None, **kwargs):
+        super().__init__(master, **kwargs)
+    
+        self.command = command
+
+        self.checkboxesFrame = ctk.CTkScrollableFrame(self)
+        self.checkboxesFrame.grid(row=0, column=0, padx=5, pady=5, sticky="nsew")
+
+        self.btnsFrame = ctk.CTkFrame(self)
+        self.btnsFrame.grid(row=1, column=0, padx=5, pady=(0,5), sticky="nsew")
+        self.select_all = ctk.CTkButton(self.btnsFrame, text="Select all", command=self.select_all_files)
+        self.select_all.grid(row=0, column=0, padx=15, pady=5, sticky="w")
+        self.deselect_all = ctk.CTkButton(self.btnsFrame, text="Deselect all", command=self.deselect_all_files)
+        self.deselect_all.grid(row=0, column=1, padx=10, pady=5, sticky="e")
+
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(0, weight=1)
+
+        self.checkbox_list = []
+        for item in item_list:
+            self.add_item(item)
 
 class ProgressFrame(ctk.CTkFrame):
     def __init__(self, master, **kwargs):
@@ -364,7 +360,7 @@ class TabsFrame(ctk.CTkFrame):
 
     def searchAE(self):
         if self.search_var.get() == "Search value":
-            tk.messagebox.showwarning(title='No option selected!', message='Select an Alarm o Event to search')
+            tk.messagebox.showwarning(title='No option selected!', message='Select an Alarm o Event to search') # type: ignore
         else:
             self.action_t2.configure(state="enabled")
 
@@ -397,7 +393,7 @@ class TabsFrame(ctk.CTkFrame):
                     text= str(i+1) + ". " + str(t.date()) + " at " + str(t.time())
                     self.add_radiobtn_t2(text, i)
 
-            tk.messagebox.showinfo(title='Search results', message="Found " + str(len(self.timestamps)) + " occurrences of " + selected_item)
+            tk.messagebox.showinfo(title='Search results', message="Found " + str(len(self.timestamps)) + " occurrences of " + selected_item) # type: ignore
 
     def add_radiobtn_t2(self, item, i):
         radiobtn = ctk.CTkRadioButton(self.results_t2, text=item, variable=self.result_selection, value=i)
@@ -414,7 +410,7 @@ class TabsFrame(ctk.CTkFrame):
 
     def generate_search_ae_plot (self):
         if (self.high_limit.get() == "Select") or (self.low_limit.get()== "Select"):
-            tk.messagebox.showwarning(title='No option selected!', message='Select time boundaries for the report')
+            tk.messagebox.showwarning(title='No option selected!', message='Select time boundaries for the report') # type: ignore
             return #Stop
         
         cols = self.get_selected_vars_t2()
@@ -426,12 +422,13 @@ class TabsFrame(ctk.CTkFrame):
         
         now_dt = fcm.datetime.datetime.now()
         format_dt = now_dt.strftime('%Y.%m.%d_%H%M%S')
+        name_file = ""
         if self.radio_var.get() == 0:
             name_file="Custom_Plot_A{}_{}".format(self.ae_number, format_dt)
         elif self.radio_var.get() == 1:
             name_file="Custom_Plot_E{}_{}".format(self.ae_number, format_dt)
 
-        file_path = os.path.join(dest_folder, (name_file + ".html"))
+        file_path = os.path.join(dest_folder, (name_file + '.html')) # type: ignore
         print(file_path)
 
         date1, date2 = fcm.date_limits(self.timestamps[self.result_selection.get()],self.low_limit.get(), self.high_limit.get())
@@ -439,10 +436,10 @@ class TabsFrame(ctk.CTkFrame):
         try:
             fig.write_html(file_path, config={'displaylogo': False})
             print("File saved successfully.")
-            tk.messagebox.showinfo(title='Plot saved!', message="Plot saved in destination folder")
+            tk.messagebox.showinfo(title='Plot saved!', message="Plot saved in destination folder") # type: ignore
 
         except Exception as e:
-            tk.messagebox.showwarning(title='Error saving file', message="Error saving file:" + e)
+            tk.messagebox.showwarning(title='Error saving file', message="Error saving file:" + e) # type: ignore
             print("Error saving file:", e)
 
     #TAB3 functions
@@ -479,10 +476,10 @@ class TabsFrame(ctk.CTkFrame):
         time_difference = datetime2 - datetime1
 
         if (time_difference.days < 0):
-            tk.messagebox.showwarning(title='Incorrect dates', message='"From:" date is bigger than "To:" date')
+            tk.messagebox.showwarning(title='Incorrect dates', message='"From:" date is bigger than "To:" date') # type: ignore
             return #Stop
         elif (time_difference.days > 5):
-            tk.messagebox.showwarning(title='Date range too big', message='Please select a date range smaller than 5 days')
+            tk.messagebox.showwarning(title='Date range too big', message='Please select a date range smaller than 5 days') # type: ignore
             return #Stop:
         
         cols = self.get_selected_vars_t3()
@@ -503,10 +500,10 @@ class TabsFrame(ctk.CTkFrame):
         try:
             fig.write_html(file_path, config={'displaylogo': False})
             print("File saved successfully.")
-            tk.messagebox.showinfo(title='Plot saved!', message="Plot saved in destination folder")
+            tk.messagebox.showinfo(title='Plot saved!', message="Plot saved in destination folder") # type: ignore
 
         except Exception as e:
-            tk.messagebox.showwarning(title='Error saving file', message="Error saving file:" + e)
+            tk.messagebox.showwarning(title='Error saving file', message="Error saving file:" + e) # type: ignore
             print("Error saving file:", e)
 
 class ResultsFrame(ctk.CTkFrame):
@@ -553,11 +550,11 @@ class App(ctk.CTk):
 
     def step_00_init(self):
         #Update breadcrumb
-        App.frames["BCFrame"].grid_columnconfigure((1,2), weight=0)
+        App.frames["BCFrame"].grid_columnconfigure(1, weight=0)
         App.frames["BCFrame"].grid_columnconfigure(0, weight=1)
         App.frames["BCFrame"].step1_label.configure(font=ctk.CTkFont(size=18, weight="bold"))
         App.frames["BCFrame"].step2_label.configure(font=ctk.CTkFont(size=15, weight="normal"))
-        App.frames["BCFrame"].step3_label.configure(font=ctk.CTkFont(size=15, weight="normal"))
+        #App.frames["BCFrame"].step3_label.configure(font=ctk.CTkFont(size=15, weight="normal"))
 
         #Update texts and action button
         App.frames["CSFrame"].title.configure(text="Import Logs")
@@ -577,7 +574,7 @@ class App(ctk.CTk):
 
     def step_10_folderSelected(self):
         #Update breadcrumb
-        App.frames["BCFrame"].grid_columnconfigure((1,2), weight=0)
+        App.frames["BCFrame"].grid_columnconfigure(1, weight=0)
         App.frames["BCFrame"].grid_columnconfigure(0, weight=1)
 
         #Update texts
@@ -598,7 +595,7 @@ class App(ctk.CTk):
     
     def step_20_importingData(self):
         #Update breadcrumb
-        App.frames["BCFrame"].grid_columnconfigure((1,2), weight=0)
+        App.frames["BCFrame"].grid_columnconfigure(1, weight=0)
         App.frames["BCFrame"].grid_columnconfigure(0, weight=1)
 
         #Update texts
@@ -616,11 +613,11 @@ class App(ctk.CTk):
 
     def step_30_dataImported(self):
         #Update breadcrumb
-        App.frames["BCFrame"].grid_columnconfigure((0,2), weight=0)
+        App.frames["BCFrame"].grid_columnconfigure(0, weight=0)
         App.frames["BCFrame"].grid_columnconfigure(1, weight=1)
-        App.frames["BCFrame"].step1_label.configure(font=ctk.CTkFont(size=15, weight="normal"))
-        App.frames["BCFrame"].step2_label.configure(font=ctk.CTkFont(size=18, weight="bold"))
-        App.frames["BCFrame"].step3_label.configure(font=ctk.CTkFont(size=15, weight="normal"))
+        App.frames["BCFrame"].step1_label.configure(font=ctk.CTkFont(size=15, weight="normal"), image=App.frames["BCFrame"].step1g_img_tk)
+        App.frames["BCFrame"].step2_label.configure(font=ctk.CTkFont(size=18, weight="bold"), image=App.frames["BCFrame"].step2_img_tk)
+        #App.frames["BCFrame"].step3_label.configure(font=ctk.CTkFont(size=15, weight="normal"))
 
         #Update texts
         App.frames["CSFrame"].title.configure(text="Select Analysis type")
@@ -639,20 +636,6 @@ class App(ctk.CTk):
         App.frames["NFrame"].bt_navigation1.configure(text= "Clear all and Go back")
         App.frames["NFrame"].bt_navigation1.configure(command= self.back_to_selectfolder)
         App.frames["NFrame"].bt_navigation2.grid_forget()
-
-    def step_40_results(self):
-        #Update breadcrumb
-        App.frames["BCFrame"].grid_columnconfigure((0,1), weight=0)
-        App.frames["BCFrame"].grid_columnconfigure(2, weight=1)
-        App.frames["BCFrame"].step1_label.configure(font=ctk.CTkFont(size=15, weight="normal"))
-        App.frames["BCFrame"].step2_label.configure(font=ctk.CTkFont(size=15, weight="normal"))
-        App.frames["BCFrame"].step3_label.configure(font=ctk.CTkFont(size=18, weight="bold"))
-        
-        #Update texts
-        App.frames["CSFrame"].title.configure (text="Results")
-        App.frames["CSFrame"].text.configure (text="Please find in the folder bla bla bla")
-
-        #WorkSpace: ResultsFrame
 
     def left_side_widgets(self, parent):
         # create sidebar logo
@@ -782,22 +765,25 @@ class App(ctk.CTk):
             self.step_10_folderSelected()
             
             #Pop up with result
-            tk.messagebox.showinfo(title='Information', message=str(len(self.csv_files_list)) + ' files found in the folder selected: ' + self.dirname)
+            tk.messagebox.showinfo(title='Information', message=str(len(self.csv_files_list)) + ' files found in the folder selected: ' + self.dirname) # type: ignore
 
     def checkbox_frame_event(self):
         return self.frames['FilesUpload'].get_checked_items()
     
     def importing_data(self):
-        DataFiles = [self.dirname + '/' + x for x in self.csv_files_list if x.startswith('S')]
-        AlarmFiles = [self.dirname + '/' + x for x in self.csv_files_list if x.startswith('A')]
-        EventFiles = [self.dirname + '/' + x for x in self.csv_files_list if x.startswith('E')]
-        print(DataFiles, AlarmFiles, EventFiles)
+        if self.dirname != None:
+            DataFiles = [self.dirname + '/' + x for x in self.csv_files_list if x.startswith('S')]
+            AlarmFiles = [self.dirname + '/' + x for x in self.csv_files_list if x.startswith('A')]
+            EventFiles = [self.dirname + '/' + x for x in self.csv_files_list if x.startswith('E')]
+            print(DataFiles, AlarmFiles, EventFiles)
+        else:
+            return #Stop
         # Import data from csv and format DataFrames
         if len(self.csv_files_list) == 0:
-            tk.messagebox.showerror(title='Import failed', message='Please select at least 1 .csv file')
+            tk.messagebox.showerror(title='Import failed', message='Please select at least 1 .csv file') # type: ignore
 
         elif len(DataFiles + AlarmFiles + EventFiles) == 0:
-            tk.messagebox.showerror(title='Import failed', message='Visualite could not find logs in the .csv files selected')
+            tk.messagebox.showerror(title='Import failed', message='Visualite could not find logs in the .csv files selected') # type: ignore
             
         elif len(DataFiles + AlarmFiles + EventFiles) > 0:
             self.import_success, self.mch_info, self.COs, self.LogsStandard, self.LogsAlarms, self.LogsEvents = fcm.import_data(DataFiles, AlarmFiles, EventFiles)
@@ -805,11 +791,11 @@ class App(ctk.CTk):
 
         if self.import_success:
             self.step_30_dataImported()
-            tk.messagebox.showinfo(title='Information', message='Import procedure successful!')
+            tk.messagebox.showinfo(title='Information', message='Import procedure successful!') # type: ignore
         
         else:
             self.step_10_folderSelected()
-            tk.messagebox.showerror(title='Import failed', message='Wrong File: ' + str(self.mch_info))
+            tk.messagebox.showerror(title='Import failed', message='Wrong File: ' + str(self.mch_info)) # type: ignore
         
         print(self.COs)
     
@@ -822,7 +808,7 @@ class App(ctk.CTk):
         print(self.csv_files_list)
 
         if self.csv_files_list == []:
-            tk.messagebox.showerror(title='Import failed', message='Please select at least one log file')
+            tk.messagebox.showerror(title='Import failed', message='Please select at least one log file') # type: ignore
             self.step_10_folderSelected()
         else:
             self.after(1000, self.importing_data) #wait 1000ms and next step
@@ -833,23 +819,26 @@ class App(ctk.CTk):
             print('no folder selected')
             return #Stop
         
-        for i, CO in enumerate(self.COs):
-            df = fcm.ChangeOverToDF(CO, self.LogsStandard)
-            fig = fcm.Plot_ChangeOver(df, self.mch_info, self.LogsAlarms, self.LogsEvents)
-            name_file= "CO"+ str(i+1) + "_" + str(CO['Start'].date()) + ".html"
-            file_path = os.path.join(dest_folder, name_file)
-            print(file_path)
-            try:
-                fig.write_html(file_path, config={'displaylogo': False})
-                print("File saved successfully.")
-            except Exception as e:
-                print("Error saving file:", e)
+        if self.COs:
+            for i, CO in enumerate(self.COs):
+                df = fcm.ChangeOverToDF(CO, self.LogsStandard)
+                fig = fcm.Plot_ChangeOver(df, self.mch_info, self.LogsAlarms, self.LogsEvents)
+                name_file= "CO"+ str(i+1) + "_" + str(CO['Start'].date()) + ".html"
+                file_path = os.path.join(dest_folder, name_file)
+                print(file_path)
+                try:
+                    fig.write_html(file_path, config={'displaylogo': False})
+                    print("File saved successfully.")
+                except Exception as e:
+                    print("Error saving file:", e)
 
     def plot_sel_COs(self):
         
         COs = App.frames["TFrame"].get_checked_items()
         
+        dest_folder =''
         flag = 0
+        
         for i, CO_sts in enumerate(COs):
             print(i)
             if CO_sts == 1:
@@ -858,7 +847,7 @@ class App(ctk.CTk):
                     #Open file dialog to select folder
                     dest_folder = fd.askdirectory(parent=self,initialdir=PATH,title='Select a destination directory')
 
-                    if dest_folder =='': #no folder selected
+                    if dest_folder == '': #no folder selected
                         print('no folder selected')
                         return #Stop
                 
@@ -875,7 +864,7 @@ class App(ctk.CTk):
                     print("Error saving file:", e)
 
         if flag == 0:
-            tk.messagebox.showwarning(title='No option selected!', message='Select at least one ChangeOver to plot')
+            tk.messagebox.showwarning(title='No option selected!', message='Select at least one ChangeOver to plot') # type: ignore
             return #Stop
 
 
