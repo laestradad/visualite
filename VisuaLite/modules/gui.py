@@ -6,8 +6,7 @@ import tkcalendar
 from PIL import Image
 import os
 
-from modules import fcm_one as fcm 
-# use fcm.bla bla to use data analysis functions
+from modules import fcm_one as fcm
 
 #execution path
 PATH = os.getcwd()
@@ -55,7 +54,7 @@ class BreadcrumbFrame(ctk.CTkFrame):
         # STEP 2
         self.step2 = ctk.CTkFrame(self)
         self.step2.grid(row=0, column=1, padx=5, pady=5, sticky="nsew")
-        self.step2_label = ctk.CTkLabel(self.step2, text="   Data Analysis", image=self.step2g_img_tk, compound="left")
+        self.step2_label = ctk.CTkLabel(self.step2, text="   Data Analysis Generator", image=self.step2g_img_tk, compound="left")
         self.step2_label.grid(row=0, column=0, padx=20, pady=10)
 
         #configure grid
@@ -302,7 +301,7 @@ class TabsFrame(ctk.CTkFrame):
         self.tabview.tab("Personalized Analysis").grid_rowconfigure(1, weight=1)
 
         self.aux_plot = ctk.CTkButton(self.tabview.tab("Personalized Analysis"), text="Show Auxiliary Plot", command=self.show_plot)
-        self.aux_plot.grid(row=0, column=0, columnspan=2, padx=20, pady=5)
+        self.aux_plot.grid(row=0, column=0, columnspan=2, padx=20, pady=10)
 
         self.frame_left_t3 = ctk.CTkFrame(self.tabview.tab("Personalized Analysis"))
         self.frame_left_t3.grid(row=1, column=0, padx=20, pady=10, sticky="nsew")
@@ -312,7 +311,7 @@ class TabsFrame(ctk.CTkFrame):
         self.cal1_text = ctk.CTkLabel(self.frame_left_t3, text='From:')
         self.cal1_text.grid(row=1, column=0, padx=20, pady=2, sticky="nw") 
         self.cal1d = tkcalendar.Calendar(self.frame_left_t3, selectmode="day", date_pattern="yyyy/MM/dd")
-        self.cal1d.grid(row=2, column=0, padx=20, pady=2)
+        self.cal1d.grid(row=2, column=0, padx=(20,10), pady=2)
         self.cal1t = ctk.CTkOptionMenu(self.frame_left_t3, dynamic_resizing=False, values=TIMES)
         self.cal1t.grid(row=3, column=0, padx=20, pady=(10,20))
         self.cal1t.set("00:00")
@@ -320,7 +319,7 @@ class TabsFrame(ctk.CTkFrame):
         self.cal1_text = ctk.CTkLabel(self.frame_left_t3, text='To:')
         self.cal1_text.grid(row=1, column=1, padx=20, pady=2, sticky="nw")
         self.cal2d = tkcalendar.Calendar(self.frame_left_t3, selectmode="day", date_pattern="yyyy/MM/dd")
-        self.cal2d.grid(row=2, column=1, padx=20, pady=2)
+        self.cal2d.grid(row=2, column=1, padx=(10,20), pady=2)
         self.cal2t = ctk.CTkOptionMenu(self.frame_left_t3, dynamic_resizing=False, values=TIMES)
         self.cal2t.grid(row=3, column=1, padx=20, pady=(10,20))
         self.cal2t.set("00:00")
@@ -445,15 +444,22 @@ class TabsFrame(ctk.CTkFrame):
     #TAB3 functions
     def show_plot(self):
         plot_fig = fcm.create_aux_plot(self.app.LogsStandard, self.app.LogsAlarms, self.app.LogsEvents)
-        plot_window = ctk.CTkToplevel(self.app)
-        plot_window.resizable(width=False, height=False)
-        plot_window.title("Auxiliary Plot")
+        self.plot_window = ctk.CTkToplevel(self.app)
+        self.plot_window.resizable(width=False, height=False)
+        self.plot_window.title("Auxiliary Plot")
         # Keep the toplevel window in front of the root window
-        plot_window.wm_transient(self.app)
+        self.plot_window.wm_transient(self.app)
         
-        canvas = FigureCanvasTkAgg(plot_fig, master=plot_window)
-        canvas.draw()
-        canvas.get_tk_widget().pack()
+        self.canvas = FigureCanvasTkAgg(plot_fig, master=self.plot_window)
+        self.canvas.draw()
+        self.canvas.get_tk_widget().pack()
+        # Ensure figures are closed properly when the window is closed
+        self.plot_window.protocol("WM_DELETE_WINDOW", lambda: self.close_plot(plot_fig, self.plot_window))
+
+    def close_plot(self, fig, window):
+        fig.clf()  # Clear the figure
+        fcm.plt.close(fig)  # Close the figure
+        window.destroy()  # Destroy the Toplevel window
 
     def add_switch_t3(self, label):
         switch = ctk.CTkSwitch(self.var_sel_t3, text=label)
@@ -505,14 +511,6 @@ class TabsFrame(ctk.CTkFrame):
         except Exception as e:
             tk.messagebox.showwarning(title='Error saving file', message="Error saving file:" + e) # type: ignore
             print("Error saving file:", e)
-
-class ResultsFrame(ctk.CTkFrame):
-    def __init__(self, master, **kwargs):
-        super().__init__(master, **kwargs)
-
-        # Set row and column weights to make it take the entire space
-        self.grid_rowconfigure(0, weight=1)
-        self.grid_columnconfigure(0, weight=1)
 
 class NavFrame(ctk.CTkFrame):
     def __init__(self, master, **kwargs):
@@ -800,17 +798,16 @@ class App(ctk.CTk):
         print(self.COs)
     
     def import_data_cmd(self):
-        # Bypass state to show progressBar
-        self.step_20_importingData()
-
+        
         # Get file names selected
         self.csv_files_list = self.checkbox_frame_event()
         print(self.csv_files_list)
 
         if self.csv_files_list == []:
             tk.messagebox.showerror(title='Import failed', message='Please select at least one log file') # type: ignore
-            self.step_10_folderSelected()
         else:
+            # Show progressBar
+            self.step_20_importingData()
             self.after(1000, self.importing_data) #wait 1000ms and next step
     
     def plot_all_COs(self):
@@ -829,8 +826,10 @@ class App(ctk.CTk):
                 try:
                     fig.write_html(file_path, config={'displaylogo': False})
                     print("File saved successfully.")
+
                 except Exception as e:
                     print("Error saving file:", e)
+        tk.messagebox.showinfo(title='Plots saved!', message="Plots saved in destination folder") # type: ignore
 
     def plot_sel_COs(self):
         
@@ -860,12 +859,16 @@ class App(ctk.CTk):
                 try:
                     fig.write_html(file_path, config={'displaylogo': False})
                     print("File saved successfully.")
+
                 except Exception as e:
                     print("Error saving file:", e)
 
         if flag == 0:
             tk.messagebox.showwarning(title='No option selected!', message='Select at least one ChangeOver to plot') # type: ignore
             return #Stop
+        
+        tk.messagebox.showinfo(title='Plots saved!', message="Plots saved in destination folder") # type: ignore
+
 
 
 
