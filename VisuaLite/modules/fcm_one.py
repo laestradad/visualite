@@ -13,6 +13,11 @@ from plotly.subplots import make_subplots
 import matplotlib.pyplot as plt
 from PIL import Image
 
+import logging
+from modules.logging_cfg import setup_logger
+logger = setup_logger()
+logging.info("fcm_one.py imported")
+
 # Get the path to the current script
 script_path = os.path.dirname(os.path.abspath(__file__))
 

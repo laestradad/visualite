@@ -8,6 +8,11 @@ import os
 
 from modules import fcm_one as fcm
 
+import logging
+from modules.logging_cfg import setup_logger
+logger = setup_logger()
+logging.info("gui.py imported")
+
 #execution path
 PATH = os.getcwd()
 
