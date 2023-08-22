@@ -13,14 +13,14 @@ from modules.logging_cfg import setup_logger
 logger = setup_logger()
 logging.info("gui.py imported")
 
-#execution path
+# Execution path
 PATH = os.getcwd()
-
 # Get the path to the current script
-script_path = os.path.dirname(os.path.abspath(__file__))
-print(script_path)
-# Construct the path to the file.txt in the resources directory
-icon_path = os.path.join(script_path, '..', 'resources', 'ad_logo.ico')
+SCRIPT_PATH = os.path.dirname(os.path.abspath(__file__))
+# App icon path
+APP_ICON = os.path.join(SCRIPT_PATH, '..', 'resources', 'ad_logo.ico')
+# Resources path
+RESOURCES = os.path.join(SCRIPT_PATH, '..', 'resources')
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("dark-blue")
@@ -36,17 +36,17 @@ class BreadcrumbFrame(ctk.CTkFrame):
         super().__init__(master, **kwargs)
 
         # Load the images
-        image1_path = os.path.join(script_path, '..', 'resources', 'number-1.png')
+        image1_path = os.path.join(RESOURCES, 'number-1.png')
         self.step1_img = Image.open(image1_path).resize((30, 30))
         self.step1_img_tk = ctk.CTkImage(self.step1_img)
-        image1g_path = os.path.join(script_path, '..', 'resources', 'number-one.png')
+        image1g_path = os.path.join(RESOURCES, 'number-one.png')
         self.step1g_img = Image.open(image1g_path).resize((30, 30))
         self.step1g_img_tk = ctk.CTkImage(self.step1g_img)
 
-        image2_path = os.path.join(script_path, '..', 'resources', 'number-2.png')
+        image2_path = os.path.join(RESOURCES, 'number-2.png')
         self.step2_img = Image.open(image2_path).resize((30, 30))
         self.step2_img_tk = ctk.CTkImage(self.step2_img)
-        image2g_path = os.path.join(script_path, '..', 'resources', 'number-two.png')
+        image2g_path = os.path.join(RESOURCES, 'number-two.png')
         self.step2g_img = Image.open(image2g_path).resize((30, 30))
         self.step2g_img_tk = ctk.CTkImage(self.step2g_img)
 
@@ -171,7 +171,7 @@ class TabsFrame(ctk.CTkFrame):
         self.label1 = ctk.CTkLabel(self.results_t1)
         self.label1.grid(row=0, column=0, padx=20, pady=20, sticky = 'nw')
 
-        self.plot_sel = ctk.CTkButton(self.results_t1, text="Save plots for selection")
+        self.plot_sel = ctk.CTkButton(self.results_t1, text="Save selected plots")
         self.plot_all = ctk.CTkButton(self.results_t1, text="Save all plots")
         
         self.COs = []
@@ -681,7 +681,7 @@ class App(ctk.CTk):
         # and where it is placed
         #self.geometry(f"{1300}x{820}")
         self.geometry('%dx%d+%d+%d' % (w, h, x, y))
-        self.iconbitmap(icon_path)
+        self.iconbitmap(APP_ICON)
 
         self.grid_columnconfigure(0, weight=0)
         self.grid_columnconfigure(1, weight=1)

@@ -14,7 +14,7 @@ if __name__ == "__main__":
         root.mainloop()
 
     except Exception as e:
-        logging.error("Failed")
+        logging.error("--- Failed ---")
         logging.error(e, exc_info=True)
     
     finally:

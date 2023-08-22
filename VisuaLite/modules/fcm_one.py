@@ -2,8 +2,6 @@ import pandas as pd
 import datetime
 # file handling
 import os
-PATH = os.getcwd()
-print(PATH)
 # read files
 from csv import reader
 import json
@@ -18,8 +16,18 @@ from modules.logging_cfg import setup_logger
 logger = setup_logger()
 logging.info("fcm_one.py imported")
 
+# Execution path
+PATH = os.getcwd()
 # Get the path to the current script
-script_path = os.path.dirname(os.path.abspath(__file__))
+SCRIPT_PATH = os.path.dirname(os.path.abspath(__file__))
+# Alfa Laval Logo path
+AL_LOGO = os.path.join(SCRIPT_PATH, '..', 'resources', 'ALlogo.png')
+# Construct the path to the file.txt in the resources directory
+UNITS = os.path.join(SCRIPT_PATH, '..', 'resources', 'units.txt')
+
+#----------------------------------------------------------- IMPORT UNITS FOR FCM ONE LOG FILES
+with open(UNITS, 'r') as file:
+    units = json.load(file)
 
 #----------------------------------------------------------- COLOR LIBRARIES
 greens = ['rgba(0, 128, 0, 0.1)', #green opacity 10%
@@ -58,7 +66,7 @@ ALcolors = ['rgba(17, 56, 127, 1)', #AL blue
             'rgba(0, 127, 200, 1)', #AL innovation
             ]
 
-# Define custom dark style for matplotlib
+# Custom dark style for matplotlib
 custom_dark_style = {
     'axes.facecolor': '#24242424',  # Custom background color / DEFAULT '#1e1e1e'
     'axes.edgecolor': '#ffffff',  # Color of axes edges / DEFAULT '#ffffff'
@@ -68,17 +76,9 @@ custom_dark_style = {
     'ytick.color': '#ffffff',  # Color of y-axis ticks / DEFAULT '#ffffff'
     'figure.facecolor': '#1e1e1e',  # Figure background color / DEFAULT '#1e1e1e'
     'figure.edgecolor': '#1e1e1e',  # Figure edge color / DEFAULT '#1e1e1e'
-    'axes.grid': True,  # Show grid / DEFAULT True
+    'axes.grid': False,  # Show grid / DEFAULT True
     'grid.color': '#333333',  # Color of grid lines / DEFAULT '#333333'
 }
-
-#----------------------------------------------------------- IMPORT UNITS FOR FCM ONE LOG FILES
-# Get the path to the current script
-script_path = os.path.dirname(os.path.abspath(__file__))
-# Construct the path to the file.txt in the resources directory
-file_path = os.path.join(script_path, '..', 'resources', 'units.txt')
-with open(file_path, 'r') as file:
-    units = json.load(file)
 
 #----------------------------------------------------------- FUNCTIONS
 
@@ -377,18 +377,24 @@ def ChangeOverToDF(CO, logs):
     df = logs[(logs['DateTime'] >= CO['Start']-delta) & (logs['DateTime'] <= CO['Finish']+delta)]
     return(df)
 
-def Plot_ChangeOver_simple(df):
+def Plot_ChangeOver_simple(df, mch_info, LogsAlarms, LogsEvents):
+    mindate = df['DateTime'].min()
+    maxdate = df['DateTime'].max()
+    print(mindate,maxdate)
+
+    if LogsAlarms is not None:
+        alm = LogsAlarms[(LogsAlarms['DateTime'] > mindate) & (LogsAlarms['DateTime'] <= maxdate)]
+    else:
+        alm = pd.DataFrame()
+    
+    if LogsEvents is not None:
+        eve = LogsEvents[(LogsEvents['DateTime'] > mindate) & (LogsEvents['DateTime'] <= maxdate)]
+    else:
+        eve = pd.DataFrame()
+
     fig = go.Figure()
 
     # --------------------------------------------------- Valves
-    greens = ['rgba(0, 128, 0, 0.1)', #green opacity 10%
-            'rgba(196, 180, 84, 1)', #vegas gold
-            'rgba(64, 224, 208, 1)', #turquoise
-            'rgba(69, 75, 27, 1)', #army green
-            'rgba(147, 197, 114, 1)', #pistachio
-            'rgba(8, 143, 143, 1)', #citrine
-            ]
-
     fig.add_trace(go.Scatter(
         x=df['DateTime'],
         y=df['ChangeOverInProgress'].astype(bool),
@@ -403,6 +409,8 @@ def Plot_ChangeOver_simple(df):
         name="CV1 Position",
         line=dict(color = greens[1]), 
         legendgroup="Valves",legendgrouptitle_text="Valves",
+        line_shape='hv',
+        hovertext=df['CV1_Label'], 
         visible='legendonly',
         yaxis="y3"
     ))
@@ -413,6 +421,8 @@ def Plot_ChangeOver_simple(df):
         name="CV2 Position",
         line=dict(color = greens[2]),
         legendgroup="Valves",legendgrouptitle_text="Valves",
+        line_shape='hv',
+        hovertext=df['CV2_Label'], 
         visible='legendonly',
         yaxis="y3"
     ))
@@ -423,6 +433,8 @@ def Plot_ChangeOver_simple(df):
         name="CV3 Position",
         line=dict(color = greens[3]),    
         legendgroup="Valves",legendgrouptitle_text="Valves",
+        line_shape='hv',
+        hovertext=df['CV3_Label'], 
         visible='legendonly',
         yaxis="y3"
     ))
@@ -433,6 +445,8 @@ def Plot_ChangeOver_simple(df):
         name="CV4 Position",
         line=dict(color = greens[4]), 
         legendgroup="Valves",legendgrouptitle_text="Valves",
+        line_shape='hv',
+        hovertext=df['CV4_Label'], 
         visible='legendonly',
         yaxis="y3"
     ))
@@ -443,14 +457,100 @@ def Plot_ChangeOver_simple(df):
         name="CV5 Position",
         line=dict(color = greens[5]),
         legendgroup="Valves",legendgrouptitle_text="Valves",
+        line_shape='hv',
+        hovertext=df['CV5_Label'], 
         visible='legendonly',
         yaxis="y3"
     ))
+       
+    # --------------------------------------------------- Flow
 
+    if not (df['FT_MassFlow'] == 0).all():
+        # -------------------------------------------- Mass Flows
+        fig.add_trace(go.Scatter(
+            x=df['DateTime'],
+            y=df['FT_MassFlow'],
+            name='FT_MassFlow',
+            line=dict(color = purples[0]),
+            legendgroup="FT",legendgrouptitle_text="Flow", visible='legendonly',
+                yaxis="y7"))
+        
+        if not (df['FM1_MassFlow'] == 0).all():
+            fig.add_trace(go.Scatter(
+                x=df['DateTime'],
+                y=df['FM1_MassFlow'],
+                name='FM1 MassFlow',
+                line=dict(color = purples[1]),
+                legendgroup="FT",legendgrouptitle_text="Flow", visible='legendonly',
+                yaxis="y7"))
+
+        if not (df['FM2_MassFlow'] == 0).all():
+            fig.add_trace(go.Scatter(
+                x=df['DateTime'],
+                y=df['FM2_MassFlow'],
+                name='FM2 MassFlow',
+                line=dict(color = purples[2]),
+                legendgroup="FT",legendgrouptitle_text="Flow", visible='legendonly',
+                yaxis="y7"))
+            
+        if not (df['FM3_MassFlow'] == 0).all():
+            fig.add_trace(go.Scatter(
+                x=df['DateTime'],
+                y=df['FM3_MassFlow'],
+                name='FM3 MassFlow',
+                line=dict(color = purples[3]),
+                legendgroup="FT",legendgrouptitle_text="Flow", visible='legendonly',
+                yaxis="y7"))
+
+        if not (df['FM4_MassFlow'] == 0).all():
+            fig.add_trace(go.Scatter(
+                x=df['DateTime'],
+                y=df['FM4_MassFlow'],
+                name='FM4 MassFlow',
+                line=dict(color = purples[4]),
+                legendgroup="FT",legendgrouptitle_text="Flow", visible='legendonly',
+                yaxis="y7"))
+    
+    else:
+        # -------------------------------------------- Volume Flow
+        fig.add_trace(go.Scatter(
+        x=df['DateTime'],
+        y=df['FT_VolumeFlow'],
+        name='FT_VolumeFlow',
+        line=dict(color = comp1[2]),
+        legendgroup="Flow",legendgrouptitle_text="Flow", 
+        visible='legendonly',
+        yaxis="y7"))
+    
+    # --------------------------------------------------- Density
+    fig.add_trace(go.Scatter(
+        x=df['DateTime'],
+        y=df['Density'],
+        name='Density',
+        line=dict(color = ALcolors[3]),
+        legendgroup="Density",legendgrouptitle_text="Density", 
+        visible='legendonly', yaxis="y9"))  
+    
+    # --------------------------------------------------- Pressures
+    fig.add_trace(go.Scatter(
+        x=df['DateTime'],
+        y=df['PT1'],
+        name='PT1',
+        line=dict(color = purples[3]),
+        legendgroup="Pressure",legendgrouptitle_text="Pressure", 
+        visible='legendonly',
+        yaxis="y8"))
+
+    fig.add_trace(go.Scatter(
+        x=df['DateTime'],
+        y=df['PT2'],
+        name='PT2',
+        line=dict(color = purples[4]),
+        legendgroup="Pressure",legendgrouptitle_text="Pressure", 
+        visible='legendonly',
+        yaxis="y8"))
+    
     # ---------------------------------------------------Temperature
-    reds = ['rgba(255, 87, 51, 1)', #cherry
-            'rgba(250, 160, 160, 1)' #pastel red
-            ]
     if (df['TT1'] != 0).all():
         fig.add_trace(go.Scatter(
             x=df['DateTime'],
@@ -494,10 +594,6 @@ def Plot_ChangeOver_simple(df):
     ))
 
     # --------------------------------------------------- Viscosity
-    blues = ['rgba(0, 71, 171, 1)', #cobalt blue
-            'rgba(70, 130, 180, 1)' #steel blue
-            ]
-
     fig.add_trace(go.Scatter(
         x=df['DateTime'],
         y=df['VT'],
@@ -529,7 +625,98 @@ def Plot_ChangeOver_simple(df):
         line=dict(color = blues[1], dash='dot'),
         legendgroup="Viscosity",legendgrouptitle_text="Viscosity",
         yaxis="y2"))
-
+    
+    # --------------------------------------------------- Events
+    if not eve.empty:
+        fig.add_trace(go.Scatter(x=eve['DateTime'], y=eve['EventNumber'].astype(int),
+                                name='Event Number',
+                                mode='markers',marker_symbol='star',
+                                marker_line_color=ALcolors[5], marker_color=ALcolors[5],
+                                marker_line_width=1, marker_size=8,
+                                legendgroup="Events",legendgrouptitle_text="Events",
+                                hovertext=eve['Label'], yaxis="y5"))
+        
+    # --------------------------------------------------- Alarms
+    p_alm = alm[(alm['AlarmNumber'] < 199)] # System Alarms A0xx to A1xx
+    if not p_alm.empty:
+        fig.add_trace(go.Scatter(x=p_alm['DateTime'], y=p_alm['AlarmNumber'].astype(str),
+                                name='System Alarms',
+                                mode='markers', marker_symbol='x',
+                                marker_line_color=ALcolors[2], marker_color=ALcolors[3],
+                                marker_line_width=1, marker_size=8,
+                                legendgroup="Alarms",legendgrouptitle_text="Alarms",
+                                hovertext=p_alm['Label'], yaxis="y6"))
+        
+    p_alm = alm[(alm['AlarmNumber'] > 199) & (alm['AlarmNumber'] <= 299)] # ChangeOver Alarms A2xx
+    if not p_alm.empty:
+        fig.add_trace(go.Scatter(x=p_alm['DateTime'], y=p_alm['AlarmNumber'].astype(str),
+                                name='ChangeOver Alarms',
+                                mode='markers', marker_symbol='x',
+                                marker_line_color=ALcolors[2], marker_color=ALcolors[3],
+                                marker_line_width=1, marker_size=8,
+                                legendgroup="Alarms",legendgrouptitle_text="Alarms",
+                                hovertext=p_alm['Label'], yaxis="y6"))    
+        
+    p_alm = alm[(alm['AlarmNumber'] > 299) & (alm['AlarmNumber'] <= 399)] # Blending Alarms A3xx
+    if not p_alm.empty:
+        fig.add_trace(go.Scatter(x=p_alm['DateTime'], y=p_alm['AlarmNumber'].astype(str),
+                                name='Blending Alarms',
+                                mode='markers', marker_symbol='x',
+                                marker_line_color=ALcolors[2], marker_color=ALcolors[3],
+                                marker_line_width=1, marker_size=8,
+                                legendgroup="Alarms",legendgrouptitle_text="Alarms",
+                                hovertext=p_alm['Label'], yaxis="y6"))  
+        
+    p_alm = alm[(alm['AlarmNumber'] > 499) & (alm['AlarmNumber'] <= 599)] # Pumps Alarms A5xx
+    if not p_alm.empty:
+        fig.add_trace(go.Scatter(x=p_alm['DateTime'], y=p_alm['AlarmNumber'].astype(str),
+                                name='Pressure Alarms',
+                                mode='markers', marker_symbol='x',
+                                marker_line_color=ALcolors[2], marker_color=ALcolors[3],
+                                marker_line_width=1, marker_size=8,
+                                legendgroup="Alarms",legendgrouptitle_text="Alarms",
+                                hovertext=p_alm['Label'], yaxis="y6"))  
+        
+    p_alm = alm[(alm['AlarmNumber'] > 599) & (alm['AlarmNumber'] <= 699)] # Filter Alarms A6xx
+    if not p_alm.empty:
+        fig.add_trace(go.Scatter(x=p_alm['DateTime'], y=p_alm['AlarmNumber'].astype(str),
+                                name='Filter Alarms',
+                                mode='markers', marker_symbol='x',
+                                marker_line_color=ALcolors[2], marker_color=ALcolors[3],
+                                marker_line_width=1, marker_size=8,
+                                legendgroup="Alarms",legendgrouptitle_text="Alarms",
+                                hovertext=p_alm['Label'], yaxis="y6"))
+        
+    p_alm = alm[(alm['AlarmNumber'] > 799) & (alm['AlarmNumber'] <= 899)] # Mixing Tank Alarms A8xx
+    if not p_alm.empty:
+        fig.add_trace(go.Scatter(x=p_alm['DateTime'], y=p_alm['AlarmNumber'].astype(str),
+                                name='Mixing Tank',
+                                mode='markers', marker_symbol='x',
+                                marker_line_color=ALcolors[2], marker_color=ALcolors[3],
+                                marker_line_width=1, marker_size=8,
+                                legendgroup="Alarms",legendgrouptitle_text="Alarms",
+                                hovertext=p_alm['Label'], yaxis="y6"))
+        
+    p_alm = alm[(alm['AlarmNumber'] > 899) & (alm['AlarmNumber'] <= 999)] # TempControl Alarms A9xx
+    if not p_alm.empty:
+        fig.add_trace(go.Scatter(x=p_alm['DateTime'], y=p_alm['AlarmNumber'].astype(str),
+                                name='TempControl Alarms',
+                                mode='markers', marker_symbol='x',
+                                marker_line_color=ALcolors[2], marker_color=ALcolors[3],
+                                marker_line_width=1, marker_size=8,
+                                legendgroup="Alarms",legendgrouptitle_text="Alarms",
+                                hovertext=p_alm['Label'], yaxis="y6")) 
+        
+    p_alm = alm[(alm['AlarmNumber'] > 999) & (alm['AlarmNumber'] <= 1099)] # ViscMeas Alarms A9xx
+    if not p_alm.empty:
+        fig.add_trace(go.Scatter(x=p_alm['DateTime'], y=p_alm['AlarmNumber'].astype(str),
+                                name='ViscMeas Alarms',
+                                mode='markers', marker_symbol='x',
+                                marker_line_color=ALcolors[2], marker_color=ALcolors[3],
+                                marker_line_width=1, marker_size=8,
+                                legendgroup="Alarms",legendgrouptitle_text="Alarms",
+                                hovertext=p_alm['Label'], yaxis="y6"))  
+        
     # Create axis objects
     fig.update_layout(
         xaxis=dict(domain=[0.1, 0.9]), #compress x axis 10% left an right
@@ -542,27 +729,75 @@ def Plot_ChangeOver_simple(df):
             overlaying="y",
             side="left",
             position=0
-        ),
+            ),
         yaxis3=dict(
-            title="CV Position",
+            title="", #ChangeOver
+            overlaying='y',
+            side='left',
+            showline=False,
+            showticklabels=False
+            ),
+        yaxis4=dict(
+            title="", #CVs
+            overlaying='y',
+            side='left',
+            showline=False,
+            showticklabels=False
+            ),
+        yaxis5=dict(
+            title="", #Events
+            overlaying='y',
+            side='left',
+            showline=False,
+            showticklabels=False
+            ),
+        yaxis6=dict(
+            title="", #Alarms
+            overlaying='y',
+            side='left',
+            showline=False,
+            showticklabels=False
+            ),
+        yaxis7=dict(
+            title="Flow",
             anchor="x",
             overlaying="y",
             side="right"
-        ),
-        yaxis4=dict(
-            title="Change Over",
+            ),
+        yaxis8=dict(
+            title="Pressure",
             anchor="free",
             overlaying="y",
             side="right",
             position=1
-        ),
+            ),
+        yaxis9=dict(
+            title="", #Density
+            overlaying='y',
+            side='left',
+            showline=False,
+            showticklabels=False
+            ),
+
         legend=dict(orientation="v", x = 1.1)
     )
 
     # Update layout properties
-    fig.update_layout(
-        title_text=("ChangeOver and CVs"),
-        legend=dict(groupclick="toggleitem") #avoid grouping all traces
+    fig.update_layout(hovermode="x unified", hoverlabel=dict(bgcolor='rgba(255,255,255,0.75)', namelength = -1, font=dict(color='black')),  
+        legend=dict(groupclick="toggleitem"), #avoid grouping all traces #orientation="v", x = 1.1, 
+        title_text=(mch_info[0] + " | " + mch_info[1] + " | " + mch_info[2]) , title_x=0.5
+    )
+
+    # Add image
+    alLogo = Image.open(AL_LOGO)
+    fig.add_layout_image(
+        dict(
+            source=alLogo,
+            xref="paper", yref="paper",
+            x=0, y=1.025,
+            sizex=0.14, sizey=0.14,
+            xanchor="left", yanchor="bottom"
+        )
     )
 
     return (fig)
@@ -589,11 +824,10 @@ def Plot_ChangeOver(df, mch_info, LogsAlarms, LogsEvents):
             [None],
             [None],
             [{"secondary_y": True}],  # Valves position & ChangeOverON
-            [{"secondary_y": True}],  # FT & Density
-            [{"secondary_y": True}],  # PT & Alarms
+            [{"secondary_y": True}],  # FT Mass & FT Volume
+            [{"secondary_y": True}],  # PT & Density
             [{"secondary_y": True}]], # Events & Alarms
-            shared_xaxes=True,
-        print_grid=True)
+            shared_xaxes=True) #,print_grid=True)
 
     # --------------------------------------------------------------------------------------------- R1-4 C1
     plot_row= 1
@@ -715,7 +949,7 @@ def Plot_ChangeOver(df, mch_info, LogsAlarms, LogsEvents):
         name="CV2 Position",
         line=dict(color = ALcolors[2]),
         legendgroup="Valves",legendgrouptitle_text="Valves", line_shape='hv',
-        hovertext=df['CV2_Label']), row=plot_row, col=plot_col, secondary_y=False)
+        hovertext=df['CV2_Label'], visible='legendonly'), row=plot_row, col=plot_col, secondary_y=False)
 
     fig.add_trace(go.Scatter(
         x=df['DateTime'],
@@ -723,7 +957,7 @@ def Plot_ChangeOver(df, mch_info, LogsAlarms, LogsEvents):
         name="CV3 Position",
         line=dict(color = ALcolors[3]),    
         legendgroup="Valves",legendgrouptitle_text="Valves", line_shape='hv',
-        hovertext=df['CV3_Label']), row=plot_row, col=plot_col, secondary_y=False)
+        hovertext=df['CV3_Label'], visible='legendonly'), row=plot_row, col=plot_col, secondary_y=False)
 
     fig.add_trace(go.Scatter(
         x=df['DateTime'],
@@ -745,11 +979,12 @@ def Plot_ChangeOver(df, mch_info, LogsAlarms, LogsEvents):
     plot_row= 6
     plot_col= 1
 
-    fig.update_yaxes(title_text="Flow",
+    fig.update_yaxes(title_text="Mass Flow",
                     row=plot_row, secondary_y=False)
-    fig.update_yaxes(title_text="Density",
+    fig.update_yaxes(title_text="Volume Flow",
                     row=plot_row, secondary_y=True)
     # --------------------------------------------------- Flow Meter
+    
     fig.add_trace(go.Scatter(
         x=df['DateTime'],
         y=df['FT_MassFlow'],
@@ -758,58 +993,59 @@ def Plot_ChangeOver(df, mch_info, LogsAlarms, LogsEvents):
         legendgroup="FT",legendgrouptitle_text="Flow"),
         row=plot_row, col=plot_col, secondary_y=False)
         
-    if (df['FM1_MassFlow'] != 0).all():
+    if not (df['FM1_MassFlow'] == 0).all():
         fig.add_trace(go.Scatter(
             x=df['DateTime'],
             y=df['FM1_MassFlow'],
             name='FM1 MassFlow',
             line=dict(color = purples[1]),
-            legendgroup="FT",legendgrouptitle_text="Flow"),
+            legendgroup="FT",legendgrouptitle_text="Flow", visible='legendonly'),
             row=plot_row, col=plot_col, secondary_y=False)
 
-    if (df['FM2_MassFlow'] != 0).all():
+    if not (df['FM2_MassFlow'] == 0).all():
         fig.add_trace(go.Scatter(
             x=df['DateTime'],
             y=df['FM2_MassFlow'],
             name='FM2 MassFlow',
             line=dict(color = purples[2]),
-            legendgroup="FT",legendgrouptitle_text="Flow"),
+            legendgroup="FT",legendgrouptitle_text="Flow", visible='legendonly'),
             row=plot_row, col=plot_col, secondary_y=False)
         
-    if (df['FM3_MassFlow'] != 0).all():
+    if not (df['FM3_MassFlow'] == 0).all():
         fig.add_trace(go.Scatter(
             x=df['DateTime'],
             y=df['FM3_MassFlow'],
             name='FM3 MassFlow',
             line=dict(color = purples[3]),
-            legendgroup="FT",legendgrouptitle_text="Flow"),
+            legendgroup="FT",legendgrouptitle_text="Flow", visible='legendonly'),
             row=plot_row, col=plot_col, secondary_y=False)
 
-    if (df['FM4_MassFlow'] != 0).all():
+    if not (df['FM4_MassFlow'] == 0).all():
         fig.add_trace(go.Scatter(
             x=df['DateTime'],
             y=df['FM4_MassFlow'],
             name='FM4 MassFlow',
             line=dict(color = purples[4]),
-            legendgroup="FT",legendgrouptitle_text="Flow"),
+            legendgroup="FT",legendgrouptitle_text="Flow", visible='legendonly'),
             row=plot_row, col=plot_col, secondary_y=False)
 
-    # --------------------------------------------------- Density
-    fig.add_trace(go.Scatter(
-        x=df['DateTime'],
-        y=df['Density'],
-        name='Density',
-        line=dict(color = comp1[2]),
-        legendgroup="Density",legendgrouptitle_text="Density"),
-        row=plot_row, col=plot_col, secondary_y=True)
-        
+    # --------------------------------------------------- Volume Flow
+    if not (df['FT_VolumeFlow'] == 0).all():
+        fig.add_trace(go.Scatter(
+            x=df['DateTime'],
+            y=df['FT_VolumeFlow'],
+            name='FT_VolumeFlow',
+            line=dict(color = comp1[2]),
+            legendgroup="FT",legendgrouptitle_text="Flow"),
+            row=plot_row, col=plot_col, secondary_y=True)
+            
     # --------------------------------------------------------------------------------------------- R7 C1
     plot_row= 7
     plot_col= 1
 
     fig.update_yaxes(title_text="Pressure",
                     row=plot_row, secondary_y=False)
-    fig.update_yaxes(title_text="Alarms",
+    fig.update_yaxes(title_text="Density",
                     row=plot_row, secondary_y=True)
     # --------------------------------------------------- Pressures
     fig.add_trace(go.Scatter(
@@ -827,27 +1063,15 @@ def Plot_ChangeOver(df, mch_info, LogsAlarms, LogsEvents):
         line=dict(color = comp1[1]),
         legendgroup="PT",legendgrouptitle_text="Pressure"),
         row=plot_row, col=plot_col, secondary_y=False)
-
-    # --------------------------------------------------- Alarms
-    p_alm = alm[(alm['AlarmNumber'] > 399) & (alm['AlarmNumber'] <= 499)] # Pumps Alarms A4xx
-    if not p_alm.empty:
-        fig.add_trace(go.Scatter(x=p_alm['DateTime'], y=p_alm['AlarmNumber'].astype(str),
-                                name='Pressure Alarms',
-                                mode='markers', marker_symbol='x',
-                                marker_line_color=ALcolors[2], marker_color=ALcolors[3],
-                                marker_line_width=1, marker_size=8,
-                                legendgroup="Alarms",legendgrouptitle_text="SPump Alarms"),
-                        row=plot_row, col=plot_col,secondary_y=True)   
-        
-    p_alm = alm[(alm['AlarmNumber'] > 499) & (alm['AlarmNumber'] <= 599)] # Pumps Alarms A5xx
-    if not p_alm.empty:
-        fig.add_trace(go.Scatter(x=p_alm['DateTime'], y=p_alm['AlarmNumber'].astype(str),
-                                name='Pressure Alarms',
-                                mode='markers', marker_symbol='x',
-                                marker_line_color=ALcolors[2], marker_color=ALcolors[3],
-                                marker_line_width=1, marker_size=8,
-                                legendgroup="Alarms",legendgrouptitle_text="CPump Alarms"),
-                        row=plot_row, col=plot_col,secondary_y=True)    
+    
+        # --------------------------------------------------- Density
+    fig.add_trace(go.Scatter(
+        x=df['DateTime'],
+        y=df['Density'],
+        name='Density',
+        line=dict(color = ALcolors[3]),
+        legendgroup="Density",legendgrouptitle_text="Density", visible='legendonly'),
+        row=plot_row, col=plot_col, secondary_y=True)
 
     # --------------------------------------------------------------------------------------------- R8 C1
     plot_row= 8
@@ -903,6 +1127,28 @@ def Plot_ChangeOver(df, mch_info, LogsAlarms, LogsEvents):
                                 legendgroup="Alarms",legendgrouptitle_text="Alarms",
                                 hovertext=p_alm['Label']),
                         row=plot_row, col=plot_col,secondary_y=True) 
+    
+    p_alm = alm[(alm['AlarmNumber'] > 399) & (alm['AlarmNumber'] <= 499)] # Pumps Alarms A4xx
+    if not p_alm.empty:
+        fig.add_trace(go.Scatter(x=p_alm['DateTime'], y=p_alm['AlarmNumber'].astype(str),
+                                name='Pressure Alarms',
+                                mode='markers', marker_symbol='x',
+                                marker_line_color=ALcolors[2], marker_color=ALcolors[3],
+                                marker_line_width=1, marker_size=8,
+                                legendgroup="Alarms",legendgrouptitle_text="Alarms",
+                                hovertext=p_alm['Label']),
+                        row=plot_row, col=plot_col,secondary_y=True)   
+        
+    p_alm = alm[(alm['AlarmNumber'] > 499) & (alm['AlarmNumber'] <= 599)] # Pumps Alarms A5xx
+    if not p_alm.empty:
+        fig.add_trace(go.Scatter(x=p_alm['DateTime'], y=p_alm['AlarmNumber'].astype(str),
+                                name='Pressure Alarms',
+                                mode='markers', marker_symbol='x',
+                                marker_line_color=ALcolors[2], marker_color=ALcolors[3],
+                                marker_line_width=1, marker_size=8,
+                                legendgroup="Alarms",legendgrouptitle_text="Alarms",
+                                hovertext=p_alm['Label']),
+                        row=plot_row, col=plot_col,secondary_y=True)    
         
     p_alm = alm[(alm['AlarmNumber'] > 599) & (alm['AlarmNumber'] <= 699)] # Filter Alarms A6xx
     if not p_alm.empty:
@@ -954,10 +1200,8 @@ def Plot_ChangeOver(df, mch_info, LogsAlarms, LogsEvents):
         title_text=(mch_info[0] + " | " + mch_info[1] + " | " + mch_info[2]) , title_x=0.5
     )
 
-
     # Add image
-    img_path = os.path.join(script_path, '..', 'resources', 'ALlogo.png')
-    alLogo = Image.open(img_path)
+    alLogo = Image.open(AL_LOGO)
     fig.add_layout_image(
         dict(
             source=alLogo,
@@ -965,8 +1209,7 @@ def Plot_ChangeOver(df, mch_info, LogsAlarms, LogsEvents):
             x=0, y=1.025,
             sizex=0.14, sizey=0.14,
             xanchor="left", yanchor="bottom"
-        )
-    )
+        ))
 
     return(fig)
 
@@ -1060,8 +1303,7 @@ def custom_plot1 (dfs, dfa, dfe, cols, date1, date2, tittle): # n rows, one for 
     )
 
     # Add image
-    img_path = os.path.join(script_path, '..', 'resources', 'ALlogo.png')
-    alLogo = Image.open(img_path)
+    alLogo = Image.open(AL_LOGO)
     fig.add_layout_image(
         dict(
             source=alLogo,
@@ -1128,13 +1370,17 @@ def create_aux_plot(LogsStandard, LogsAlarms, LogsEvents):
 
     # Data
     x = LogsStandard['DateTime']
-    y1 = LogsStandard['FT_VolumeFlow']
+    # Plot Volumetric or Mass
+    if not (LogsStandard['FT_VolumeFlow'] == 0).all():
+        y1 = LogsStandard['FT_VolumeFlow']
+    else:
+        y1 = LogsStandard['FT_MassFlow']
     y2 = LogsStandard['TT2']
     y3 = LogsStandard['VT']
 
     #y1
-    ax1.plot(x, y1, color='#6699ccff', label='FT_VolumeFlow')
-    ax1.set_ylabel('FT_VolumeFlow', color='#6699ccff')
+    ax1.plot(x, y1, color='#6699ccff', label='FT')
+    ax1.set_ylabel('Flow', color='#6699ccff')
     ax1.tick_params(axis='y', labelcolor='#6699ccff')
 
     #y2
@@ -1164,5 +1410,49 @@ def create_aux_plot(LogsStandard, LogsAlarms, LogsEvents):
     # Adjust layout
     plt.tight_layout()
     plt.subplots_adjust(hspace=0.5)  # Adjust vertical spacing between rows
+
+    return fig
+
+def change_over_preview(df):
+
+    plt.style.use(custom_dark_style)
+
+    # Create a two-row plot
+    fig, ax1 = plt.subplots()
+
+    ax1.set_title('Change Over Preview')
+    ax1.grid(axis='both', linestyle='--', linewidth=0.5, alpha=0.7)  # Add auxiliary x-axis grid
+
+    # Data
+    x = df['DateTime']
+    y1 = df['TT2']
+    y2 = df['VT']
+
+    #y1
+    ax1.plot(x, y1, color='#ec6066ff', label='TT2')
+    ax1.set_ylabel('Temperature', color='#ec6066ff')
+    ax1.tick_params(axis='y', labelcolor='#ec6066ff')
+
+    #y2
+    ax2 = ax1.twinx()
+    ax2.plot(x, y2, color='#6699ccff', label='VT')
+    ax2.set_ylabel('Viscosity', color='#6699ccff')
+    ax2.tick_params(axis='y', labelcolor='#6699ccff')
+
+    # Set fewer ticks on the x-axis
+    min_date = df['DateTime'].min()
+    max_date = df['DateTime'].max()
+    # Calculate the time interval between dates
+    num_dates = 5
+    date_delta = (max_date - min_date) / (num_dates - 1)
+    # Generate the equally spaced dates
+    x_ticks = [min_date + i * date_delta for i in range(num_dates)]
+
+    # Set custom tick positions and labels on the x-axis
+    ax1.set_xticks(x_ticks)
+    ax1.set_xticklabels((date.strftime('%d/%m %H:%M') for date in x_ticks), rotation=45)  # Format and rotate tick labels
+
+    # Adjust layout
+    plt.tight_layout()
 
     return fig
