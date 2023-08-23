@@ -158,7 +158,342 @@ class ProgressFrame(ctk.CTkFrame):
         
         self.progressbar_1.configure(mode="indeterminnate")
         self.progressbar_1.start()
+
+class NavFrame(ctk.CTkFrame):
+    def __init__(self, master, **kwargs):
+        super().__init__(master, **kwargs)
+        logger.debug("NavFrame init")
+
+        # Add widgets to the blue frame
+        self.bt_navigation1 = ctk.CTkButton(self)
+        self.bt_navigation1.grid(row=0, column=0, padx=20, pady=10, sticky="w")
+
+        # Add widgets to the blue frame
+        self.bt_navigation2 = ctk.CTkButton(self)
+        self.bt_navigation2.grid(row=0, column=2, padx=20, pady=10, sticky="e")
+
+        # Set blue frame's row and column weights to make it take the entire space
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+
+class App(ctk.CTk):
+
+    # GUI management
+    frames = {} #dictionary containing frames
+    current = None #class ctkFrame of current frame selected
+
+    # Files selection
+    dirname = None #folder with logs
+    csv_files_list = [] #list of imported files
+    
+    # Import data
+    import_success = 0 # bool of import data result
+    mch_info = None # First 3 rows of csv files
+    COs = None # List of changeovers
+    LogsStandard = fcm.pd.DataFrame() #DataFrame with process logs
+    LogsAlarms = fcm.pd.DataFrame() #DataFrame with alarm logs
+    LogsEvents = fcm.pd.DataFrame() #DataFrame with event logs
+
+    def step_00_init(self):
+        logger.debug("Widgets update step_00_init()")
+
+        #Update breadcrumb
+        App.frames["BCFrame"].grid_columnconfigure(1, weight=0)
+        App.frames["BCFrame"].grid_columnconfigure(0, weight=1)
+        App.frames["BCFrame"].step1_label.configure(font=ctk.CTkFont(size=18, weight="bold"))
+        App.frames["BCFrame"].step2_label.configure(font=ctk.CTkFont(size=15, weight="normal"))
+        #App.frames["BCFrame"].step3_label.configure(font=ctk.CTkFont(size=15, weight="normal"))
+
+        #Update texts and action button
+        App.frames["CSFrame"].title.configure(text="Import Logs")
+        App.frames["CSFrame"].text.configure(text="Please select the folder containing the .csv files you want to analyse")
+        App.frames["CSFrame"].action_bt.configure(text="Select folder")
+        App.frames["CSFrame"].action_bt.configure(command=self.select_folder)
+        App.frames["CSFrame"].action_bt.grid(row=1, column=2, padx=20, pady=10, sticky="se")
+
+        #WorkSpace: Empty
+        self.show_frame("WSFrame")
         
+        #Update Navigation buttons
+        App.frames["NFrame"].bt_navigation1.grid_forget()
+        App.frames["NFrame"].bt_navigation2.configure(text="Import logs", state="disabled")
+        App.frames["NFrame"].bt_navigation2.configure(command= self.import_data_cmd)
+        App.frames["NFrame"].bt_navigation2.grid(row=0, column=2, padx=20, pady=10, sticky="e")
+
+    def step_10_folderSelected(self):
+        logger.debug("Widgets update step_10_folderSelected()")
+
+        #Update breadcrumb
+        App.frames["BCFrame"].grid_columnconfigure(1, weight=0)
+        App.frames["BCFrame"].grid_columnconfigure(0, weight=1)
+
+        #Update texts
+        App.frames["CSFrame"].title.configure(text="Import Logs")
+        App.frames["CSFrame"].text.configure(text="Folder selected" + str(self.dirname))
+
+        #WorkSpace: Scrollable frame
+        App.frames["FilesUpload"] = CheckBoxFrame(self.right_side_panel, command=self.checkbox_frame_event,
+                                                                 item_list=self.csv_files_list)
+        self.show_frame("FilesUpload")
+
+        #Update buttons
+        App.frames["NFrame"].bt_navigation1.grid(row=0, column=0, padx=20, pady=10, sticky="w")
+        App.frames["NFrame"].bt_navigation1.configure(text= "Clear all")
+        App.frames["NFrame"].bt_navigation1.configure(command= self.back_to_selectfolder)
+        if len(self.csv_files_list) > 0:
+            App.frames["NFrame"].bt_navigation2.configure(state="enabled")
+    
+    def step_20_importingData(self):
+        logger.debug("Widgets update step_20_importingData()")
+
+        #Update breadcrumb
+        App.frames["BCFrame"].grid_columnconfigure(1, weight=0)
+        App.frames["BCFrame"].grid_columnconfigure(0, weight=1)
+
+        #Update texts
+        App.frames["CSFrame"].title.configure(text="Importing data")
+        App.frames["CSFrame"].text.configure(text="Please wait")
+
+        #WorkSpace: Empty or Progressbar
+        App.frames["PFrame"] = ProgressFrame(self.right_side_panel)
+        self.show_frame("PFrame")
+
+        #Update buttons
+        App.frames["CSFrame"].action_bt.grid_forget()
+        App.frames["NFrame"].bt_navigation1.grid_forget()
+        App.frames["NFrame"].bt_navigation2.grid_forget()
+
+    def step_30_dataImported(self):
+        logger.debug("Widgets update step_30_dataImported()")
+
+        #Update breadcrumb
+        App.frames["BCFrame"].grid_columnconfigure(0, weight=0)
+        App.frames["BCFrame"].grid_columnconfigure(1, weight=1)
+        App.frames["BCFrame"].step1_label.configure(font=ctk.CTkFont(size=15, weight="normal"), image=App.frames["BCFrame"].step1g_img_tk)
+        App.frames["BCFrame"].step2_label.configure(font=ctk.CTkFont(size=18, weight="bold"), image=App.frames["BCFrame"].step2_img_tk)
+        #App.frames["BCFrame"].step3_label.configure(font=ctk.CTkFont(size=15, weight="normal"))
+
+        #Update texts
+        App.frames["CSFrame"].title.configure(text="Select Analysis type")
+        App.frames["CSFrame"].text.configure(text="You can do 1, 2 or 3")
+        App.frames["CSFrame"].action_bt.grid_forget()
+        
+        #WorkSpace: TabFrame
+        App.frames["TFrame"] = TabsFrame(self.right_side_panel, self) # Pass the instance of App to TabsFrame
+        self.show_frame("TFrame")
+
+        #Update Buttons
+        App.frames["NFrame"].bt_navigation1.grid(row=0, column=0, padx=20, pady=10, sticky="w")
+        App.frames["NFrame"].bt_navigation1.configure(text= "Clear all and Go back")
+        App.frames["NFrame"].bt_navigation1.configure(command= self.back_to_selectfolder)
+        App.frames["NFrame"].bt_navigation2.grid_forget()
+
+    def left_side_widgets(self, parent):
+        logger.debug("Widgets update left_side_widgets()")
+
+        # create sidebar logo
+        self.logo_label = ctk.CTkLabel(parent, text="VisuaLite", font=ctk.CTkFont(size=22, weight="bold"))
+        self.logo_label.grid(row=0, column=0, padx=20, pady=(20, 10))
+        # create info label
+        self.info_label = ctk.CTkLabel(parent, text="FCM One | 1.5", font=ctk.CTkFont(size=15))
+        self.info_label.grid(row=1, column=0, padx=20, pady=(20, 10))
+        # make middle empty row have the priority
+        parent.grid_rowconfigure(2, weight=1)
+        # create app controls of appearance and scaling
+        self.appearance_mode_label = ctk.CTkLabel(parent, text="Appearance Mode:", anchor="w")
+        self.appearance_mode_label.grid(row=3, column=0, padx=20, pady=(10, 0))
+        self.appearance_mode_optionemenu = ctk.CTkOptionMenu(parent, values=["Light", "Dark"],command=self.change_appearance_mode_event)
+        self.appearance_mode_optionemenu.grid(row=4, column=0, padx=20, pady=(10, 10))
+        self.appearance_mode_optionemenu.set("Dark")
+        self.scaling_label = ctk.CTkLabel(parent, text="UI Scaling:", anchor="w")
+        self.scaling_label.grid(row=5, column=0, padx=20, pady=(10, 0))
+        self.scaling_optionemenu = ctk.CTkOptionMenu(parent, values=["80%", "90%", "100%", "110%", "120%"],command=self.change_scaling_event)
+        self.scaling_optionemenu.grid(row=6, column=0, padx=20, pady=(10, 20))
+        self.scaling_optionemenu.set("100%")
+
+    def __init__(self):
+        super().__init__()
+        logger.debug("App init")
+
+        # configure window
+        self.title("VisuaLite V0.1")
+        # set the dimensions of the screen 
+        w = 1300 # width
+        h = 820 # height
+
+        # get screen width and height
+        ws = self.winfo_screenwidth() # width of the screen
+        hs = self.winfo_screenheight() # height of the screen
+
+        # calculate x and y coordinates for the Tk root window
+        x = (ws/2) - (w/2)
+        y = (hs/2) - (h/2)
+
+        # and where it is placed
+        #self.geometry(f"{1300}x{820}")
+        self.geometry('%dx%d+%d+%d' % (w, h, x, y))
+        self.iconbitmap(APP_ICON)
+
+        self.grid_columnconfigure(0, weight=0)
+        self.grid_columnconfigure(1, weight=1)
+
+        # -------------------------------------------------------------------------------------------------------------- left side panel
+        self.left_side_panel = ctk.CTkFrame(self, corner_radius=8, width=300)
+        self.left_side_panel.grid(row=0, column=0, rowspan=8, sticky="nsew", padx=(20, 10), pady=20)
+        self.left_side_widgets(self.left_side_panel)
+
+        self.grid_rowconfigure(0, weight=1)
+
+        # -------------------------------------------------------------------------------------------------------------- right side panel
+        self.right_side_panel = ctk.CTkFrame(self, corner_radius=8)
+        self.right_side_panel.grid(row=0, column=1, sticky="nsew", padx=(10, 20), pady=20)
+        
+        # Set right_side_panel's row and column weights to make the row2 expand to fill the available space
+        self.right_side_panel.grid_rowconfigure(2, weight=1)
+        self.right_side_panel.grid_columnconfigure(0, weight=1)
+
+        #Create frames inside right side panel
+        App.frames["BCFrame"] = BreadcrumbFrame(self.right_side_panel)
+        App.frames["BCFrame"].grid(row=0, column=0, padx=5, pady= 5, sticky="nsew")
+
+        App.frames["CSFrame"] = CurrentStep(self.right_side_panel)
+        App.frames["CSFrame"].grid(row=1, column=0,  padx=5, pady= 5, sticky="nsew")
+
+        App.frames["WSFrame"] = EmptyFrame(self.right_side_panel)
+        App.frames["WSFrame"].grid(row=2, column=0,  padx=5, pady= 5, sticky="nsew")
+        App.current = "WSFrame" # WorkSpace
+
+        App.frames["NFrame"] = NavFrame(self.right_side_panel)
+        App.frames["NFrame"].grid(row=3, column=0, padx=5, pady= 5,  sticky="nsew")
+
+        # Init widgets
+        self.step_00_init()    
+
+        # TODO Disclaimer  
+
+    def change_appearance_mode_event(self, new_appearance_mode: str):
+        logger.debug("change_appearance_mode_event")
+        logger.debug(new_appearance_mode)
+
+        ctk.set_appearance_mode(new_appearance_mode)
+
+    def change_scaling_event(self, new_scaling: str):
+        logger.debug("change_scaling_event")
+        logger.debug(new_scaling)
+
+        new_scaling_float = int(new_scaling.replace("%", "")) / 100
+        ctk.set_widget_scaling(new_scaling_float)
+
+    def clear_all(self):
+        # Delete memory
+        logger.debug("--- Clear memory ---")
+        self.dirname = None
+        self.csv_files_list = []
+        self.import_success = 0
+        self.mch_info = None
+        self.COs = None
+        self.LogsStandard = fcm.pd.DataFrame()
+        self.LogsAlarms = fcm.pd.DataFrame()
+        self.LogsEvents = fcm.pd.DataFrame()
+    
+    def show_frame(self, frame_id):
+        # method to change frames in position row 2, column 0 of right_side_panel
+        logger.debug("show_frame")
+        logger.debug(frame_id)
+ 
+        if App.current is not None:
+            App.frames[App.current].grid_forget() # Hide the current frame
+
+        App.frames[frame_id].grid(row=2, column=0, padx=5, pady= 5, sticky="nsew") # Show the selected frame
+        App.current = frame_id
+
+    def back_to_selectfolder (self):
+        logger.debug("Step1 - Back button pressed")
+        
+        self.clear_all()
+        self.step_00_init()
+
+    def select_folder(self):
+        logger.debug("Step1 - Select folder button pressed")
+
+        #Open file dialog to select folder
+        self.dirname = fd.askdirectory(parent=self,initialdir=PATH,title='Select a directory with log files')
+        logger.debug("Step1 - Selected folder:")
+        logger.debug(self.dirname)
+
+        if self.dirname != '':
+            #Look for csv files in the selected folder    
+            self.csv_files_list = []
+            for filename in os.listdir(self.dirname):
+                if filename.lower().endswith('.csv'):
+                    self.csv_files_list.append(filename)
+
+            logger.debug("Step1 - Files found:")
+            logger.debug(self.csv_files_list)
+
+            #Update widgets
+            self.step_10_folderSelected()
+            
+            #Pop up with result
+            tk.messagebox.showinfo(title='Information', message=str(len(self.csv_files_list)) + ' files found in the folder selected: ' + self.dirname) # type: ignore
+        else:
+            logger.debug("Step1 - no folder selected")
+
+    def checkbox_frame_event(self):
+        return self.frames['FilesUpload'].get_checked_items()
+    
+    def importing_data(self):
+        logger.debug("...continue")
+        if self.dirname != None:
+            DataFiles = [self.dirname + '/' + x for x in self.csv_files_list if x.startswith('S')]
+            AlarmFiles = [self.dirname + '/' + x for x in self.csv_files_list if x.startswith('A')]
+            EventFiles = [self.dirname + '/' + x for x in self.csv_files_list if x.startswith('E')]
+            logger.debug("DataFiles:")
+            logger.debug(DataFiles)
+            logger.debug("AlarmFiles:")
+            logger.debug(AlarmFiles)
+            logger.debug("EventFiles:")
+            logger.debug(EventFiles)
+        else:
+            logger.debug("dir name== None -> Stop")
+            return #Stop
+        
+        # Import data from csv and format DataFrames
+        if len(DataFiles + AlarmFiles + EventFiles) == 0:
+            logger.debug("no .csv files starting with S*, A* or E* --> Stop")
+            tk.messagebox.showerror(title='Import failed', message='Visualite could not find logs in the .csv files selected') # type: ignore
+            return # Stop
+        
+        elif len(DataFiles + AlarmFiles + EventFiles) > 0:
+            # TODO Check it is FCM One Log files
+            self.import_success, self.mch_info, self.COs, self.LogsStandard, self.LogsAlarms, self.LogsEvents = fcm.import_data(DataFiles, AlarmFiles, EventFiles)
+            logger.debug(f"{self.import_success=}")
+    
+        if self.import_success:
+            self.step_30_dataImported()
+            tk.messagebox.showinfo(title='Information', message='Import procedure successful!') # type: ignore
+        
+        else:
+            self.step_10_folderSelected()
+            tk.messagebox.showerror(title='Import failed', message='Wrong File: ' + str(self.mch_info)) # type: ignore
+    
+    def import_data_cmd(self):
+        logger.debug("Step1 - Import data started ")
+        # Get file names selected
+        self.csv_files_list = self.checkbox_frame_event()
+        logger.debug("Files selected:")
+        logger.debug(self.csv_files_list)
+
+        if self.csv_files_list == []:
+            logger.debug("no files selected -> Stop")
+            tk.messagebox.showerror(title='Import failed', message='Please select at least one log file') # type: ignore
+            return #Stop
+        else:
+            # Show progressBar
+            self.step_20_importingData()
+            logger.debug("wait 1000ms...")
+            self.after(1000, self.importing_data) #wait 1000ms and next step
+
 class TabsFrame(ctk.CTkFrame):
     def __init__(self, master, app_instance, **kwargs):
         super().__init__(master, **kwargs)
@@ -187,8 +522,8 @@ class TabsFrame(ctk.CTkFrame):
         self.label1 = ctk.CTkLabel(self.results_t1)
         self.label1.grid(row=0, column=0, padx=20, pady=20, sticky = 'nw')
 
-        self.plot_sel = ctk.CTkButton(self.results_t1, text="Save selected plots")
-        self.plot_all = ctk.CTkButton(self.results_t1, text="Save all plots")
+        self.plot_sel = ctk.CTkButton(self.results_t1, text="Save selected plots", command= self.plot_sel_COs)
+        self.plot_all = ctk.CTkButton(self.results_t1, text="Save all plots", command= self.plot_all_COs)
         
         self.COs = []
         if self.app.COs:  
@@ -369,6 +704,86 @@ class TabsFrame(ctk.CTkFrame):
         for checkbox in self.checkbox_list:
             COs_sts.append(checkbox.get())
         return COs_sts
+
+    def plot_all_COs(self):
+        logger.debug("Tab1 - plot_all_COs started ---")
+
+        dest_folder = fd.askdirectory(parent=self,initialdir=PATH,title='Select a destination directory')
+        logger.debug("Folder selected:")
+        logger.debug(dest_folder)
+        if dest_folder =='': #no folder selected
+            logger.debug("no folder selected -> Stop")
+            return #Stop
+        
+        if self.app.COs:
+            logger.debug("COs:")
+            logger.debug(self.app.COs)            
+
+            for i, CO in enumerate(self.app.COs):
+                df = fcm.ChangeOverToDF(CO, self.app.LogsStandard)
+                fig = fcm.Plot_ChangeOver(df, self.app.mch_info, self.app.LogsAlarms, self.app.LogsEvents)
+                name_file= "CO"+ str(i+1) + "_" + str(CO['Start'].date()) + ".html"
+                file_path = os.path.join(dest_folder, name_file)
+                logger.debug("File to create:")
+                logger.debug(file_path)
+
+                try:
+                    fig.write_html(file_path, config={'displaylogo': False})
+                    logger.debug("File saved successfully.")
+
+                except Exception as e:
+                    logger.error("--- Error saving file")
+                    logger.error(e, exc_info=True)
+
+        logger.debug("Tab1 - plot_all_COs finished ---")
+        tk.messagebox.showinfo(title='Plots saved!', message="Plots saved in destination folder") # type: ignore
+
+    def plot_sel_COs(self):
+        logger.debug("Tab1 - plot_sel_COs started ---")
+
+        COs = self.get_checked_items()
+        logger.debug("checked items:")
+        logger.debug(COs)
+        
+        dest_folder =''
+        flag = 0
+        
+        for i, CO_sts in enumerate(COs):
+            logger.debug(f"{i=}")
+            if CO_sts == 1:
+                #first plot
+                if flag == 0: 
+                    #Open file dialog to select folder
+                    dest_folder = fd.askdirectory(parent=self,initialdir=PATH,title='Select a destination directory')
+                    logger.debug("Selected folder:")
+                    logger.debug(dest_folder)
+
+                    if dest_folder == '': #no folder selected
+                        logger.debug("no folder selected -> Stop")
+                        return #Stop
+                
+                flag=1
+                df = fcm.ChangeOverToDF(self.app.COs[i], self.app.LogsStandard)
+                fig = fcm.Plot_ChangeOver(df, self.app.mch_info, self.app.LogsAlarms, self.app.LogsEvents)
+                name_file= "CO"+ str(i+1) + "_" + str(self.app.COs[i]['Start'].date()) + ".html"
+                file_path = os.path.join(dest_folder, name_file)
+                logger.debug("File to save:")
+                logger.debug(file_path)
+                try:
+                    fig.write_html(file_path, config={'displaylogo': False})
+                    logger.debug("File saved successfully.")
+
+                except Exception as e:
+                    logger.error("--- Error saving file")
+                    logger.error(e, exc_info=True)
+
+        if flag == 0:
+            logger.debug("no option selected -> Stop")
+            tk.messagebox.showwarning(title='No option selected!', message='Select at least one ChangeOver to plot') # type: ignore
+            return #Stop
+        
+        logger.debug("Tab1 - plot_sel_COs finished ---")
+        tk.messagebox.showinfo(title='Plots saved!', message="Plots saved in destination folder") # type: ignore
         
     #TAB2 functions
     def update_optionmenu(self): 
@@ -577,424 +992,6 @@ class TabsFrame(ctk.CTkFrame):
             logger.error("--- Error saving file")
             logger.error(e, exc_info=True)
             tk.messagebox.showwarning(title='Error saving file', message="Error saving file:" + e) # type: ignore
-
-class NavFrame(ctk.CTkFrame):
-    def __init__(self, master, **kwargs):
-        super().__init__(master, **kwargs)
-        logger.debug("NavFrame init")
-
-        # Add widgets to the blue frame
-        self.bt_navigation1 = ctk.CTkButton(self)
-        self.bt_navigation1.grid(row=0, column=0, padx=20, pady=10, sticky="w")
-
-        # Add widgets to the blue frame
-        self.bt_navigation2 = ctk.CTkButton(self)
-        self.bt_navigation2.grid(row=0, column=2, padx=20, pady=10, sticky="e")
-
-        # Set blue frame's row and column weights to make it take the entire space
-        self.grid_rowconfigure(0, weight=1)
-        self.grid_columnconfigure(0, weight=1)
-
-class App(ctk.CTk):
-
-    # GUI management
-    frames = {} #dictionary containing frames
-    current = None #class ctkFrame of current frame selected
-
-    # Files selection
-    dirname = None #folder with logs
-    csv_files_list = [] #list of imported files
-    
-    # Import data
-    import_success = 0 # bool of import data result
-    mch_info = None # First 3 rows of csv files
-    COs = None # List of changeovers
-    LogsStandard = fcm.pd.DataFrame() #DataFrame with process logs
-    LogsAlarms = fcm.pd.DataFrame() #DataFrame with alarm logs
-    LogsEvents = fcm.pd.DataFrame() #DataFrame with event logs
-
-    def step_00_init(self):
-        logger.debug("Widgets update step_00_init()")
-
-        #Update breadcrumb
-        App.frames["BCFrame"].grid_columnconfigure(1, weight=0)
-        App.frames["BCFrame"].grid_columnconfigure(0, weight=1)
-        App.frames["BCFrame"].step1_label.configure(font=ctk.CTkFont(size=18, weight="bold"))
-        App.frames["BCFrame"].step2_label.configure(font=ctk.CTkFont(size=15, weight="normal"))
-        #App.frames["BCFrame"].step3_label.configure(font=ctk.CTkFont(size=15, weight="normal"))
-
-        #Update texts and action button
-        App.frames["CSFrame"].title.configure(text="Import Logs")
-        App.frames["CSFrame"].text.configure(text="Please select the folder containing the .csv files you want to analyse")
-        App.frames["CSFrame"].action_bt.configure(text="Select folder")
-        App.frames["CSFrame"].action_bt.configure(command=self.select_folder)
-        App.frames["CSFrame"].action_bt.grid(row=1, column=2, padx=20, pady=10, sticky="se")
-
-        #WorkSpace: Empty
-        self.show_frame("WSFrame")
-        
-        #Update Navigation buttons
-        App.frames["NFrame"].bt_navigation1.grid_forget()
-        App.frames["NFrame"].bt_navigation2.configure(text="Import logs", state="disabled")
-        App.frames["NFrame"].bt_navigation2.configure(command= self.import_data_cmd)
-        App.frames["NFrame"].bt_navigation2.grid(row=0, column=2, padx=20, pady=10, sticky="e")
-
-    def step_10_folderSelected(self):
-        logger.debug("Widgets update step_10_folderSelected()")
-
-        #Update breadcrumb
-        App.frames["BCFrame"].grid_columnconfigure(1, weight=0)
-        App.frames["BCFrame"].grid_columnconfigure(0, weight=1)
-
-        #Update texts
-        App.frames["CSFrame"].title.configure(text="Import Logs")
-        App.frames["CSFrame"].text.configure(text="Folder selected" + str(self.dirname))
-
-        #WorkSpace: Scrollable frame
-        App.frames["FilesUpload"] = CheckBoxFrame(self.right_side_panel, command=self.checkbox_frame_event,
-                                                                 item_list=self.csv_files_list)
-        self.show_frame("FilesUpload")
-
-        #Update buttons
-        App.frames["NFrame"].bt_navigation1.grid(row=0, column=0, padx=20, pady=10, sticky="w")
-        App.frames["NFrame"].bt_navigation1.configure(text= "Clear all")
-        App.frames["NFrame"].bt_navigation1.configure(command= self.back_to_selectfolder)
-        if len(self.csv_files_list) > 0:
-            App.frames["NFrame"].bt_navigation2.configure(state="enabled")
-    
-    def step_20_importingData(self):
-        logger.debug("Widgets update step_20_importingData()")
-
-        #Update breadcrumb
-        App.frames["BCFrame"].grid_columnconfigure(1, weight=0)
-        App.frames["BCFrame"].grid_columnconfigure(0, weight=1)
-
-        #Update texts
-        App.frames["CSFrame"].title.configure(text="Importing data")
-        App.frames["CSFrame"].text.configure(text="Please wait")
-
-        #WorkSpace: Empty or Progressbar
-        App.frames["PFrame"] = ProgressFrame(self.right_side_panel)
-        self.show_frame("PFrame")
-
-        #Update buttons
-        App.frames["CSFrame"].action_bt.grid_forget()
-        App.frames["NFrame"].bt_navigation1.grid_forget()
-        App.frames["NFrame"].bt_navigation2.grid_forget()
-
-    def step_30_dataImported(self):
-        logger.debug("Widgets update step_30_dataImported()")
-
-        #Update breadcrumb
-        App.frames["BCFrame"].grid_columnconfigure(0, weight=0)
-        App.frames["BCFrame"].grid_columnconfigure(1, weight=1)
-        App.frames["BCFrame"].step1_label.configure(font=ctk.CTkFont(size=15, weight="normal"), image=App.frames["BCFrame"].step1g_img_tk)
-        App.frames["BCFrame"].step2_label.configure(font=ctk.CTkFont(size=18, weight="bold"), image=App.frames["BCFrame"].step2_img_tk)
-        #App.frames["BCFrame"].step3_label.configure(font=ctk.CTkFont(size=15, weight="normal"))
-
-        #Update texts
-        App.frames["CSFrame"].title.configure(text="Select Analysis type")
-        App.frames["CSFrame"].text.configure(text="You can do 1, 2 or 3")
-        App.frames["CSFrame"].action_bt.grid_forget()
-        
-        #WorkSpace: TabFrame
-        App.frames["TFrame"] = TabsFrame(self.right_side_panel, self) # Pass the instance of App to TabsFrame
-        self.show_frame("TFrame")
-        App.frames["TFrame"].plot_all.configure(command= self.plot_all_COs)
-        App.frames["TFrame"].plot_sel.configure(command= self.plot_sel_COs)
-
-
-        #Update Buttons
-        App.frames["NFrame"].bt_navigation1.grid(row=0, column=0, padx=20, pady=10, sticky="w")
-        App.frames["NFrame"].bt_navigation1.configure(text= "Clear all and Go back")
-        App.frames["NFrame"].bt_navigation1.configure(command= self.back_to_selectfolder)
-        App.frames["NFrame"].bt_navigation2.grid_forget()
-
-    def left_side_widgets(self, parent):
-        logger.debug("Widgets update left_side_widgets()")
-
-        # create sidebar logo
-        self.logo_label = ctk.CTkLabel(parent, text="VisuaLite", font=ctk.CTkFont(size=22, weight="bold"))
-        self.logo_label.grid(row=0, column=0, padx=20, pady=(20, 10))
-        # create info label
-        self.info_label = ctk.CTkLabel(parent, text="FCM One | 1.5", font=ctk.CTkFont(size=15))
-        self.info_label.grid(row=1, column=0, padx=20, pady=(20, 10))
-        # make middle empty row have the priority
-        parent.grid_rowconfigure(2, weight=1)
-        # create app controls of appearance and scaling
-        self.appearance_mode_label = ctk.CTkLabel(parent, text="Appearance Mode:", anchor="w")
-        self.appearance_mode_label.grid(row=3, column=0, padx=20, pady=(10, 0))
-        self.appearance_mode_optionemenu = ctk.CTkOptionMenu(parent, values=["Light", "Dark"],command=self.change_appearance_mode_event)
-        self.appearance_mode_optionemenu.grid(row=4, column=0, padx=20, pady=(10, 10))
-        self.appearance_mode_optionemenu.set("Dark")
-        self.scaling_label = ctk.CTkLabel(parent, text="UI Scaling:", anchor="w")
-        self.scaling_label.grid(row=5, column=0, padx=20, pady=(10, 0))
-        self.scaling_optionemenu = ctk.CTkOptionMenu(parent, values=["80%", "90%", "100%", "110%", "120%"],command=self.change_scaling_event)
-        self.scaling_optionemenu.grid(row=6, column=0, padx=20, pady=(10, 20))
-        self.scaling_optionemenu.set("100%")
-
-    def __init__(self):
-        super().__init__()
-        logger.debug("App init")
-
-        # configure window
-        self.title("VisuaLite V0.1")
-        # set the dimensions of the screen 
-        w = 1300 # width
-        h = 820 # height
-
-        # get screen width and height
-        ws = self.winfo_screenwidth() # width of the screen
-        hs = self.winfo_screenheight() # height of the screen
-
-        # calculate x and y coordinates for the Tk root window
-        x = (ws/2) - (w/2)
-        y = (hs/2) - (h/2)
-
-        # and where it is placed
-        #self.geometry(f"{1300}x{820}")
-        self.geometry('%dx%d+%d+%d' % (w, h, x, y))
-        self.iconbitmap(APP_ICON)
-
-        self.grid_columnconfigure(0, weight=0)
-        self.grid_columnconfigure(1, weight=1)
-
-        # -------------------------------------------------------------------------------------------------------------- left side panel
-        self.left_side_panel = ctk.CTkFrame(self, corner_radius=8, width=300)
-        self.left_side_panel.grid(row=0, column=0, rowspan=8, sticky="nsew", padx=(20, 10), pady=20)
-        self.left_side_widgets(self.left_side_panel)
-
-        self.grid_rowconfigure(0, weight=1)
-
-        # -------------------------------------------------------------------------------------------------------------- right side panel
-        self.right_side_panel = ctk.CTkFrame(self, corner_radius=8)
-        self.right_side_panel.grid(row=0, column=1, sticky="nsew", padx=(10, 20), pady=20)
-        
-        # Set right_side_panel's row and column weights to make the row2 expand to fill the available space
-        self.right_side_panel.grid_rowconfigure(2, weight=1)
-        self.right_side_panel.grid_columnconfigure(0, weight=1)
-
-        #Create frames inside right side panel
-        App.frames["BCFrame"] = BreadcrumbFrame(self.right_side_panel)
-        App.frames["BCFrame"].grid(row=0, column=0, padx=5, pady= 5, sticky="nsew")
-
-        App.frames["CSFrame"] = CurrentStep(self.right_side_panel)
-        App.frames["CSFrame"].grid(row=1, column=0,  padx=5, pady= 5, sticky="nsew")
-
-        App.frames["WSFrame"] = EmptyFrame(self.right_side_panel)
-        App.frames["WSFrame"].grid(row=2, column=0,  padx=5, pady= 5, sticky="nsew")
-        App.current = "WSFrame" # WorkSpace
-
-        App.frames["NFrame"] = NavFrame(self.right_side_panel)
-        App.frames["NFrame"].grid(row=3, column=0, padx=5, pady= 5,  sticky="nsew")
-
-        # Init widgets
-        self.step_00_init()      
-
-    def change_appearance_mode_event(self, new_appearance_mode: str):
-        logger.debug("change_appearance_mode_event")
-        logger.debug(new_appearance_mode)
-
-        ctk.set_appearance_mode(new_appearance_mode)
-
-    def change_scaling_event(self, new_scaling: str):
-        logger.debug("change_scaling_event")
-        logger.debug(new_scaling)
-
-        new_scaling_float = int(new_scaling.replace("%", "")) / 100
-        ctk.set_widget_scaling(new_scaling_float)
-
-    def clear_all(self):
-        # Delete memory
-        logger.debug("--- Clear memory ---")
-        self.dirname = None
-        self.csv_files_list = []
-        self.import_success = 0
-        self.mch_info = None
-        self.COs = None
-        self.LogsStandard = fcm.pd.DataFrame()
-        self.LogsAlarms = fcm.pd.DataFrame()
-        self.LogsEvents = fcm.pd.DataFrame()
-    
-    def show_frame(self, frame_id):
-        # method to change frames in position row 2, column 0 of right_side_panel
-        logger.debug("show_frame")
-        logger.debug(frame_id)
- 
-        if App.current is not None:
-            App.frames[App.current].grid_forget() # Hide the current frame
-
-        App.frames[frame_id].grid(row=2, column=0, padx=5, pady= 5, sticky="nsew") # Show the selected frame
-        App.current = frame_id
-
-    def back_to_selectfolder (self):
-        logger.debug("Step1 - Back button pressed")
-        
-        self.clear_all()
-        self.step_00_init()
-
-    def select_folder(self):
-        logger.debug("Step1 - Select folder button pressed")
-
-        #Open file dialog to select folder
-        self.dirname = fd.askdirectory(parent=self,initialdir=PATH,title='Select a directory with log files')
-        logger.debug("Step1 - Selected folder:")
-        logger.debug(self.dirname)
-
-        if self.dirname != '':
-            #Look for csv files in the selected folder    
-            self.csv_files_list = []
-            for filename in os.listdir(self.dirname):
-                if filename.lower().endswith('.csv'):
-                    self.csv_files_list.append(filename)
-
-            logger.debug("Step1 - Files found:")
-            logger.debug(self.csv_files_list)
-
-            #Update widgets
-            self.step_10_folderSelected()
-            
-            #Pop up with result
-            tk.messagebox.showinfo(title='Information', message=str(len(self.csv_files_list)) + ' files found in the folder selected: ' + self.dirname) # type: ignore
-        else:
-            logger.debug("Step1 - no folder selected")
-
-    def checkbox_frame_event(self):
-        return self.frames['FilesUpload'].get_checked_items()
-    
-    def importing_data(self):
-        logger.debug("...continue")
-        if self.dirname != None:
-            DataFiles = [self.dirname + '/' + x for x in self.csv_files_list if x.startswith('S')]
-            AlarmFiles = [self.dirname + '/' + x for x in self.csv_files_list if x.startswith('A')]
-            EventFiles = [self.dirname + '/' + x for x in self.csv_files_list if x.startswith('E')]
-            logger.debug("DataFiles:")
-            logger.debug(DataFiles)
-            logger.debug("AlarmFiles:")
-            logger.debug(AlarmFiles)
-            logger.debug("EventFiles:")
-            logger.debug(EventFiles)
-        else:
-            logger.debug("dir name== None -> Stop")
-            return #Stop
-        
-        # Import data from csv and format DataFrames
-        if len(DataFiles + AlarmFiles + EventFiles) == 0:
-            logger.debug("no .csv files starting with S*, A* or E* --> Stop")
-            tk.messagebox.showerror(title='Import failed', message='Visualite could not find logs in the .csv files selected') # type: ignore
-            return # Stop
-        
-        elif len(DataFiles + AlarmFiles + EventFiles) > 0:
-            # TODO Check it is FCM One Log files
-            self.import_success, self.mch_info, self.COs, self.LogsStandard, self.LogsAlarms, self.LogsEvents = fcm.import_data(DataFiles, AlarmFiles, EventFiles)
-            logger.debug(f"{self.import_success=}")
-    
-        if self.import_success:
-            self.step_30_dataImported()
-            tk.messagebox.showinfo(title='Information', message='Import procedure successful!') # type: ignore
-        
-        else:
-            self.step_10_folderSelected()
-            tk.messagebox.showerror(title='Import failed', message='Wrong File: ' + str(self.mch_info)) # type: ignore
-    
-    def import_data_cmd(self):
-        logger.debug("Step1 - Import data started ")
-        # Get file names selected
-        self.csv_files_list = self.checkbox_frame_event()
-        logger.debug("Files selected:")
-        logger.debug(self.csv_files_list)
-
-        if self.csv_files_list == []:
-            logger.debug("no files selected -> Stop")
-            tk.messagebox.showerror(title='Import failed', message='Please select at least one log file') # type: ignore
-            return #Stop
-        else:
-            # Show progressBar
-            self.step_20_importingData()
-            logger.debug("wait 1000ms...")
-            self.after(1000, self.importing_data) #wait 1000ms and next step
-    
-    def plot_all_COs(self):
-        logger.debug("Tab1 - plot_all_COs started ---")
-
-        dest_folder = fd.askdirectory(parent=self,initialdir=PATH,title='Select a destination directory')
-        logger.debug("Folder selected:")
-        logger.debug(dest_folder)
-        if dest_folder =='': #no folder selected
-            logger.debug("no folder selected -> Stop")
-            return #Stop
-        
-        if self.COs:
-            logger.debug("COs:")
-            logger.debug(self.COs)            
-
-            for i, CO in enumerate(self.COs):
-                df = fcm.ChangeOverToDF(CO, self.LogsStandard)
-                fig = fcm.Plot_ChangeOver(df, self.mch_info, self.LogsAlarms, self.LogsEvents)
-                name_file= "CO"+ str(i+1) + "_" + str(CO['Start'].date()) + ".html"
-                file_path = os.path.join(dest_folder, name_file)
-                logger.debug("File to create:")
-                logger.debug(file_path)
-
-                try:
-                    fig.write_html(file_path, config={'displaylogo': False})
-                    logger.debug("File saved successfully.")
-
-                except Exception as e:
-                    logger.error("--- Error saving file")
-                    logger.error(e, exc_info=True)
-
-        logger.debug("Tab1 - plot_all_COs finished ---")
-        tk.messagebox.showinfo(title='Plots saved!', message="Plots saved in destination folder") # type: ignore
-
-    def plot_sel_COs(self):
-        logger.debug("Tab1 - plot_sel_COs started ---")
-
-        COs = App.frames["TFrame"].get_checked_items()
-        logger.debug("checked items:")
-        logger.debug(COs)
-        
-        dest_folder =''
-        flag = 0
-        
-        for i, CO_sts in enumerate(COs):
-            logger.debug(f"{i=}")
-            if CO_sts == 1:
-                #first plot
-                if flag == 0: 
-                    #Open file dialog to select folder
-                    dest_folder = fd.askdirectory(parent=self,initialdir=PATH,title='Select a destination directory')
-                    logger.debug("Selected folder:")
-                    logger.debug(dest_folder)
-
-                    if dest_folder == '': #no folder selected
-                        logger.debug("no folder selected -> Stop")
-                        return #Stop
-                
-                flag=1
-                df = fcm.ChangeOverToDF(self.COs[i], self.LogsStandard)
-                fig = fcm.Plot_ChangeOver(df, self.mch_info, self.LogsAlarms, self.LogsEvents)
-                name_file= "CO"+ str(i+1) + "_" + str(self.COs[i]['Start'].date()) + ".html"
-                file_path = os.path.join(dest_folder, name_file)
-                logger.debug("File to save:")
-                logger.debug(file_path)
-                try:
-                    fig.write_html(file_path, config={'displaylogo': False})
-                    logger.debug("File saved successfully.")
-
-                except Exception as e:
-                    logger.error("--- Error saving file")
-                    logger.error(e, exc_info=True)
-
-        if flag == 0:
-            logger.debug("no option selected -> Stop")
-            tk.messagebox.showwarning(title='No option selected!', message='Select at least one ChangeOver to plot') # type: ignore
-            return #Stop
-        
-        logger.debug("Tab1 - plot_sel_COs finished ---")
-        tk.messagebox.showinfo(title='Plots saved!', message="Plots saved in destination folder") # type: ignore
-
-
 
 
         
