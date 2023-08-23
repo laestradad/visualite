@@ -1,23 +1,17 @@
 import pandas as pd
 import datetime
-# file handling
 import os
-# read files
 from csv import reader
 import json
-# plot library
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import matplotlib.pyplot as plt
 from PIL import Image
 
-import logging
 from modules.logging_cfg import setup_logger
 logger = setup_logger()
-logging.info("fcm_one.py imported")
+logger.info("fcm_one.py imported")
 
-# Execution path
-PATH = os.getcwd()
 # Get the path to the current script
 SCRIPT_PATH = os.path.dirname(os.path.abspath(__file__))
 # Alfa Laval Logo path
@@ -80,9 +74,51 @@ custom_dark_style = {
     'grid.color': '#333333',  # Color of grid lines / DEFAULT '#333333'
 }
 
-#----------------------------------------------------------- FUNCTIONS
+#----------------------------------------------------------- DECORATORS
+def custom_callback(func):
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            logger.error("--- Callback failed ---")
+            logger.error(e, exc_info=True)
+    return wrapper
 
+#----------------------------------------------------------- FUNCTIONS
+# Check csv files
+def read_mch_info(file):
+    i = 0
+    with open(file, 'r') as csv_file:
+        csv_reader = reader(csv_file, delimiter=';')
+        mch_info = []
+        for row in csv_reader:
+            # row variable is a list that represents a row in csv
+            mch_info.append(row[0])
+            i += 1
+            if i == 3:
+                break          
+    return(mch_info)
+
+def check_files (files):
+    logger.debug("check_files started ---")
+
+    # Check Machine information
+    mch_info_check = read_mch_info(files[0])
+    logger.debug(f"{mch_info_check=}")
+
+    for file in (files):
+        mch_info = read_mch_info(file)
+        if mch_info != mch_info_check:
+            logger.error('File does not correspond to the same machine')
+            logger.error(file)
+            return 0, file
+    
+    logger.error('All files correspond to the same machine')
+    return 1, mch_info_check
+
+# Import data
 def concat_files(AllFilesNames):
+    logger.debug("concat_files started ---")
    # Create an empty list to store the dataframes
     ListDataframe = list()
 
@@ -100,39 +136,17 @@ def concat_files(AllFilesNames):
 
     #Remove duplicates
     DF_Data.drop_duplicates(keep=False, inplace=True)
+    
+    logger.debug("--- raw data imported:")
+    logger.debug(DF_Data.shape)
+    logger.debug(DF_Data.columns.tolist())
 
     return(DF_Data)
 
-def read_mch_info(file):
-    i = 0
-    with open(file, 'r') as csv_file:
-        csv_reader = reader(csv_file, delimiter=';')
-        mch_info = []
-        for row in csv_reader:
-            # row variable is a list that represents a row in csv
-            mch_info.append(row[0])
-            i += 1
-            if i == 3:
-                break
-
-    return(mch_info)
-
-def check_files (files):
-    # Check Machine information
-    mch_info_check = read_mch_info(files[0])
-
-    for file in (files):
-        mch_info = read_mch_info(file)
-        if mch_info != mch_info_check:
-            print('File ' + file + ' does not correspond to the same machine')
-            print(mch_info_check)
-            return 0, file
-    
-    print('All files correspond to the same machine')
-    print(mch_info_check)
-    return 1, mch_info_check
-
+@custom_callback # wrapper to catch errors
 def import_data(DataFiles, AlarmFiles, EventFiles):
+    logger.debug("--- import_data started ---")
+
     mch_info = None
     LogsStandard = pd.DataFrame()
     COs = []
@@ -148,27 +162,32 @@ def import_data(DataFiles, AlarmFiles, EventFiles):
 
         # LOGS STANDARD
         if DataFiles:
+            logger.debug("Importing Standard Logs ---")
+
             LogsStandard = Format_DF_SLogs(DataFiles)
             COs = IdentifyCOs(LogsStandard)
 
         # ALARMS
         if AlarmFiles:
+            logger.debug("Importing Alarm Logs ---")
             LogsAlarms = Format_DF_ALogs(AlarmFiles)
 
         # EVENTS
         if EventFiles:
+            logger.debug("Importing Event Logs ---")
             LogsEvents = Format_DF_ELogs(EventFiles)
+
         return 1, mch_info, COs, LogsStandard, LogsAlarms, LogsEvents
     
     else:
         return 0, mch_info, None, None, None, None  
 
+# Formatting of DataFrames
 def Format_DF_SLogs(list_files):
 
     LogsStandard = concat_files(list_files)
-    print("Standard Logs imported ----------------")
-    print(LogsStandard.columns)
-    print(LogsStandard.shape)
+    
+    logger.debug("Formatting Standard Logs ---")
 
     # Format LogsStandard
     LogsStandard = LogsStandard[['DateTime','GpsPos', 'ChangeOverInProgress','F60InAutoMode','CV1_Position', 'CV2_Position',
@@ -231,15 +250,17 @@ def Format_DF_SLogs(list_files):
     # Create column with value change
     LogsStandard['ChangeoverCMDchange'] = LogsStandard['ChangeOverInProgress'].diff()
 
-    print("Standard Logs formatted ----------------")
+    logger.debug("--- Standard Logs formatted")
+    logger.debug(LogsStandard.shape)
+    logger.debug(LogsStandard.columns.tolist())
+    logger.debug(LogsStandard.dtypes)
+
     return(LogsStandard)
 
 def Format_DF_ALogs(list_files):
 
     LogsAlarms = concat_files(list_files)
-    print("Alarm Logs imported ----------------")
-    print(LogsAlarms.columns)
-    print(LogsAlarms.shape)
+    logger.debug("Formatting Alarm Logs ---")
 
     LogsAlarms = LogsAlarms[['DateTime', 'AlarmNumber']]
 
@@ -319,14 +340,16 @@ def Format_DF_ALogs(list_files):
 
     LogsAlarms['Alm_Code_Label'] = "A" + LogsAlarms['AlarmNumber'].astype(str) + "_" + LogsAlarms['Label'] 
     
-    print("Alarm Logs formatted ----------------")
+    logger.debug("--- Alarm Logs formatted")
+    logger.debug(LogsAlarms.shape)
+    logger.debug(LogsAlarms.columns.tolist())
+    logger.debug(LogsAlarms.dtypes)
+
     return(LogsAlarms)
 
 def Format_DF_ELogs(list_files):
     LogsEvents = concat_files(list_files)
-    print("Event Logs imported ----------------")
-    print(LogsEvents.columns)
-    print(LogsEvents.shape)
+    logger.debug("Formatting Event Logs ---")
 
     LogsEvents = LogsEvents[['DateTime', 'GpsPos', 'EventNumber', 'Data']]
     LogsEvents['Label'] = LogsEvents['EventNumber'] 
@@ -350,10 +373,17 @@ def Format_DF_ELogs(list_files):
     
     LogsEvents['Evn_Code_Label'] = "E" + LogsEvents['EventNumber'].astype(str) + "_" + LogsEvents['Label'] 
 
-    print("Event Logs formatted ----------------")
+    logger.debug("--- Event Logs formatted")
+    logger.debug(LogsEvents.shape)
+    logger.debug(LogsEvents.columns.tolist())
+    logger.debug(LogsEvents.dtypes)
+
     return(LogsEvents)
 
+# ChangeOver functions
 def IdentifyCOs(logs):
+    logger.debug("IdentifyCOs started ---")
+
     # memorize starting DateTimes
     COstart = logs[logs['ChangeoverCMDchange'] == 1]['DateTime'].tolist()
 
@@ -366,32 +396,44 @@ def IdentifyCOs(logs):
         if duration > datetime.timedelta(minutes = 1):
             COs.append({'Start': COstart[i], 'Finish': COfinish[i], 'Duration': duration})
 
-    print('In the logs imported there are ' + str(len(COs)) + ' changeovers')
+    logger.debug('In the logs imported there are ' + str(len(COs)) + ' changeovers')
     for CO in COs:
-        print('- From ' + str(CO['Start']) + ' to ' + str(CO['Finish']) + '. Duration: ' + str(CO['Duration'])) 
+        logger.debug('- From ' + str(CO['Start']) + ' to ' + str(CO['Finish']) + '. Duration: ' + str(CO['Duration'])) 
 
     return COs
 
 def ChangeOverToDF(CO, logs):
+    logger.debug("ChangeOverToDF started ---")
+    logger.debug(CO)
+
     delta = datetime.timedelta(minutes = 20)
     df = logs[(logs['DateTime'] >= CO['Start']-delta) & (logs['DateTime'] <= CO['Finish']+delta)]
+
+    logger.debug(df.shape)
     return(df)
 
+# plotly
+@custom_callback # wrapper to catch errors
 def Plot_ChangeOver_simple(df, mch_info, LogsAlarms, LogsEvents):
+    logger.debug("Plot_ChangeOver_simple started ---")
+
     mindate = df['DateTime'].min()
     maxdate = df['DateTime'].max()
-    print(mindate,maxdate)
+    logger.debug(f"{mindate=}, {maxdate=}")
 
     if LogsAlarms is not None:
         alm = LogsAlarms[(LogsAlarms['DateTime'] > mindate) & (LogsAlarms['DateTime'] <= maxdate)]
     else:
+        logger.debug("LogsAlarms is None")
         alm = pd.DataFrame()
     
     if LogsEvents is not None:
         eve = LogsEvents[(LogsEvents['DateTime'] > mindate) & (LogsEvents['DateTime'] <= maxdate)]
     else:
+        logger.debug("LogsEvents is None")
         eve = pd.DataFrame()
 
+    logger.debug("fig init")
     fig = go.Figure()
 
     # --------------------------------------------------- Valves
@@ -800,22 +842,30 @@ def Plot_ChangeOver_simple(df, mch_info, LogsAlarms, LogsEvents):
         )
     )
 
+    logger.debug("fig done")
     return (fig)
 
+@custom_callback # wrapper to catch errors
 def Plot_ChangeOver(df, mch_info, LogsAlarms, LogsEvents):
+    logger.debug("Plot_ChangeOver started ---")
+
     mindate = df['DateTime'].min()
     maxdate = df['DateTime'].max()
-    print(mindate,maxdate)
+    logger.debug(f"{mindate=}, {maxdate=}")
     
     if LogsAlarms is not None:
         alm = LogsAlarms[(LogsAlarms['DateTime'] > mindate) & (LogsAlarms['DateTime'] <= maxdate)]
     else:
+        logger.debug("LogsAlarms is None")
         alm = pd.DataFrame()
     
     if LogsEvents is not None:
         eve = LogsEvents[(LogsEvents['DateTime'] > mindate) & (LogsEvents['DateTime'] <= maxdate)]
     else:
+        logger.debug("LogsEvents is None")
         eve = pd.DataFrame()
+
+    logger.debug("fig init")
 
     fig = make_subplots(
         rows=8, cols=1,
@@ -1211,22 +1261,31 @@ def Plot_ChangeOver(df, mch_info, LogsAlarms, LogsEvents):
             xanchor="left", yanchor="bottom"
         ))
 
+    logger.debug("fig done")
+
     return(fig)
 
 # custom plot funcions
 def classify_cols(selected):
+    logger.debug("classify_cols started ---")
+    logger.debug(f"{selected=}")
+
     filter_unit_cols = {col : unit for col, unit in units.items() if col in selected}
     # {key_expression: value_expression for item in iterable if condition}
+    logger.debug(f"{filter_unit_cols=}")
 
     classified_cols = {}
     for col, unit in filter_unit_cols.items():
         if unit not in classified_cols:
             classified_cols[unit] = [] #if first column of this unit, create key and an empty array as value
         classified_cols[unit].append(col)
-
+    
+    logger.debug(f"{classified_cols=}")
     return classified_cols
 
 def date_limits (timestamp, lower, upper):
+    logger.debug("date_limits started ---")
+
     date1 = timestamp
     date2 = timestamp
 
@@ -1254,7 +1313,9 @@ def date_limits (timestamp, lower, upper):
     
     return date1, date2
 
+@custom_callback # wrapper to catch errors
 def custom_plot1 (dfs, dfa, dfe, cols, date1, date2, tittle): # n rows, one for each unit
+    logger.debug("custom_plot1 started ---")
     
     dfs = dfs[(dfs['DateTime'] >= date1) & (dfs['DateTime'] <= date2)]
     dfa = dfa[(dfa['DateTime'] >= date1) & (dfa['DateTime'] <= date2)]
@@ -1262,10 +1323,12 @@ def custom_plot1 (dfs, dfa, dfe, cols, date1, date2, tittle): # n rows, one for 
 
     cols2 = classify_cols(cols)
 
+    logger.debug("fig init")
     fig = make_subplots(rows=len(cols2), cols=1, shared_xaxes=True, vertical_spacing=0.02)
 
     for i, (unit, cols) in enumerate(cols2.items()):
-        print(i, unit, cols)
+        logger.debug(f"{i=}, {unit=}, {cols=}")
+
         fig.update_yaxes(title_text=unit,row=i+1)
 
         for col in cols:
@@ -1314,15 +1377,22 @@ def custom_plot1 (dfs, dfa, dfe, cols, date1, date2, tittle): # n rows, one for 
         )
     )
     
+    logger.debug("fig done")
+
     return fig
 
+# matplotlib plots
+@custom_callback # wrapper to catch errors
 def create_aux_plot(LogsStandard, LogsAlarms, LogsEvents):
+    logger.debug("create_aux_plot started ---")
+
 
     plt.style.use(custom_dark_style)
     #plt.style.use('default')
     #plt.style.use('dark_background')
 
     # Create a two-row plot
+    logger.debug("fig init")
     fig, axes = plt.subplots(nrows=2, ncols=1, figsize=(10, 6), gridspec_kw={'height_ratios': [1, 5]})
 
     # ---------------------------------------------------------------------------- Row 1: Line plots
@@ -1411,12 +1481,16 @@ def create_aux_plot(LogsStandard, LogsAlarms, LogsEvents):
     plt.tight_layout()
     plt.subplots_adjust(hspace=0.5)  # Adjust vertical spacing between rows
 
+    logger.debug("fig done")
     return fig
 
+@custom_callback # wrapper to catch errors
 def change_over_preview(df):
+    logger.debug("change_over_preview started ---")
 
     plt.style.use(custom_dark_style)
 
+    logger.debug("fig init")
     # Create a two-row plot
     fig, ax1 = plt.subplots()
 
@@ -1455,4 +1529,5 @@ def change_over_preview(df):
     # Adjust layout
     plt.tight_layout()
 
+    logger.debug("fig done")
     return fig

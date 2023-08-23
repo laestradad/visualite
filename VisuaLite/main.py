@@ -1,21 +1,23 @@
-import logging
-from modules.logging_cfg import setup_logger
+from modules.logging_cfg import setup_logger, backup_log
+# Backup the previous log before starting the application
+backup_log()
+# Create new log file
 logger = setup_logger()
-logging.info("Visualite Launched")
+logger.info("Visualite Launched")
+
 from modules import gui
 
 if __name__ == "__main__":
 
-    logging.debug("--- Start ---")
+    logger.debug("--- Start ---")
 
     try:
-
         root = gui.App()
         root.mainloop()
 
     except Exception as e:
-        logging.error("--- Failed ---")
-        logging.error(e, exc_info=True)
+        logger.error("--- Tkinter failed ---")
+        logger.error(e, exc_info=True)
     
     finally:
-        logging.debug("--- End ---")
+        logger.debug("--- End ---")

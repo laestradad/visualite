@@ -8,15 +8,16 @@ import os
 
 from modules import fcm_one as fcm
 
-import logging
 from modules.logging_cfg import setup_logger
 logger = setup_logger()
-logging.info("gui.py imported")
+logger.info("gui.py imported")
 
 # Execution path
 PATH = os.getcwd()
+logger.info(f"{PATH=}")
 # Get the path to the current script
 SCRIPT_PATH = os.path.dirname(os.path.abspath(__file__))
+logger.info(f"{SCRIPT_PATH=}")
 # App icon path
 APP_ICON = os.path.join(SCRIPT_PATH, '..', 'resources', 'ad_logo.ico')
 # Resources path
@@ -34,6 +35,8 @@ TIMES = ['00:00', '01:00', '02:00', '03:00', '04:00', '05:00',
 class BreadcrumbFrame(ctk.CTkFrame):
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
+
+        logger.debug("BreadcrumbFrame init")
 
         # Load the images
         image1_path = os.path.join(RESOURCES, 'number-1.png')
@@ -68,6 +71,8 @@ class BreadcrumbFrame(ctk.CTkFrame):
 class CurrentStep(ctk.CTkFrame):
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
+        
+        logger.debug("CurrentStep init")
 
         # create Title and command row
         self.title = ctk.CTkLabel(self, fg_color="transparent", font=ctk.CTkFont(size=22, weight="bold"), anchor="nw")
@@ -87,11 +92,14 @@ class EmptyFrame(ctk.CTkFrame):
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
 
+        logger.debug("EmptyFrame init")
+    
         # Set row and column weights to make it take the entire space
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
     
 class CheckBoxFrame(ctk.CTkFrame):
+        
     def add_item(self, item):
         checkbox = ctk.CTkCheckBox(self.checkboxesFrame, text=item)
         if self.command is not None:
@@ -113,6 +121,8 @@ class CheckBoxFrame(ctk.CTkFrame):
             
     def __init__(self, master, item_list, command=None, **kwargs):
         super().__init__(master, **kwargs)
+
+        logger.debug("CheckBoxFrame init")
     
         self.command = command
 
@@ -137,6 +147,8 @@ class ProgressFrame(ctk.CTkFrame):
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
 
+        logger.debug("ProgressFrame init")
+
         # Set row and column weights to make it take the entire space
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
@@ -151,6 +163,8 @@ class TabsFrame(ctk.CTkFrame):
     def __init__(self, master, app_instance, **kwargs):
         super().__init__(master, **kwargs)
 
+        logger.debug("TabsFrame init")
+
         self.app = app_instance
 
         self.grid_columnconfigure(0, weight=1)
@@ -161,6 +175,8 @@ class TabsFrame(ctk.CTkFrame):
         self.tabview.grid(row=0, column=0, padx=20, pady=20, sticky="nsew")
 
         #-----------------------------------TAB1
+        logger.debug("tab1 init")
+
         self.tabview.add("Change Overs")
         self.tabview.tab("Change Overs").grid_columnconfigure(0, weight=1)
         self.tabview.tab("Change Overs").grid_rowconfigure(0, weight=1)
@@ -192,6 +208,8 @@ class TabsFrame(ctk.CTkFrame):
         
 
         #-----------------------------------TAB2
+        logger.debug("tab2 init")
+
         self.tabview.add("Search Event/Alarm")
         self.tabview.tab("Search Event/Alarm").grid_rowconfigure(2, weight=1)
         self.tabview.tab("Search Event/Alarm").grid_columnconfigure((0,1,2,3,4), weight=0)
@@ -301,6 +319,8 @@ class TabsFrame(ctk.CTkFrame):
             self.radio_button_2.configure(state="disabled")
 
         #-----------------------------------TAB3
+        logger.debug("tab3 init")
+
         self.tabview.add("Personalized Analysis")
         self.tabview.tab("Personalized Analysis").grid_columnconfigure(1, weight=1)
         self.tabview.tab("Personalized Analysis").grid_rowconfigure(1, weight=1)
@@ -354,38 +374,42 @@ class TabsFrame(ctk.CTkFrame):
     def update_optionmenu(self): 
         
         if self.radio_var.get() == 0:
-            print("Alarm selected")
+            logger.debug("Tab2 - Alarm radiobutton selected")
             self.optionmenu_1.configure(values=self.alm_list)
         elif self.radio_var.get() == 1:
-            print("Event selected")
+            logger.debug("Tab2 - Event radiobutton selected")
             self.optionmenu_1.configure(values=self.eve_list)
 
         self.optionmenu_1.set("Search value")
 
     def searchAE(self):
+        logger.debug("Tab2 - Search function started ---")
         if self.search_var.get() == "Search value":
+            logger.debug("deafault 'Search Value' selected -> Stop")
             tk.messagebox.showwarning(title='No option selected!', message='Select an Alarm o Event to search') # type: ignore
+            return #Stop
         else:
             self.action_t2.configure(state="enabled")
 
             selected_item = self.search_var.get()
+            logger.debug("%s selected", selected_item)
+
             self.ae_number= int(selected_item[1:selected_item.index('_')]) 
             #text.index('_') returns position of _ char / or int(text.split('_')[0][1:]) this function splits string by _
             
             self.timestamps = []
             if selected_item[0] == 'A':
-                print("Searching Alarm ", self.ae_number)
+                logger.debug("Searching for AlarmNumber %s", self.ae_number)
                 self.timestamps = self.app.LogsAlarms[self.app.LogsAlarms['AlarmNumber'] == self.ae_number]['DateTime'].tolist()
                 
             elif selected_item[0] == 'E':
-                print("Searching Event ", self.ae_number)
+                logger.debug("Searching for EventNumber %s", self.ae_number)
                 self.timestamps = self.app.LogsEvents[self.app.LogsEvents['EventNumber'] == self.ae_number]['DateTime'].tolist()
             
-            print(self.timestamps)
-            for t in self.timestamps:
-                text=str(t.date()) + " at " + str(t.time())
-                print(text)
+            logger.debug("Search results:")
+            logger.debug(self.timestamps)
             
+            logger.debug("Creating results' widgets")
             self.result_selection = tk.IntVar(value=0)
             if self.timestamps:
 
@@ -396,7 +420,8 @@ class TabsFrame(ctk.CTkFrame):
                 for i, t in enumerate(self.timestamps):
                     text= str(i+1) + ". " + str(t.date()) + " at " + str(t.time())
                     self.add_radiobtn_t2(text, i)
-
+            
+            logger.debug("Results' widgets created ---")
             tk.messagebox.showinfo(title='Search results', message="Found " + str(len(self.timestamps)) + " occurrences of " + selected_item) # type: ignore
 
     def add_radiobtn_t2(self, item, i):
@@ -413,19 +438,35 @@ class TabsFrame(ctk.CTkFrame):
         return [switch.cget("text") for switch in self.switch_list_t2 if switch.get() == 1]
 
     def generate_search_ae_plot (self):
+        logger.debug("Tab2 - Generation search_AE plot started ---")
+
+        logger.debug("Limits selected:")
+        logger.debug(self.high_limit.get())
+        logger.debug(self.low_limit.get())
+
         if (self.high_limit.get() == "Select") or (self.low_limit.get()== "Select"):
             tk.messagebox.showwarning(title='No option selected!', message='Select time boundaries for the report') # type: ignore
+            logger.debug("default values selected -> Stop")
             return #Stop
         
+        date1, date2 = fcm.date_limits(self.timestamps[self.result_selection.get()],self.low_limit.get(), self.high_limit.get())
+        logger.debug("Dates to filter:")
+        logger.debug(f"{date1=}, {date2=}")
+        
         cols = self.get_selected_vars_t2()
+        logger.debug("Variables selected:")
+        logger.debug(cols)
 
         dest_folder = fd.askdirectory(parent=self,initialdir=PATH,title='Select a destination directory')
         if dest_folder =='': #no folder selected
-            print('no folder selected')
+            logger.debug("No folder selected -> Stop")
             return #Stop
+        logger.debug("Folder selected:")
+        logger.debug(dest_folder)
         
         now_dt = fcm.datetime.datetime.now()
         format_dt = now_dt.strftime('%Y.%m.%d_%H%M%S')
+        # TODO input dialog to get name of (def in App class??)
         name_file = ""
         if self.radio_var.get() == 0:
             name_file="Custom_Plot_A{}_{}".format(self.ae_number, format_dt)
@@ -433,18 +474,21 @@ class TabsFrame(ctk.CTkFrame):
             name_file="Custom_Plot_E{}_{}".format(self.ae_number, format_dt)
 
         file_path = os.path.join(dest_folder, (name_file + '.html')) # type: ignore
-        print(file_path)
+        logger.debug("File to be saved:")
+        logger.debug(file_path)
 
-        date1, date2 = fcm.date_limits(self.timestamps[self.result_selection.get()],self.low_limit.get(), self.high_limit.get())
         fig = fcm.custom_plot1 (self.app.LogsStandard, self.app.LogsAlarms, self.app.LogsEvents, cols, date1, date2, name_file)
+        logger.debug("Tab2 - fig created")
+        
         try:
             fig.write_html(file_path, config={'displaylogo': False})
-            print("File saved successfully.")
+            logger.debug("Tab2 - html created successfully ---")
             tk.messagebox.showinfo(title='Plot saved!', message="Plot saved in destination folder") # type: ignore
 
         except Exception as e:
+            logger.error("--- Error saving file")
+            logger.error(e, exc_info=True)
             tk.messagebox.showwarning(title='Error saving file', message="Error saving file:" + e) # type: ignore
-            print("Error saving file:", e)
 
     #TAB3 functions
     def show_plot(self):
@@ -475,51 +519,69 @@ class TabsFrame(ctk.CTkFrame):
         return [switch.cget("text") for switch in self.switch_list_t3 if switch.get() == 1]
 
     def generate_personalized_plot(self):
+        logger.debug("Tab3 - PersonalizedPlot function started ---")
+
         date1 = self.cal1d.get_date()
         time1 = self.cal1t.get()
         date2 = self.cal2d.get_date()
         time2 = self.cal2t.get() 
+
+        logger.debug("User selections:")
+        logger.debug(f"{date1=}, {time1=}, {date2=}, {time2=}")
+
+        cols = self.get_selected_vars_t3()
+        logger.debug(f"{cols=}")
         
-        datetime1 = fcm.datetime.datetime(int(date1.split('/')[0]), int(date1.split('/')[1]), int(date1.split('/')[2]), int(time1.split(':')[0]), 0, 0)  # Year, month, day, hour, minute, second
-        datetime2 = fcm.datetime.datetime(int(date2.split('/')[0]), int(date2.split('/')[1]), int(date2.split('/')[2]), int(time2.split(':')[0]), 0, 0)  # Year, month, day, hour, minute, second
-        print(datetime1, datetime2)
+        datetime1 = fcm.datetime.datetime(int(date1.split('/')[0]), int(date1.split('/')[1]), int(date1.split('/')[2]),
+                                          int(time1.split(':')[0]), 0, 0)  # Year, month, day, hour, minute, second
+        datetime2 = fcm.datetime.datetime(int(date2.split('/')[0]), int(date2.split('/')[1]), int(date2.split('/')[2]),
+                                          int(time2.split(':')[0]), 0, 0)  # Year, month, day, hour, minute, second
 
         time_difference = datetime2 - datetime1
 
         if (time_difference.days < 0):
+            logger.debug("date range not valid -> Stop")
             tk.messagebox.showwarning(title='Incorrect dates', message='"From:" date is bigger than "To:" date') # type: ignore
             return #Stop
         elif (time_difference.days > 5):
+            logger.debug("date range bigger than 5 days -> Stop")
             tk.messagebox.showwarning(title='Date range too big', message='Please select a date range smaller than 5 days') # type: ignore
             return #Stop:
         
-        cols = self.get_selected_vars_t3()
-
+        #TODO if cols ==[]
+        
         dest_folder = fd.askdirectory(parent=self,initialdir=PATH,title='Select a destination directory')
-        if dest_folder =='': #no folder selected
-            print('no folder selected')
+        if dest_folder =='':
+            logger.debug("no folder selected -> Stop")
             return #Stop
+        logger.debug("Folder selected:")
+        logger.debug(dest_folder)
         
         now_dt = fcm.datetime.datetime.now()
         format_dt = now_dt.strftime('%Y.%m.%d_%H%M%S')
+
+        # TODO input dialog to get name of (def in App class??)
         name_file="Custom_Plot_{}".format(format_dt)
-        
         file_path = os.path.join(dest_folder, (name_file + ".html"))
-        print(file_path)
+        logger.debug("File to be saved:")
+        logger.debug(file_path)
 
         fig = fcm.custom_plot1(self.app.LogsStandard, self.app.LogsAlarms, self.app.LogsEvents, cols, datetime1, datetime2, name_file)
+        logger.debug("Tab3 - fig creted")
         try:
             fig.write_html(file_path, config={'displaylogo': False})
-            print("File saved successfully.")
+            logger.debug("Tab3 - html created successfully ---")
             tk.messagebox.showinfo(title='Plot saved!', message="Plot saved in destination folder") # type: ignore
 
         except Exception as e:
+            logger.error("--- Error saving file")
+            logger.error(e, exc_info=True)
             tk.messagebox.showwarning(title='Error saving file', message="Error saving file:" + e) # type: ignore
-            print("Error saving file:", e)
 
 class NavFrame(ctk.CTkFrame):
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
+        logger.debug("NavFrame init")
 
         # Add widgets to the blue frame
         self.bt_navigation1 = ctk.CTkButton(self)
@@ -552,6 +614,8 @@ class App(ctk.CTk):
     LogsEvents = fcm.pd.DataFrame() #DataFrame with event logs
 
     def step_00_init(self):
+        logger.debug("Widgets update step_00_init()")
+
         #Update breadcrumb
         App.frames["BCFrame"].grid_columnconfigure(1, weight=0)
         App.frames["BCFrame"].grid_columnconfigure(0, weight=1)
@@ -576,6 +640,8 @@ class App(ctk.CTk):
         App.frames["NFrame"].bt_navigation2.grid(row=0, column=2, padx=20, pady=10, sticky="e")
 
     def step_10_folderSelected(self):
+        logger.debug("Widgets update step_10_folderSelected()")
+
         #Update breadcrumb
         App.frames["BCFrame"].grid_columnconfigure(1, weight=0)
         App.frames["BCFrame"].grid_columnconfigure(0, weight=1)
@@ -597,6 +663,8 @@ class App(ctk.CTk):
             App.frames["NFrame"].bt_navigation2.configure(state="enabled")
     
     def step_20_importingData(self):
+        logger.debug("Widgets update step_20_importingData()")
+
         #Update breadcrumb
         App.frames["BCFrame"].grid_columnconfigure(1, weight=0)
         App.frames["BCFrame"].grid_columnconfigure(0, weight=1)
@@ -615,6 +683,8 @@ class App(ctk.CTk):
         App.frames["NFrame"].bt_navigation2.grid_forget()
 
     def step_30_dataImported(self):
+        logger.debug("Widgets update step_30_dataImported()")
+
         #Update breadcrumb
         App.frames["BCFrame"].grid_columnconfigure(0, weight=0)
         App.frames["BCFrame"].grid_columnconfigure(1, weight=1)
@@ -641,6 +711,8 @@ class App(ctk.CTk):
         App.frames["NFrame"].bt_navigation2.grid_forget()
 
     def left_side_widgets(self, parent):
+        logger.debug("Widgets update left_side_widgets()")
+
         # create sidebar logo
         self.logo_label = ctk.CTkLabel(parent, text="VisuaLite", font=ctk.CTkFont(size=22, weight="bold"))
         self.logo_label.grid(row=0, column=0, padx=20, pady=(20, 10))
@@ -663,7 +735,8 @@ class App(ctk.CTk):
 
     def __init__(self):
         super().__init__()
-        
+        logger.debug("App init")
+
         # configure window
         self.title("VisuaLite V0.1")
         # set the dimensions of the screen 
@@ -719,25 +792,34 @@ class App(ctk.CTk):
         self.step_00_init()      
 
     def change_appearance_mode_event(self, new_appearance_mode: str):
+        logger.debug("change_appearance_mode_event")
+        logger.debug(new_appearance_mode)
+
         ctk.set_appearance_mode(new_appearance_mode)
 
     def change_scaling_event(self, new_scaling: str):
+        logger.debug("change_scaling_event")
+        logger.debug(new_scaling)
+
         new_scaling_float = int(new_scaling.replace("%", "")) / 100
         ctk.set_widget_scaling(new_scaling_float)
 
     def clear_all(self):
-        # Delete information
+        # Delete memory
+        logger.debug("--- Clear memory ---")
         self.dirname = None
         self.csv_files_list = []
         self.import_success = 0
         self.mch_info = None
         self.COs = None
-        self.LogsStandard = None
-        self.LogsAlarms = None
-        self.LogsEvents = None
+        self.LogsStandard = fcm.pd.DataFrame()
+        self.LogsAlarms = fcm.pd.DataFrame()
+        self.LogsEvents = fcm.pd.DataFrame()
     
     def show_frame(self, frame_id):
-        # method to change frames in position row 2, column 0 of right_side_panel   
+        # method to change frames in position row 2, column 0 of right_side_panel
+        logger.debug("show_frame")
+        logger.debug(frame_id)
  
         if App.current is not None:
             App.frames[App.current].grid_forget() # Hide the current frame
@@ -746,16 +828,18 @@ class App(ctk.CTk):
         App.current = frame_id
 
     def back_to_selectfolder (self):
-        print("button back to Select folder pressed")
+        logger.debug("Step1 - Back button pressed")
+        
         self.clear_all()
         self.step_00_init()
 
     def select_folder(self):
-        print("button Select folder pressed")
+        logger.debug("Step1 - Select folder button pressed")
 
         #Open file dialog to select folder
         self.dirname = fd.askdirectory(parent=self,initialdir=PATH,title='Select a directory with log files')
-        print(self.dirname)
+        logger.debug("Step1 - Selected folder:")
+        logger.debug(self.dirname)
 
         if self.dirname != '':
             #Look for csv files in the selected folder    
@@ -764,34 +848,47 @@ class App(ctk.CTk):
                 if filename.lower().endswith('.csv'):
                     self.csv_files_list.append(filename)
 
+            logger.debug("Step1 - Files found:")
+            logger.debug(self.csv_files_list)
+
             #Update widgets
             self.step_10_folderSelected()
             
             #Pop up with result
             tk.messagebox.showinfo(title='Information', message=str(len(self.csv_files_list)) + ' files found in the folder selected: ' + self.dirname) # type: ignore
+        else:
+            logger.debug("Step1 - no folder selected")
 
     def checkbox_frame_event(self):
         return self.frames['FilesUpload'].get_checked_items()
     
     def importing_data(self):
+        logger.debug("...continue")
         if self.dirname != None:
             DataFiles = [self.dirname + '/' + x for x in self.csv_files_list if x.startswith('S')]
             AlarmFiles = [self.dirname + '/' + x for x in self.csv_files_list if x.startswith('A')]
             EventFiles = [self.dirname + '/' + x for x in self.csv_files_list if x.startswith('E')]
-            print(DataFiles, AlarmFiles, EventFiles)
+            logger.debug("DataFiles:")
+            logger.debug(DataFiles)
+            logger.debug("AlarmFiles:")
+            logger.debug(AlarmFiles)
+            logger.debug("EventFiles:")
+            logger.debug(EventFiles)
         else:
+            logger.debug("dir name== None -> Stop")
             return #Stop
+        
         # Import data from csv and format DataFrames
-        if len(self.csv_files_list) == 0:
-            tk.messagebox.showerror(title='Import failed', message='Please select at least 1 .csv file') # type: ignore
-
-        elif len(DataFiles + AlarmFiles + EventFiles) == 0:
+        if len(DataFiles + AlarmFiles + EventFiles) == 0:
+            logger.debug("no .csv files starting with S*, A* or E* --> Stop")
             tk.messagebox.showerror(title='Import failed', message='Visualite could not find logs in the .csv files selected') # type: ignore
-            
+            return # Stop
+        
         elif len(DataFiles + AlarmFiles + EventFiles) > 0:
+            # TODO Check it is FCM One Log files
             self.import_success, self.mch_info, self.COs, self.LogsStandard, self.LogsAlarms, self.LogsEvents = fcm.import_data(DataFiles, AlarmFiles, EventFiles)
-            print(self.import_success)
-
+            logger.debug(f"{self.import_success=}")
+    
         if self.import_success:
             self.step_30_dataImported()
             tk.messagebox.showinfo(title='Information', message='Import procedure successful!') # type: ignore
@@ -799,60 +896,79 @@ class App(ctk.CTk):
         else:
             self.step_10_folderSelected()
             tk.messagebox.showerror(title='Import failed', message='Wrong File: ' + str(self.mch_info)) # type: ignore
-        
-        print(self.COs)
     
     def import_data_cmd(self):
-        
+        logger.debug("Step1 - Import data started ")
         # Get file names selected
         self.csv_files_list = self.checkbox_frame_event()
-        print(self.csv_files_list)
+        logger.debug("Files selected:")
+        logger.debug(self.csv_files_list)
 
         if self.csv_files_list == []:
+            logger.debug("no files selected -> Stop")
             tk.messagebox.showerror(title='Import failed', message='Please select at least one log file') # type: ignore
+            return #Stop
         else:
             # Show progressBar
             self.step_20_importingData()
+            logger.debug("wait 1000ms...")
             self.after(1000, self.importing_data) #wait 1000ms and next step
     
     def plot_all_COs(self):
+        logger.debug("Tab1 - plot_all_COs started ---")
+
         dest_folder = fd.askdirectory(parent=self,initialdir=PATH,title='Select a destination directory')
+        logger.debug("Folder selected:")
+        logger.debug(dest_folder)
         if dest_folder =='': #no folder selected
-            print('no folder selected')
+            logger.debug("no folder selected -> Stop")
             return #Stop
         
         if self.COs:
+            logger.debug("COs:")
+            logger.debug(self.COs)            
+
             for i, CO in enumerate(self.COs):
                 df = fcm.ChangeOverToDF(CO, self.LogsStandard)
                 fig = fcm.Plot_ChangeOver(df, self.mch_info, self.LogsAlarms, self.LogsEvents)
                 name_file= "CO"+ str(i+1) + "_" + str(CO['Start'].date()) + ".html"
                 file_path = os.path.join(dest_folder, name_file)
-                print(file_path)
+                logger.debug("File to create:")
+                logger.debug(file_path)
+
                 try:
                     fig.write_html(file_path, config={'displaylogo': False})
-                    print("File saved successfully.")
+                    logger.debug("File saved successfully.")
 
                 except Exception as e:
-                    print("Error saving file:", e)
+                    logger.error("--- Error saving file")
+                    logger.error(e, exc_info=True)
+
+        logger.debug("Tab1 - plot_all_COs finished ---")
         tk.messagebox.showinfo(title='Plots saved!', message="Plots saved in destination folder") # type: ignore
 
     def plot_sel_COs(self):
-        
+        logger.debug("Tab1 - plot_sel_COs started ---")
+
         COs = App.frames["TFrame"].get_checked_items()
+        logger.debug("checked items:")
+        logger.debug(COs)
         
         dest_folder =''
         flag = 0
         
         for i, CO_sts in enumerate(COs):
-            print(i)
+            logger.debug(f"{i=}")
             if CO_sts == 1:
                 #first plot
                 if flag == 0: 
                     #Open file dialog to select folder
                     dest_folder = fd.askdirectory(parent=self,initialdir=PATH,title='Select a destination directory')
+                    logger.debug("Selected folder:")
+                    logger.debug(dest_folder)
 
                     if dest_folder == '': #no folder selected
-                        print('no folder selected')
+                        logger.debug("no folder selected -> Stop")
                         return #Stop
                 
                 flag=1
@@ -860,18 +976,22 @@ class App(ctk.CTk):
                 fig = fcm.Plot_ChangeOver(df, self.mch_info, self.LogsAlarms, self.LogsEvents)
                 name_file= "CO"+ str(i+1) + "_" + str(self.COs[i]['Start'].date()) + ".html"
                 file_path = os.path.join(dest_folder, name_file)
-                print(file_path)
+                logger.debug("File to save:")
+                logger.debug(file_path)
                 try:
                     fig.write_html(file_path, config={'displaylogo': False})
-                    print("File saved successfully.")
+                    logger.debug("File saved successfully.")
 
                 except Exception as e:
-                    print("Error saving file:", e)
+                    logger.error("--- Error saving file")
+                    logger.error(e, exc_info=True)
 
         if flag == 0:
+            logger.debug("no option selected -> Stop")
             tk.messagebox.showwarning(title='No option selected!', message='Select at least one ChangeOver to plot') # type: ignore
             return #Stop
         
+        logger.debug("Tab1 - plot_sel_COs finished ---")
         tk.messagebox.showinfo(title='Plots saved!', message="Plots saved in destination folder") # type: ignore
 
 
