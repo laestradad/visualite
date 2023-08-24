@@ -5,8 +5,11 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import tkcalendar
 from PIL import Image
 import os
+import pandas as pd
+import datetime
 
-from modules import fcm_one as fcm
+from modules import data_analysis as fcm_da
+from modules import plots as fcm_plt
 
 from modules.logging_cfg import setup_logger
 logger = setup_logger()
@@ -190,9 +193,9 @@ class App(ctk.CTk):
     import_success = 0 # bool of import data result
     mch_info = None # First 3 rows of csv files
     COs = None # List of changeovers
-    LogsStandard = fcm.pd.DataFrame() #DataFrame with process logs
-    LogsAlarms = fcm.pd.DataFrame() #DataFrame with alarm logs
-    LogsEvents = fcm.pd.DataFrame() #DataFrame with event logs
+    LogsStandard = pd.DataFrame() #DataFrame with process logs
+    LogsAlarms = pd.DataFrame() #DataFrame with alarm logs
+    LogsEvents = pd.DataFrame() #DataFrame with event logs
 
     def step_00_init(self):
         logger.debug("Widgets update step_00_init()")
@@ -392,9 +395,9 @@ class App(ctk.CTk):
         self.import_success = 0
         self.mch_info = None
         self.COs = None
-        self.LogsStandard = fcm.pd.DataFrame()
-        self.LogsAlarms = fcm.pd.DataFrame()
-        self.LogsEvents = fcm.pd.DataFrame()
+        self.LogsStandard = pd.DataFrame()
+        self.LogsAlarms = pd.DataFrame()
+        self.LogsEvents = pd.DataFrame()
     
     def show_frame(self, frame_id):
         # method to change frames in position row 2, column 0 of right_side_panel
@@ -418,7 +421,7 @@ class App(ctk.CTk):
 
         #Open file dialog to select folder
         self.dirname = fd.askdirectory(parent=self,initialdir=PATH,title='Select a directory with log files')
-        logger.debug("Step1 - Selected folder:")
+        logger.debug("Selected folder:")
         logger.debug(self.dirname)
 
         if self.dirname != '':
@@ -428,7 +431,7 @@ class App(ctk.CTk):
                 if filename.lower().endswith('.csv'):
                     self.csv_files_list.append(filename)
 
-            logger.debug("Step1 - Files found:")
+            logger.debug("Files found:")
             logger.debug(self.csv_files_list)
 
             #Update widgets
@@ -437,7 +440,7 @@ class App(ctk.CTk):
             #Pop up with result
             tk.messagebox.showinfo(title='Information', message=str(len(self.csv_files_list)) + ' files found in the folder selected: ' + self.dirname) # type: ignore
         else:
-            logger.debug("Step1 - no folder selected")
+            logger.debug("--- no folder selected")
 
     def checkbox_frame_event(self):
         return self.frames['FilesUpload'].get_checked_items()
@@ -466,7 +469,7 @@ class App(ctk.CTk):
         
         elif len(DataFiles + AlarmFiles + EventFiles) > 0:
             # TODO Check it is FCM One Log files
-            self.import_success, self.mch_info, self.COs, self.LogsStandard, self.LogsAlarms, self.LogsEvents = fcm.import_data(DataFiles, AlarmFiles, EventFiles)
+            self.import_success, self.mch_info, self.COs, self.LogsStandard, self.LogsAlarms, self.LogsEvents = fcm_da.import_data(DataFiles, AlarmFiles, EventFiles)
             logger.debug(f"{self.import_success=}")
     
         if self.import_success:
@@ -720,8 +723,8 @@ class TabsFrame(ctk.CTkFrame):
             logger.debug(self.app.COs)            
 
             for i, CO in enumerate(self.app.COs):
-                df = fcm.ChangeOverToDF(CO, self.app.LogsStandard)
-                fig = fcm.Plot_ChangeOver(df, self.app.mch_info, self.app.LogsAlarms, self.app.LogsEvents)
+                df = fcm_da.ChangeOverToDF(CO, self.app.LogsStandard)
+                fig = fcm_plt.Plot_ChangeOver(df, self.app.mch_info, self.app.LogsAlarms, self.app.LogsEvents)
                 name_file= "CO"+ str(i+1) + "_" + str(CO['Start'].date()) + ".html"
                 file_path = os.path.join(dest_folder, name_file)
                 logger.debug("File to create:")
@@ -735,7 +738,7 @@ class TabsFrame(ctk.CTkFrame):
                     logger.error("--- Error saving file")
                     logger.error(e, exc_info=True)
 
-        logger.debug("Tab1 - plot_all_COs finished ---")
+        logger.debug("--- Tab1 - plot_all_COs finished")
         tk.messagebox.showinfo(title='Plots saved!', message="Plots saved in destination folder") # type: ignore
 
     def plot_sel_COs(self):
@@ -763,8 +766,8 @@ class TabsFrame(ctk.CTkFrame):
                         return #Stop
                 
                 flag=1
-                df = fcm.ChangeOverToDF(self.app.COs[i], self.app.LogsStandard)
-                fig = fcm.Plot_ChangeOver(df, self.app.mch_info, self.app.LogsAlarms, self.app.LogsEvents)
+                df = fcm_da.ChangeOverToDF(self.app.COs[i], self.app.LogsStandard)
+                fig = fcm_plt.Plot_ChangeOver(df, self.app.mch_info, self.app.LogsAlarms, self.app.LogsEvents)
                 name_file= "CO"+ str(i+1) + "_" + str(self.app.COs[i]['Start'].date()) + ".html"
                 file_path = os.path.join(dest_folder, name_file)
                 logger.debug("File to save:")
@@ -782,7 +785,7 @@ class TabsFrame(ctk.CTkFrame):
             tk.messagebox.showwarning(title='No option selected!', message='Select at least one ChangeOver to plot') # type: ignore
             return #Stop
         
-        logger.debug("Tab1 - plot_sel_COs finished ---")
+        logger.debug("--- Tab1 - plot_sel_COs finished")
         tk.messagebox.showinfo(title='Plots saved!', message="Plots saved in destination folder") # type: ignore
         
     #TAB2 functions
@@ -836,7 +839,7 @@ class TabsFrame(ctk.CTkFrame):
                     text= str(i+1) + ". " + str(t.date()) + " at " + str(t.time())
                     self.add_radiobtn_t2(text, i)
             
-            logger.debug("Results' widgets created ---")
+            logger.debug("--- Results' widgets created")
             tk.messagebox.showinfo(title='Search results', message="Found " + str(len(self.timestamps)) + " occurrences of " + selected_item) # type: ignore
 
     def add_radiobtn_t2(self, item, i):
@@ -864,7 +867,7 @@ class TabsFrame(ctk.CTkFrame):
             logger.debug("default values selected -> Stop")
             return #Stop
         
-        date1, date2 = fcm.date_limits(self.timestamps[self.result_selection.get()],self.low_limit.get(), self.high_limit.get())
+        date1, date2 = fcm_da.date_limits(self.timestamps[self.result_selection.get()],self.low_limit.get(), self.high_limit.get())
         logger.debug("Dates to filter:")
         logger.debug(f"{date1=}, {date2=}")
         
@@ -879,7 +882,7 @@ class TabsFrame(ctk.CTkFrame):
         logger.debug("Folder selected:")
         logger.debug(dest_folder)
         
-        now_dt = fcm.datetime.datetime.now()
+        now_dt = datetime.datetime.now()
         format_dt = now_dt.strftime('%Y.%m.%d_%H%M%S')
         # TODO input dialog to get name of (def in App class??)
         name_file = ""
@@ -892,12 +895,12 @@ class TabsFrame(ctk.CTkFrame):
         logger.debug("File to be saved:")
         logger.debug(file_path)
 
-        fig = fcm.custom_plot1 (self.app.LogsStandard, self.app.LogsAlarms, self.app.LogsEvents, cols, date1, date2, name_file)
+        fig = fcm_plt.custom_plot1 (self.app.LogsStandard, self.app.LogsAlarms, self.app.LogsEvents, cols, date1, date2, name_file)
         logger.debug("Tab2 - fig created")
         
         try:
             fig.write_html(file_path, config={'displaylogo': False})
-            logger.debug("Tab2 - html created successfully ---")
+            logger.debug("--- Tab2 - html created successfully")
             tk.messagebox.showinfo(title='Plot saved!', message="Plot saved in destination folder") # type: ignore
 
         except Exception as e:
@@ -907,7 +910,7 @@ class TabsFrame(ctk.CTkFrame):
 
     #TAB3 functions
     def show_plot(self):
-        plot_fig = fcm.create_aux_plot(self.app.LogsStandard, self.app.LogsAlarms, self.app.LogsEvents)
+        plot_fig = fcm_plt.create_aux_plot(self.app.LogsStandard, self.app.LogsAlarms, self.app.LogsEvents)
         self.plot_window = ctk.CTkToplevel(self.app)
         self.plot_window.resizable(width=False, height=False)
         self.plot_window.title("Auxiliary Plot")
@@ -922,7 +925,7 @@ class TabsFrame(ctk.CTkFrame):
 
     def close_plot(self, fig, window):
         fig.clf()  # Clear the figure
-        fcm.plt.close(fig)  # Close the figure
+        fcm_plt.plt.close(fig)  # Close the figure
         window.destroy()  # Destroy the Toplevel window
 
     def add_switch_t3(self, label):
@@ -947,9 +950,9 @@ class TabsFrame(ctk.CTkFrame):
         cols = self.get_selected_vars_t3()
         logger.debug(f"{cols=}")
         
-        datetime1 = fcm.datetime.datetime(int(date1.split('/')[0]), int(date1.split('/')[1]), int(date1.split('/')[2]),
+        datetime1 = datetime.datetime(int(date1.split('/')[0]), int(date1.split('/')[1]), int(date1.split('/')[2]),
                                           int(time1.split(':')[0]), 0, 0)  # Year, month, day, hour, minute, second
-        datetime2 = fcm.datetime.datetime(int(date2.split('/')[0]), int(date2.split('/')[1]), int(date2.split('/')[2]),
+        datetime2 = datetime.datetime(int(date2.split('/')[0]), int(date2.split('/')[1]), int(date2.split('/')[2]),
                                           int(time2.split(':')[0]), 0, 0)  # Year, month, day, hour, minute, second
 
         time_difference = datetime2 - datetime1
@@ -972,7 +975,7 @@ class TabsFrame(ctk.CTkFrame):
         logger.debug("Folder selected:")
         logger.debug(dest_folder)
         
-        now_dt = fcm.datetime.datetime.now()
+        now_dt = datetime.datetime.now()
         format_dt = now_dt.strftime('%Y.%m.%d_%H%M%S')
 
         # TODO input dialog to get name of (def in App class??)
@@ -981,11 +984,11 @@ class TabsFrame(ctk.CTkFrame):
         logger.debug("File to be saved:")
         logger.debug(file_path)
 
-        fig = fcm.custom_plot1(self.app.LogsStandard, self.app.LogsAlarms, self.app.LogsEvents, cols, datetime1, datetime2, name_file)
+        fig = fcm_plt.custom_plot1(self.app.LogsStandard, self.app.LogsAlarms, self.app.LogsEvents, cols, datetime1, datetime2, name_file)
         logger.debug("Tab3 - fig creted")
         try:
             fig.write_html(file_path, config={'displaylogo': False})
-            logger.debug("Tab3 - html created successfully ---")
+            logger.debug("--- Tab3 - html created successfully")
             tk.messagebox.showinfo(title='Plot saved!', message="Plot saved in destination folder") # type: ignore
 
         except Exception as e:
