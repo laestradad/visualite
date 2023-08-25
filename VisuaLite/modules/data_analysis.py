@@ -3,6 +3,7 @@ import datetime
 import os
 from csv import reader
 import json
+import re
 
 from modules.logging_cfg import setup_logger
 logger = setup_logger()
@@ -32,33 +33,85 @@ def custom_callback(func):
 #----------------------------------------------------------- FUNCTIONS
 # Check csv files
 def read_mch_info(file):
-    i = 0
     with open(file, 'r') as csv_file:
         csv_reader = reader(csv_file, delimiter=';')
         mch_info = []
-        for row in csv_reader:
+        for i, row in enumerate(csv_reader):
             # row variable is a list that represents a row in csv
             mch_info.append(row[0])
-            i += 1
-            if i == 3:
+            if i == 2:
                 break          
     return(mch_info)
 
 def check_files (files):
     logger.debug("check_files started ---")
 
-    # Check Machine information
+    #Standard file name pattern
+    pattern = r"^[ASE]_\d{4}_\d{1,2}_\d{1,2}__\d{1,2}_\d{1,2}_\d{1,2}\.csv$"
+    """
+    ^: Start of the string 
+    [ASE]: either "A", "S", or "E" 
+    _: character 
+    \d{4}: Matches exactly 4 digits 
+    \d{1,2}: Matches 1 or 2 digits 
+    \.csv: Matches the ".csv" extension
+    $: End of the string
+    """
+
+    #Standard columns of FCM_ONE log files
+    std_cols = ['DateTime','GpsPos','PT1','PT2','TT1','TT2','TargetTemperature','TemperatureLowLimit','TemperatureHighLimit',
+                'VT','TargetViscosity','ViscosityLowLimit','ViscosityHighLimit','Density','FM1_MassFlow','FM1_Density',
+                'FM1_Temperature','FM2_MassFlow','FM2_Density','FM2_Temperature','FM3_MassFlow','FM3_Density',
+                'FM3_Temperature','FM4_MassFlow','FM4_Density','FM4_Temperature','FT_VolumeFlow','FT_MassFlow',
+                'FT_Density','FT_Temperature','SO2','CO2','SC','CV1_Position','CV2_Position','CV3_Position','CV4_Position','CV5_Position',
+                'CurrentControl','SupplyCurrentPump','CircCurrentPump','CurrentFilter','F60InAutoMode','ChangeOverInProgress','DPT_AI']
+    alm_cols = ['DateTime', 'AlarmNumber']
+    eve_cols = ['DateTime', 'GpsPos', 'EventNumber', 'Data']
+
+    #Retrieve sample Machine information
     mch_info_check = read_mch_info(files[0])
     logger.debug(f"{mch_info_check=}")
 
     for file in (files):
-        mch_info = read_mch_info(file)
-        if mch_info != mch_info_check:
-            logger.error('File does not correspond to the same machine')
+        #Check file name
+        file_name = file.split('/')[-1] #get file name from path
+        if re.match(pattern, file_name) is None: #re library
+            logger.error('--- File name does not correspond to FCM structure')
             logger.error(file)
             return 0, file
-    
-    logger.error('All files correspond to the same machine')
+
+        with open(file, 'r') as csv_file:
+            csv_reader = reader(csv_file, delimiter=';')
+            mch_info = []
+            for i, row in enumerate(csv_reader):
+                if i < 3:
+                    #Save first three rows
+                    mch_info.append(row[0])
+                elif i == 3:
+                    # Compare it with sample machine info
+                    if mch_info != mch_info_check:
+                        logger.error('--- File does not correspond to the same machine')
+                        logger.error(file)
+                        return 0, file
+
+                    #Standard columns
+                    if file_name[0] == 'S':
+                        check_cols = std_cols
+                        
+                    elif file_name[0] == 'A':
+                        check_cols = alm_cols
+
+                    elif file_name[0] == 'E':
+                        check_cols = eve_cols
+
+                    # Iterate row4 and check cols
+                    for j, col in enumerate(check_cols):
+                        if row[j] != col:
+                            logger.error('--- File does not match with FCM One/1.5 log file structure')
+                            logger.error(file)
+                            return 0, file
+ 
+    logger.debug('--- All files correspond to the same machine and FCM One/1.5 log file structure')
     return 1, mch_info_check
 
 # Import data
@@ -89,7 +142,7 @@ def concat_files(AllFilesNames):
     return(DF_Data)
 
 @custom_callback # wrapper to catch errors
-def import_data(DataFiles, AlarmFiles, EventFiles):
+def import_data(dirname, file_list):
     logger.debug("--- import_data started ---")
 
     mch_info = None
@@ -98,7 +151,20 @@ def import_data(DataFiles, AlarmFiles, EventFiles):
     LogsAlarms = pd.DataFrame()
     LogsEvents = pd.DataFrame()
 
-    #Check if all files are from the same machine / flag_files=1 if all good
+    if dirname != None:
+        DataFiles = [dirname + '/' + x for x in file_list if x.startswith('S')]
+        AlarmFiles = [dirname + '/' + x for x in file_list if x.startswith('A')]
+        EventFiles = [dirname + '/' + x for x in file_list if x.startswith('E')]
+    else:
+        logger.debug("dirname == None -> Stop")
+        return 4, None, None, None, None, None 
+
+    # Check file names first
+    if len(DataFiles + AlarmFiles + EventFiles) == 0:
+        logger.debug("no .csv files starting with S*, A* or E* --> Stop")
+        return 2, None, None, None, None, None 
+
+    #Check if all files are from the same machine and corrispond to csv log file structure / flag_files=1 if all good
     files = DataFiles + AlarmFiles + EventFiles
     flag_files, mch_info = check_files(files)
 
@@ -122,9 +188,11 @@ def import_data(DataFiles, AlarmFiles, EventFiles):
             logger.debug("Importing Event Logs ---")
             LogsEvents = Format_DF_ELogs(EventFiles)
 
+        logger.debug("--- import_data success")
         return 1, mch_info, COs, LogsStandard, LogsAlarms, LogsEvents
     
     else:
+        logger.debug("--- import_data aborted")
         return 0, mch_info, None, None, None, None  
 
 # Formatting of DataFrames

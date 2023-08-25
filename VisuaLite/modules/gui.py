@@ -372,7 +372,9 @@ class App(ctk.CTk):
         # Init widgets
         self.step_00_init()    
 
-        # TODO Disclaimer  
+        #Disclaimer
+        tk.messagebox.showinfo(title='DISCLAIMER', 
+            message='Welcome to Visualite for FCM One / 1.5 \n\nPlease note this is a Beta Version, so this product is currently not supported by Alfa Laval.\n\nHappy ploting!') # type: ignore
 
     def change_appearance_mode_event(self, new_appearance_mode: str):
         logger.debug("change_appearance_mode_event")
@@ -420,11 +422,13 @@ class App(ctk.CTk):
         logger.debug("Step1 - Select folder button pressed")
 
         #Open file dialog to select folder
-        self.dirname = fd.askdirectory(parent=self,initialdir=PATH,title='Select a directory with log files')
+        self.sel_folder = fd.askdirectory(parent=self, title='Select a directory with log files')
         logger.debug("Selected folder:")
-        logger.debug(self.dirname)
+        logger.debug(self.sel_folder)
 
-        if self.dirname != '':
+        if self.sel_folder != '':
+            #Save selection until a new valid folder is selected
+            self.dirname = self.sel_folder
             #Look for csv files in the selected folder    
             self.csv_files_list = []
             for filename in os.listdir(self.dirname):
@@ -447,47 +451,35 @@ class App(ctk.CTk):
     
     def importing_data(self):
         logger.debug("...continue")
-        if self.dirname != None:
-            DataFiles = [self.dirname + '/' + x for x in self.csv_files_list if x.startswith('S')]
-            AlarmFiles = [self.dirname + '/' + x for x in self.csv_files_list if x.startswith('A')]
-            EventFiles = [self.dirname + '/' + x for x in self.csv_files_list if x.startswith('E')]
-            logger.debug("DataFiles:")
-            logger.debug(DataFiles)
-            logger.debug("AlarmFiles:")
-            logger.debug(AlarmFiles)
-            logger.debug("EventFiles:")
-            logger.debug(EventFiles)
-        else:
-            logger.debug("dir name== None -> Stop")
-            return #Stop
-        
-        # Import data from csv and format DataFrames
-        if len(DataFiles + AlarmFiles + EventFiles) == 0:
-            logger.debug("no .csv files starting with S*, A* or E* --> Stop")
-            tk.messagebox.showerror(title='Import failed', message='Visualite could not find logs in the .csv files selected') # type: ignore
-            return # Stop
-        
-        elif len(DataFiles + AlarmFiles + EventFiles) > 0:
-            # TODO Check it is FCM One Log files
-            self.import_success, self.mch_info, self.COs, self.LogsStandard, self.LogsAlarms, self.LogsEvents = fcm_da.import_data(DataFiles, AlarmFiles, EventFiles)
-            logger.debug(f"{self.import_success=}")
+
+        self.import_success, self.mch_info, self.COs, self.LogsStandard, self.LogsAlarms, self.LogsEvents = fcm_da.import_data(self.dirname, self.selected_files)
+        logger.debug(f"{self.import_success=}")
     
-        if self.import_success:
+        if self.import_success == 1: #success
             self.step_30_dataImported()
             tk.messagebox.showinfo(title='Information', message='Import procedure successful!') # type: ignore
         
-        else:
+        # ERRORS
+        elif self.import_success == 0: #file from another machine / file wrong columns / file name not standard
             self.step_10_folderSelected()
             tk.messagebox.showerror(title='Import failed', message='Wrong File: ' + str(self.mch_info)) # type: ignore
-    
+
+        elif self.import_success == 2: #no file with standard name in csv selected
+            self.step_10_folderSelected()
+            tk.messagebox.showerror(title='Import failed', message='Visualite could not find log files in the .csv files selected') # type: ignore
+
+        else:
+            self.step_10_folderSelected()
+            tk.messagebox.showerror(title='Import failed', message='Unknown error. Please restart the application and try again') # type: ignore
+
     def import_data_cmd(self):
         logger.debug("Step1 - Import data started ")
         # Get file names selected
-        self.csv_files_list = self.checkbox_frame_event()
+        self.selected_files = self.checkbox_frame_event()
         logger.debug("Files selected:")
-        logger.debug(self.csv_files_list)
+        logger.debug(self.selected_files)
 
-        if self.csv_files_list == []:
+        if self.selected_files == []:
             logger.debug("no files selected -> Stop")
             tk.messagebox.showerror(title='Import failed', message='Please select at least one log file') # type: ignore
             return #Stop
@@ -711,7 +703,7 @@ class TabsFrame(ctk.CTkFrame):
     def plot_all_COs(self):
         logger.debug("Tab1 - plot_all_COs started ---")
 
-        dest_folder = fd.askdirectory(parent=self,initialdir=PATH,title='Select a destination directory')
+        dest_folder = fd.askdirectory(parent=self, title='Select a destination directory')
         logger.debug("Folder selected:")
         logger.debug(dest_folder)
         if dest_folder =='': #no folder selected
@@ -724,7 +716,7 @@ class TabsFrame(ctk.CTkFrame):
 
             for i, CO in enumerate(self.app.COs):
                 df = fcm_da.ChangeOverToDF(CO, self.app.LogsStandard)
-                fig = fcm_plt.Plot_ChangeOver(df, self.app.mch_info, self.app.LogsAlarms, self.app.LogsEvents)
+                fig = fcm_plt.change_over_divided(df, self.app.LogsAlarms, self.app.LogsEvents, self.app.mch_info)
                 name_file= "CO"+ str(i+1) + "_" + str(CO['Start'].date()) + ".html"
                 file_path = os.path.join(dest_folder, name_file)
                 logger.debug("File to create:")
@@ -757,7 +749,7 @@ class TabsFrame(ctk.CTkFrame):
                 #first plot
                 if flag == 0: 
                     #Open file dialog to select folder
-                    dest_folder = fd.askdirectory(parent=self,initialdir=PATH,title='Select a destination directory')
+                    dest_folder = fd.askdirectory(parent=self, title='Select a destination directory')
                     logger.debug("Selected folder:")
                     logger.debug(dest_folder)
 
@@ -767,7 +759,7 @@ class TabsFrame(ctk.CTkFrame):
                 
                 flag=1
                 df = fcm_da.ChangeOverToDF(self.app.COs[i], self.app.LogsStandard)
-                fig = fcm_plt.Plot_ChangeOver(df, self.app.mch_info, self.app.LogsAlarms, self.app.LogsEvents)
+                fig = fcm_plt.change_over_overlap(df, self.app.LogsAlarms, self.app.LogsEvents, self.app.mch_info)
                 name_file= "CO"+ str(i+1) + "_" + str(self.app.COs[i]['Start'].date()) + ".html"
                 file_path = os.path.join(dest_folder, name_file)
                 logger.debug("File to save:")
@@ -779,15 +771,20 @@ class TabsFrame(ctk.CTkFrame):
                 except Exception as e:
                     logger.error("--- Error saving file")
                     logger.error(e, exc_info=True)
+                    flag = 2
 
         if flag == 0:
-            logger.debug("no option selected -> Stop")
+            logger.debug("--- no option selected -> Stop")
             tk.messagebox.showwarning(title='No option selected!', message='Select at least one ChangeOver to plot') # type: ignore
             return #Stop
-        
+        elif flag == 1:
+            tk.messagebox.showinfo(title='Plots saved!', message="Plots saved in destination folder") # type: ignore
+
+        elif flag == 2:
+            tk.messagebox.showinfo(title='Error saving html files', message="Some error may have occured during saving the plots.\n\nPlease verify you have the rights to write in the selected folder.") # type: ignore
+
         logger.debug("--- Tab1 - plot_sel_COs finished")
-        tk.messagebox.showinfo(title='Plots saved!', message="Plots saved in destination folder") # type: ignore
-        
+                
     #TAB2 functions
     def update_optionmenu(self): 
         
@@ -874,8 +871,12 @@ class TabsFrame(ctk.CTkFrame):
         cols = self.get_selected_vars_t2()
         logger.debug("Variables selected:")
         logger.debug(cols)
+        if cols == []:
+            logger.debug("no variable selected -> Stop")
+            tk.messagebox.showwarning(title='No variable selected', message='Please select at least one variable to plot') # type: ignore
+            return #Stop:
 
-        dest_folder = fd.askdirectory(parent=self,initialdir=PATH,title='Select a destination directory')
+        dest_folder = fd.askdirectory(parent=self, title='Select a destination directory')
         if dest_folder =='': #no folder selected
             logger.debug("No folder selected -> Stop")
             return #Stop
@@ -946,9 +947,6 @@ class TabsFrame(ctk.CTkFrame):
 
         logger.debug("User selections:")
         logger.debug(f"{date1=}, {time1=}, {date2=}, {time2=}")
-
-        cols = self.get_selected_vars_t3()
-        logger.debug(f"{cols=}")
         
         datetime1 = datetime.datetime(int(date1.split('/')[0]), int(date1.split('/')[1]), int(date1.split('/')[2]),
                                           int(time1.split(':')[0]), 0, 0)  # Year, month, day, hour, minute, second
@@ -966,9 +964,15 @@ class TabsFrame(ctk.CTkFrame):
             tk.messagebox.showwarning(title='Date range too big', message='Please select a date range smaller than 5 days') # type: ignore
             return #Stop:
         
-        #TODO if cols ==[]
+        cols = self.get_selected_vars_t3()
+        logger.debug(f"{cols=}")
+
+        if cols == []:
+            logger.debug("no variable selected -> Stop")
+            tk.messagebox.showwarning(title='No variable selected', message='Please select at least one variable to plot') # type: ignore
+            return #Stop:
         
-        dest_folder = fd.askdirectory(parent=self,initialdir=PATH,title='Select a destination directory')
+        dest_folder = fd.askdirectory(parent=self, title='Select a destination directory')
         if dest_folder =='':
             logger.debug("no folder selected -> Stop")
             return #Stop
