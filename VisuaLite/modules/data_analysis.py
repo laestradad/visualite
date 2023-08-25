@@ -393,7 +393,6 @@ def Format_DF_ELogs(list_files):
 
     return(LogsEvents)
 
-# ChangeOver functions
 def IdentifyCOs(logs):
     logger.debug("IdentifyCOs started ---")
 
@@ -415,6 +414,7 @@ def IdentifyCOs(logs):
 
     return COs
 
+@custom_callback # wrapper to catch errors
 def ChangeOverToDF(CO, logs):
     logger.debug("ChangeOverToDF started ---")
     logger.debug(CO)
@@ -426,6 +426,7 @@ def ChangeOverToDF(CO, logs):
     return(df)
 
 # custom plot funcions
+@custom_callback # wrapper to catch errors
 def classify_cols(selected):
     logger.debug("classify_cols started ---")
     logger.debug(f"{selected=}")
@@ -443,6 +444,7 @@ def classify_cols(selected):
     logger.debug(f"{classified_cols=}")
     return classified_cols
 
+@custom_callback # wrapper to catch errors
 def date_limits (timestamp, lower, upper):
     logger.debug("date_limits started ---")
 

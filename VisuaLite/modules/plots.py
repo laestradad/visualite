@@ -185,9 +185,10 @@ def filled_trace(x,y,name,color,cat):
 
 @custom_callback # wrapper to catch errors
 def change_over_overlap(LogsStandard, LogsAlarms, LogsEvents, mch_info):
+    logger.debug("change_over_overlap started ---")
+
     mindate = LogsStandard['DateTime'].min()
     maxdate = LogsStandard['DateTime'].max()
-    print(mindate,maxdate)
 
     if LogsAlarms is not None:
         alm = LogsAlarms[(LogsAlarms['DateTime'] > mindate) & (LogsAlarms['DateTime'] <= maxdate)]
@@ -220,6 +221,7 @@ def change_over_overlap(LogsStandard, LogsAlarms, LogsEvents, mch_info):
         'ViscMeas Alarms': [1000,1099]
     }
 
+    logger.debug("fig init")
     fig = go.Figure()
 
     # Create axis objects
@@ -261,10 +263,13 @@ def change_over_overlap(LogsStandard, LogsAlarms, LogsEvents, mch_info):
     )
 
     for i, (category, variables) in enumerate(change_over_vars.items()):
+        logger.debug(category)
 
         if category == 'Temperature':            
 
             for j, variable in enumerate(variables):
+                logger.debug(variable)
+
                 if ('Limit' in variable):
                     trace = square_disc_line_trace(
                         x=LogsStandard['DateTime'],
@@ -294,6 +299,8 @@ def change_over_overlap(LogsStandard, LogsAlarms, LogsEvents, mch_info):
         if category == 'Viscosity':
 
             for j, variable in enumerate(variables):
+                logger.debug(variable)
+
                 if ('Limit' in variable):
                     trace = square_disc_line_trace(
                         x=LogsStandard['DateTime'],
@@ -321,6 +328,8 @@ def change_over_overlap(LogsStandard, LogsAlarms, LogsEvents, mch_info):
         if category == 'Valves':
 
             for j, variable in enumerate(variables):
+                logger.debug(variable)
+
                 trace = square_line_trace(
                     x=LogsStandard['DateTime'],
                     y=LogsStandard[variable],
@@ -348,6 +357,8 @@ def change_over_overlap(LogsStandard, LogsAlarms, LogsEvents, mch_info):
         if category == 'Flow':
             
             for variable in variables:
+                logger.debug(variable)
+
                 if variable == 'FT_MassFlow':
                     flag=False
                     if not (LogsStandard[variable] == 0).all():
@@ -393,6 +404,8 @@ def change_over_overlap(LogsStandard, LogsAlarms, LogsEvents, mch_info):
         if category == 'Pressure':
 
             for j, variable in enumerate(variables):
+                logger.debug(variable)
+
                 trace = line_trace(
                     x=LogsStandard['DateTime'],
                     y=LogsStandard[variable],
@@ -418,6 +431,8 @@ def change_over_overlap(LogsStandard, LogsAlarms, LogsEvents, mch_info):
             fig.add_trace(trace)
 
     if (not eve.empty):
+        logger.debug('events')
+
         trace = plot_events(
                     x=eve['DateTime'],
                     y=eve['EventNumber'],
@@ -428,6 +443,8 @@ def change_over_overlap(LogsStandard, LogsAlarms, LogsEvents, mch_info):
 
     if (not alm.empty):
         for cat, limits in alarm_cats.items():
+            logger.debug(cat)
+
             filter_alm = alm[(alm['AlarmNumber'] >= limits[0]) & (alm['AlarmNumber'] <= limits[1])]
             if not filter_alm.empty:
                 trace = plot_alarms(
@@ -438,7 +455,8 @@ def change_over_overlap(LogsStandard, LogsAlarms, LogsEvents, mch_info):
                 trace.yaxis="y9"
 
                 fig.add_trace(trace)
-
+    
+    logger.debug('fig config')            
     # Update layout properties
     fig.update_layout(hovermode="x unified", hoverlabel=dict(bgcolor='rgba(255,255,255,0.75)', namelength = -1, font=dict(color='black')),  
         legend=dict(groupclick="toggleitem"), #avoid grouping all traces #orientation="v", x = 1.1, 
@@ -457,13 +475,15 @@ def change_over_overlap(LogsStandard, LogsAlarms, LogsEvents, mch_info):
         )
     )
 
+    logger.debug("fig done")
     return (fig)
 
 @custom_callback # wrapper to catch errors
 def change_over_divided(LogsStandard, LogsAlarms, LogsEvents, mch_info):
+    logger.debug("change_over_divided started ---")
+
     mindate = LogsStandard['DateTime'].min()
     maxdate = LogsStandard['DateTime'].max()
-    print(mindate,maxdate)
 
     if LogsAlarms is not None:
         alm = LogsAlarms[(LogsAlarms['DateTime'] > mindate) & (LogsAlarms['DateTime'] <= maxdate)]
@@ -496,6 +516,7 @@ def change_over_divided(LogsStandard, LogsAlarms, LogsEvents, mch_info):
         'ViscMeas Alarms': [1000,1099]
     }
 
+    logger.debug("fig init")
     chart_type = ''
     if alm.empty and eve.empty:
 
@@ -553,8 +574,9 @@ def change_over_divided(LogsStandard, LogsAlarms, LogsEvents, mch_info):
                         row=8, secondary_y=False)
         fig.update_yaxes(title_text="Alarms",
                         row=8, secondary_y=True)
-
+    
     for i, (category, variables) in enumerate(change_over_vars.items()):
+        logger.debug(category)
 
         if category == 'Temperature':
             plot_row = 1
@@ -563,6 +585,8 @@ def change_over_divided(LogsStandard, LogsAlarms, LogsEvents, mch_info):
                             row=plot_row, secondary_y=False)
             
             for j, variable in enumerate(variables):
+                logger.debug(variable)
+
                 if ('Limit' in variable):
                     trace = square_disc_line_trace(
                         x=LogsStandard['DateTime'],
@@ -594,6 +618,8 @@ def change_over_divided(LogsStandard, LogsAlarms, LogsEvents, mch_info):
                             row=plot_row, secondary_y=True)
             
             for j, variable in enumerate(variables):
+                logger.debug(variable)
+
                 if ('Limit' in variable):
                     trace = square_disc_line_trace(
                         x=LogsStandard['DateTime'],
@@ -619,6 +645,8 @@ def change_over_divided(LogsStandard, LogsAlarms, LogsEvents, mch_info):
         if category == 'Valves':
             plot_row = 5
             for j, variable in enumerate(variables):
+                logger.debug(variable)
+
                 trace = square_line_trace(
                     x=LogsStandard['DateTime'],
                     y=LogsStandard[variable],
@@ -635,6 +663,8 @@ def change_over_divided(LogsStandard, LogsAlarms, LogsEvents, mch_info):
         if category == 'Bool': #ChangeOverInProgress
             plot_row = 5 
             for variable in variables:
+                logger.debug(variable)
+
                 trace = filled_trace(
                     x=LogsStandard['DateTime'],
                     y=LogsStandard[variable],
@@ -650,6 +680,8 @@ def change_over_divided(LogsStandard, LogsAlarms, LogsEvents, mch_info):
             fig.update_yaxes(title_text="Flow", row=plot_row)
             
             for variable in variables:
+                logger.debug(variable)
+
                 if variable == 'FT_MassFlow':
                     flag=False
                     if not (LogsStandard[variable] == 0).all():
@@ -690,6 +722,8 @@ def change_over_divided(LogsStandard, LogsAlarms, LogsEvents, mch_info):
                 row=plot_row, secondary_y=False)
 
             for j, variable in enumerate(variables):
+                logger.debug(variable)
+
                 trace = line_trace(
                     x=LogsStandard['DateTime'],
                     y=LogsStandard[variable],
@@ -715,6 +749,8 @@ def change_over_divided(LogsStandard, LogsAlarms, LogsEvents, mch_info):
 
     plot_row = 8
     if (not eve.empty):
+        logger.debug('events')
+
         trace = plot_events(
                     x=eve['DateTime'],
                     y=eve['EventNumber'],
@@ -727,6 +763,8 @@ def change_over_divided(LogsStandard, LogsAlarms, LogsEvents, mch_info):
 
     if (not alm.empty):
         for cat, limits in alarm_cats.items():
+            logger.debug(cat)
+
             filter_alm = alm[(alm['AlarmNumber'] >= limits[0]) & (alm['AlarmNumber'] <= limits[1])]
             if not filter_alm.empty:
                 trace = plot_alarms(
@@ -740,12 +778,13 @@ def change_over_divided(LogsStandard, LogsAlarms, LogsEvents, mch_info):
                 elif chart_type == 'NO_E':
                     fig.add_trace(trace, row=plot_row, col=1)
 
+    logger.debug('fig config')
+                    
     # Update layout properties
     fig.update_layout(hovermode="x unified", hoverlabel=dict(bgcolor='rgba(255,255,255,0.75)', namelength = -1, font=dict(color='black')),  
         legend=dict(groupclick="toggleitem"), #avoid grouping all traces #orientation="v", x = 1.1, 
         title_text=(mch_info[0] + " | " + mch_info[1] + " | " + mch_info[2]) , title_x=0.5
     )
-
 
     # Add image
     alLogo = Image.open(AL_LOGO)
@@ -758,6 +797,8 @@ def change_over_divided(LogsStandard, LogsAlarms, LogsEvents, mch_info):
             xanchor="left", yanchor="bottom"
         )
     )
+
+    logger.debug('fig done')
     return fig
 
 # matplotlib plots
