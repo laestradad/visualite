@@ -154,7 +154,7 @@ def change_over_overlap(LogsStandard, LogsAlarms, LogsEvents, mch_info):
     mindate = LogsStandard['DateTime'].min()
     maxdate = LogsStandard['DateTime'].max()
 
-    if LogsAlarms is not None:
+    if not LogsAlarms.empty:
         alm = LogsAlarms[(LogsAlarms['DateTime'] > mindate) & (LogsAlarms['DateTime'] <= maxdate)]
     else:
         alm = pd.DataFrame()
@@ -428,7 +428,7 @@ def change_over_divided(LogsStandard, LogsAlarms, LogsEvents, mch_info):
     mindate = LogsStandard['DateTime'].min()
     maxdate = LogsStandard['DateTime'].max()
 
-    if LogsAlarms is not None:
+    if not LogsAlarms.empty:
         alm = LogsAlarms[(LogsAlarms['DateTime'] > mindate) & (LogsAlarms['DateTime'] <= maxdate)]
     else:
         alm = pd.DataFrame()
@@ -471,11 +471,11 @@ def change_over_divided(LogsStandard, LogsAlarms, LogsEvents, mch_info):
         
         if alm.empty:
             chart_type = 'NO_A'
-            fig.update_yaxes(title_text="Alarms", row=8)
+            fig.update_yaxes(title_text="Events", row=8)
 
         else:
             chart_type = 'NO_E'
-            fig.update_yaxes(title_text="Events", row=8)
+            fig.update_yaxes(title_text="Alarms", row=8)
 
     elif (not alm.empty) and (not eve.empty):
 
@@ -729,9 +729,27 @@ def custom_plot_divided(dfs, dfa, dfe, cols, date1, date2, tittle): # n rows, on
     logger.debug("date limits:")
     logger.debug(f"{date1=},{date2=}")
 
-    dfs = dfs[(dfs['DateTime'] >= date1) & (dfs['DateTime'] <= date2)]
-    dfa = dfa[(dfa['DateTime'] >= date1) & (dfa['DateTime'] <= date2)]
-    dfe = dfe[(dfe['DateTime'] >= date1) & (dfe['DateTime'] <= date2)]
+    if dfs.empty and dfa.empty and dfe.empty:
+        fig = go.Figure()
+        fig.update_layout(title_text=tittle)
+        logger.debug("--- no data to plot")
+        return fig
+    
+    if not dfs.empty:
+        dfs = dfs[(dfs['DateTime'] >= date1) & (dfs['DateTime'] <= date2)]
+    else:
+        logger.debug("Standard Logs empty in date range selected")
+
+    if not dfa.empty:
+        dfa = dfa[(dfa['DateTime'] >= date1) & (dfa['DateTime'] <= date2)]
+    else:
+        logger.debug("Alarm Logs empty in date range selected")
+
+    if not dfe.empty:
+        dfe = dfe[(dfe['DateTime'] >= date1) & (dfe['DateTime'] <= date2)]
+    else:
+        logger.debug("Event Logs empty in date range selected")
+
 
     cols2 = fcm.classify_cols(cols)
     logger.debug("selected units and columns:")
@@ -815,7 +833,6 @@ def custom_plot_divided(dfs, dfa, dfe, cols, date1, date2, tittle): # n rows, on
 def create_aux_plot(LogsStandard, LogsAlarms, LogsEvents):
     logger.debug("create_aux_plot started ---")
 
-
     plt.style.use(custom_dark_style)
     #plt.style.use('default')
     #plt.style.use('dark_background')
@@ -826,25 +843,39 @@ def create_aux_plot(LogsStandard, LogsAlarms, LogsEvents):
 
     # ---------------------------------------------------------------------------- Row 1: Line plots
     axes[0].set_title('Date range of Log files')
-    axes[0].plot(LogsStandard['DateTime'], [3] * len(LogsStandard), color='#FFCC00', linewidth=8, label='LogsStandard')
 
-    axes[0].plot(LogsAlarms['DateTime'], [2] * len(LogsAlarms), color='#ec6066ff', linewidth=8, label='LogsAlarms')
-    axes[0].plot(LogsEvents['DateTime'], [1] * len(LogsEvents), color='#6699ccff', linewidth=8, label='LogsEvents')
+    dates = []
+    #Get min and max date for each dataframe and plot for each df
+    if not LogsStandard.empty:
+        mindateS = LogsStandard['DateTime'].min()
+        maxdateS = LogsStandard['DateTime'].max()
+        dates.append(mindateS)
+        dates.append(maxdateS)
+
+        axes[0].plot(LogsStandard['DateTime'], [3] * len(LogsStandard),
+                        color='#FFCC00', linewidth=8, label='LogsStandard')
+
+    if not LogsAlarms.empty:
+        mindateA = LogsAlarms['DateTime'].min()
+        maxdateA = LogsAlarms['DateTime'].max()
+        dates.append(mindateA)
+        dates.append(maxdateA)
+
+        axes[0].plot(LogsAlarms['DateTime'], [2] * len(LogsAlarms),
+                        color='#ec6066ff', linewidth=8, label='LogsAlarms')
+
+    if not LogsEvents.empty:
+        mindateE = LogsEvents['DateTime'].min()
+        maxdateE = LogsEvents['DateTime'].max()
+        dates.append(mindateE)
+        dates.append(maxdateE)
+
+        axes[0].plot(LogsEvents['DateTime'], [1] * len(LogsEvents),
+                        color='#6699ccff', linewidth=8, label='LogsEvents')
 
     axes[0].grid(axis='both', linestyle='--', linewidth=0.5, alpha=0.7)  # Add auxiliary x-axis grid
 
-    #Get min and max date for each dataframe
-    mindateS = LogsStandard['DateTime'].min()
-    maxdateS = LogsStandard['DateTime'].max()
-
-    mindateA = LogsAlarms['DateTime'].min()
-    maxdateA = LogsAlarms['DateTime'].max()
-
-    mindateE = LogsEvents['DateTime'].min()
-    maxdateE = LogsEvents['DateTime'].max()
-
     # Filter datetime values to get unique dates ignoring time
-    dates = [mindateS, mindateA, mindateE, maxdateS, maxdateA, maxdateE]
     ticks = list(set(dt.date() for dt in dates))
     ticks.sort()
 
@@ -852,10 +883,14 @@ def create_aux_plot(LogsStandard, LogsAlarms, LogsEvents):
     filtered_dates = [ticks[0]]
     # Iterate through the sorted date list and delete dates near less than x days
     for i in range(1, len(ticks)):
-        if (ticks[i] - filtered_dates[-1]).days >= 2:
+        if (max(ticks) - min(ticks)).days > 2: #only if date range of logs is greater than 2 days
+            if (ticks[i] - filtered_dates[-1]).days >= 2:
+                filtered_dates.append(ticks[i])
+        else:
             filtered_dates.append(ticks[i])
+
     # Format the unique dates as "01/01/23" strings
-    xtick_labels = [date.strftime('%m/%d/%y') for date in filtered_dates]
+    xtick_labels = [date.strftime('%d/%m/%y') for date in filtered_dates]
 
     axes[0].set_xticks(filtered_dates)
     axes[0].set_xticklabels(xtick_labels, rotation=45)
@@ -864,18 +899,24 @@ def create_aux_plot(LogsStandard, LogsAlarms, LogsEvents):
 
     # ----------------------------------------------------------------------------- Row 2: Multiple y-axes
     ax1 = axes[1]
-    ax1.set_title('Main variables trend')
     ax1.grid(axis='both', linestyle='--', linewidth=0.5, alpha=0.7)  # Add auxiliary x-axis grid
+    plt.subplots_adjust(hspace=0.5)  # Adjust vertical spacing between rows
 
     # Data
-    x = LogsStandard['DateTime']
-    # Plot Volumetric or Mass
-    if not (LogsStandard['FT_VolumeFlow'] == 0).all():
-        y1 = LogsStandard['FT_VolumeFlow']
+    if LogsStandard.empty:
+        ax1.set_title('No Standard Logs imported')
+        return fig
+
     else:
-        y1 = LogsStandard['FT_MassFlow']
-    y2 = LogsStandard['TT2']
-    y3 = LogsStandard['VT']
+        ax1.set_title('Main variables trend')
+        x = LogsStandard['DateTime']
+        # Plot Volumetric or Mass
+        if not (LogsStandard['FT_VolumeFlow'] == 0).all():
+            y1 = LogsStandard['FT_VolumeFlow']
+        else:
+            y1 = LogsStandard['FT_MassFlow']
+        y2 = LogsStandard['TT2']
+        y3 = LogsStandard['VT']
 
     #y1
     ax1.plot(x, y1, color='#6699ccff', label='FT')
@@ -895,20 +936,20 @@ def create_aux_plot(LogsStandard, LogsAlarms, LogsEvents):
     ax3.set_ylabel('Viscosity', color='#FFCC00')
     ax3.tick_params(axis='y', labelcolor='#FFCC00')
 
-    # Set fewer ticks on the x-axis
     min_date = LogsStandard['DateTime'].min()
     max_date = LogsStandard['DateTime'].max()
-    num_ticks = 10  # Choose the number of ticks you prefer
     x_ticks = pd.date_range(start=min_date, end=max_date, freq='D')
-    x_ticks = x_ticks[::len(x_ticks) // num_ticks]  # Select every Nth tick
-
-    # Set custom tick positions and labels on the x-axis
-    ax1.set_xticks(x_ticks)
-    ax1.set_xticklabels(x_ticks.strftime('%m/%d/%y'), rotation=45)  # Format and rotate tick labels
+    
+    # Set fewer ticks on the x-axis (if possible)
+    num_ticks = 10  # Choose the number of ticks you prefer
+    if len(x_ticks) >= num_ticks:
+        x_ticks = x_ticks[::len(x_ticks) // num_ticks]  # Select every Nth tick
+        # Set custom tick positions and labels on the x-axis
+        ax1.set_xticks(x_ticks)
+        ax1.set_xticklabels(x_ticks.strftime('%d/%m/%y'), rotation=45)  # Format and rotate tick labels
 
     # Adjust layout
     plt.tight_layout()
-    plt.subplots_adjust(hspace=0.5)  # Adjust vertical spacing between rows
 
     logger.debug("fig done")
     return fig

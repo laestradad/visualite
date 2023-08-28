@@ -374,7 +374,7 @@ class App(ctk.CTk):
 
         #Disclaimer
         tk.messagebox.showinfo(title='DISCLAIMER', 
-            message='Welcome to Visualite for FCM One / 1.5 \n\nPlease note this is a Beta Version, so this product is currently not supported by Alfa Laval.\n\nHappy ploting!') # type: ignore
+            message='Welcome to Visualite for FCM One / 1.5 \n\nPlease note this is a BETA Version, so it is currently not supported by Alfa Laval.\n\nHappy ploting!') # type: ignore
 
     def change_appearance_mode_event(self, new_appearance_mode: str):
         logger.debug("change_appearance_mode_event")
@@ -713,6 +713,8 @@ class TabsFrame(ctk.CTkFrame):
         if self.app.COs:
             logger.debug("COs:")
             logger.debug(self.app.COs)            
+            
+            flag = 0
 
             for i, CO in enumerate(self.app.COs):
                 df = fcm_da.ChangeOverToDF(CO, self.app.LogsStandard)
@@ -725,13 +727,23 @@ class TabsFrame(ctk.CTkFrame):
                 try:
                     fig.write_html(file_path, config={'displaylogo': False})
                     logger.debug("File saved successfully.")
+                    flag = 1
 
                 except Exception as e:
                     logger.error("--- Error saving file")
                     logger.error(e, exc_info=True)
+                    flag = 2
 
-        logger.debug("--- Tab1 - plot_all_COs finished")
-        tk.messagebox.showinfo(title='Plots saved!', message="Plots saved in destination folder") # type: ignore
+        if flag == 0:
+            logger.debug("--- no changeovers to plot -> Stop")
+            return #Stop
+        elif flag == 1:
+            tk.messagebox.showinfo(title='Plots saved!', message="Plots saved in destination folder") # type: ignore
+
+        elif flag == 2:
+            tk.messagebox.showinfo(title='Error saving html files', message="Some error may have occured during saving the plots.") # type: ignore
+
+        logger.debug("--- Tab1 - plot_sel_COs finished")
 
     def plot_sel_COs(self):
         logger.debug("Tab1 - plot_sel_COs started ---")
@@ -781,7 +793,7 @@ class TabsFrame(ctk.CTkFrame):
             tk.messagebox.showinfo(title='Plots saved!', message="Plots saved in destination folder") # type: ignore
 
         elif flag == 2:
-            tk.messagebox.showinfo(title='Error saving html files', message="Some error may have occured during saving the plots.\n\nPlease verify you have the rights to write in the selected folder.") # type: ignore
+            tk.messagebox.showinfo(title='Error saving html files', message="Some error may have occured during saving the plots.") # type: ignore
 
         logger.debug("--- Tab1 - plot_sel_COs finished")
                 
@@ -907,7 +919,7 @@ class TabsFrame(ctk.CTkFrame):
         except Exception as e:
             logger.error("--- Error saving file")
             logger.error(e, exc_info=True)
-            tk.messagebox.showwarning(title='Error saving file', message="Error saving file:" + e) # type: ignore
+            tk.messagebox.showwarning(title='Error saving file', message="Error saving file") # type: ignore
 
     #TAB3 functions
     def show_plot(self):
@@ -998,7 +1010,7 @@ class TabsFrame(ctk.CTkFrame):
         except Exception as e:
             logger.error("--- Error saving file")
             logger.error(e, exc_info=True)
-            tk.messagebox.showwarning(title='Error saving file', message="Error saving file:" + e) # type: ignore
+            tk.messagebox.showwarning(title='Error saving file', message="Error saving file") # type: ignore
 
 
         
