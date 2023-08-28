@@ -478,3 +478,47 @@ def date_limits (timestamp, lower, upper):
     
     return date1, date2
 
+def split_df(LogsStandard):
+    mindate = LogsStandard['DateTime'].min()
+    maxdate = LogsStandard['DateTime'].max()
+    print(mindate,maxdate)
+
+    step = 5
+
+    limits = []
+    limits.append(mindate.date()-datetime.timedelta(days=1)) # first
+
+    interval = maxdate - mindate
+
+    while interval > datetime.timedelta(days=step):
+        limits.append(limits[-1] + datetime.timedelta(days=step))
+        interval = interval - datetime.timedelta(days=step)
+        
+    limits.append(maxdate.date()+datetime.timedelta(days=1)) # last
+
+    import numpy as np
+    limits = np.array(limits, dtype='datetime64')
+    
+    # Show Results
+    for item in limits:
+        print (item)
+
+    # Divide all data in slices of 5 days
+    dfs = []
+    totalshape = 0
+
+    for i in range(len(limits)-1):
+        df = pd.DataFrame()
+        df = LogsStandard[(LogsStandard['DateTime'] > limits[i]) & (LogsStandard['DateTime'] <= limits[i+1])]
+        dfs.append(df)
+        
+        totalshape = totalshape + df.shape[0]
+        print(df.shape)
+        
+    print (totalshape)
+
+    for df in dfs:
+        mindate = df['DateTime'].min()
+        maxdate = df['DateTime'].max()
+        print(mindate, maxdate)
+        print('--')

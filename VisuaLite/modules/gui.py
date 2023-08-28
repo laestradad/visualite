@@ -321,8 +321,8 @@ class App(ctk.CTk):
         # configure window
         self.title("VisuaLite V0.1")
         # set the dimensions of the screen 
-        w = 1300 # width
-        h = 820 # height
+        w = 1380 # width
+        h = 900 # height
 
         # get screen width and height
         ws = self.winfo_screenwidth() # width of the screen
@@ -508,17 +508,41 @@ class TabsFrame(ctk.CTkFrame):
         logger.debug("tab1 init")
 
         self.tabview.add("Change Overs")
-        self.tabview.tab("Change Overs").grid_columnconfigure(0, weight=1)
+        self.tabview.tab("Change Overs").grid_columnconfigure(1, weight=1)
+        self.tabview.tab("Change Overs").grid_columnconfigure(0, minsize=480)
         self.tabview.tab("Change Overs").grid_rowconfigure(0, weight=1)
-        
+
+        self.co_preview = ctk.CTkFrame(self.tabview.tab("Change Overs"))
+        self.co_preview.grid(row=0, column=0, padx=20, pady=20, sticky = 'nsew')
+        self.co_preview.grid_columnconfigure(0, weight=1)
+        self.co_preview.grid_rowconfigure(1, weight=1)
+
+        self.preview_options = ctk.CTkOptionMenu(self.co_preview)
+        self.preview_options.grid(row=0, column=0, padx=20, pady=(20,10), sticky="w")
+
+        self.preview_btn = ctk.CTkButton(self.co_preview, text="Preview")
+        self.preview_btn.grid(row=0, column=1, padx=20, pady=(20,10), sticky="w")
+
+        dummy_plot_dark = os.path.join(RESOURCES, 'dark_co_preview.png')
+        dummy_plot_light = os.path.join(RESOURCES, 'light_co_preview.png')
+        self.dummy_plot_tk = ctk.CTkImage(light_image=Image.open(dummy_plot_light),
+                                          dark_image=Image.open(dummy_plot_dark),
+                                          size=(480, 360))
+        self.dummy_plot = ctk.CTkLabel(self.co_preview, text="", image=self.dummy_plot_tk)
+        self.dummy_plot.grid(row=1, column=0, columnspan=2, sticky="nsew", padx=5, pady=10)
+
+        self.clear_btn = ctk.CTkButton(self.co_preview, text="Clear")
+        self.clear_btn.grid(row=2,column=0, columnspan=2, padx=20, pady=(10,20))
+
         self.results_t1 = ctk.CTkScrollableFrame(self.tabview.tab("Change Overs"))
-        self.results_t1.grid(row=0, column=0, padx=20, pady=20, sticky = 'nsew')
+        self.results_t1.grid(row=0, column=1, padx=20, pady=20, sticky = 'nsew')
 
         self.label1 = ctk.CTkLabel(self.results_t1)
         self.label1.grid(row=0, column=0, padx=20, pady=20, sticky = 'nw')
 
         self.plot_sel = ctk.CTkButton(self.results_t1, text="Save selected plots", command= self.plot_sel_COs)
         self.plot_all = ctk.CTkButton(self.results_t1, text="Save all plots", command= self.plot_all_COs)
+        self.plot_type = ctk.CTkOptionMenu(self.results_t1)
         
         self.COs = []
         if self.app.COs:  
@@ -530,8 +554,9 @@ class TabsFrame(ctk.CTkFrame):
                 text= str(i+1) + '. From ' + str(CO['Start']) + ' to ' + str(CO['Finish']) + '. Duration: ' + str(CO['Duration'])
                 self.add_checkbox_t1(text)
 
-            self.plot_sel.grid(row=len(self.checkbox_list)+2, column=0, padx=20, pady=10, sticky="w")
-            self.plot_all.grid(row=len(self.checkbox_list)+2, column=0, padx=20, pady=10, sticky="e")
+            self.plot_type.grid(row=len(self.checkbox_list)+2, column=0, padx=10, pady=10, sticky="w")
+            self.plot_sel.grid(row=len(self.checkbox_list)+2, column=0, padx=10, pady=10)
+            self.plot_all.grid(row=len(self.checkbox_list)+2, column=0, padx=10, pady=10, sticky="e")
 
         else:
             self.label1.configure(text="No Change Overs detected in data inserted")
