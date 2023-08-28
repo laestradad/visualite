@@ -896,7 +896,7 @@ class TabsFrame(ctk.CTkFrame):
         logger.debug("File to be saved:")
         logger.debug(file_path)
 
-        fig = fcm_plt.custom_plot1 (self.app.LogsStandard, self.app.LogsAlarms, self.app.LogsEvents, cols, date1, date2, name_file)
+        fig = fcm_plt.custom_plot_divided(self.app.LogsStandard, self.app.LogsAlarms, self.app.LogsEvents, cols, date1, date2, name_file)
         logger.debug("Tab2 - fig created")
         
         try:
@@ -988,7 +988,7 @@ class TabsFrame(ctk.CTkFrame):
         logger.debug("File to be saved:")
         logger.debug(file_path)
 
-        fig = fcm_plt.custom_plot1(self.app.LogsStandard, self.app.LogsAlarms, self.app.LogsEvents, cols, datetime1, datetime2, name_file)
+        fig = fcm_plt.custom_plot_divided(self.app.LogsStandard, self.app.LogsAlarms, self.app.LogsEvents, cols, datetime1, datetime2, name_file)
         logger.debug("Tab3 - fig creted")
         try:
             fig.write_html(file_path, config={'displaylogo': False})

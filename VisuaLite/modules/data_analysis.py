@@ -16,6 +16,16 @@ AL_LOGO = os.path.join(SCRIPT_PATH, '..', 'resources', 'ALlogo.png')
 # Construct the path to the file.txt in the resources directory
 UNITS = os.path.join(SCRIPT_PATH, '..', 'resources', 'units.txt')
 
+#----------------------------------------------------------- Standard columns of FCM_ONE log files
+std_cols = ['DateTime','PT1','PT2','TT1','TT2','TargetTemperature','TemperatureLowLimit','TemperatureHighLimit',
+            'VT','TargetViscosity','ViscosityLowLimit','ViscosityHighLimit','Density','FM1_MassFlow','FM1_Density',
+            'FM1_Temperature','FM2_MassFlow','FM2_Density','FM2_Temperature','FM3_MassFlow','FM3_Density',
+            'FM3_Temperature','FM4_MassFlow','FM4_Density','FM4_Temperature','FT_VolumeFlow','FT_MassFlow',
+            'FT_Density','FT_Temperature','SO2','CO2','SC','CV1_Position','CV2_Position','CV3_Position','CV4_Position','CV5_Position',
+            'CurrentControl','SupplyCurrentPump','CircCurrentPump','CurrentFilter','F60InAutoMode','ChangeOverInProgress','DPT_AI']
+alm_cols = ['DateTime', 'AlarmNumber']
+eve_cols = ['DateTime', 'GpsPos', 'EventNumber', 'Data']
+
 #----------------------------------------------------------- IMPORT UNITS FOR FCM ONE LOG FILES
 with open(UNITS, 'r') as file:
     units = json.load(file)
@@ -58,16 +68,6 @@ def check_files (files):
     $: End of the string
     """
 
-    #Standard columns of FCM_ONE log files
-    std_cols = ['DateTime','GpsPos','PT1','PT2','TT1','TT2','TargetTemperature','TemperatureLowLimit','TemperatureHighLimit',
-                'VT','TargetViscosity','ViscosityLowLimit','ViscosityHighLimit','Density','FM1_MassFlow','FM1_Density',
-                'FM1_Temperature','FM2_MassFlow','FM2_Density','FM2_Temperature','FM3_MassFlow','FM3_Density',
-                'FM3_Temperature','FM4_MassFlow','FM4_Density','FM4_Temperature','FT_VolumeFlow','FT_MassFlow',
-                'FT_Density','FT_Temperature','SO2','CO2','SC','CV1_Position','CV2_Position','CV3_Position','CV4_Position','CV5_Position',
-                'CurrentControl','SupplyCurrentPump','CircCurrentPump','CurrentFilter','F60InAutoMode','ChangeOverInProgress','DPT_AI']
-    alm_cols = ['DateTime', 'AlarmNumber']
-    eve_cols = ['DateTime', 'GpsPos', 'EventNumber', 'Data']
-
     #Retrieve sample Machine information
     mch_info_check = read_mch_info(files[0])
     logger.debug(f"{mch_info_check=}")
@@ -104,13 +104,16 @@ def check_files (files):
                     elif file_name[0] == 'E':
                         check_cols = eve_cols
 
-                    # Iterate row4 and check cols
-                    for j, col in enumerate(check_cols):
-                        if row[j] != col:
-                            logger.error('--- File does not match with FCM One/1.5 log file structure')
+                    # Iterate row4 and check cols are from fcm logs
+                    for col in check_cols:
+                        if not (col in row):
+                            logger.debug(row)
+                            logger.error("Column not found in std_cols: " + col)
+                            logger.debug(check_cols)
                             logger.error(file)
+                            logger.error('--- File does not match with FCM One/1.5 log file structure')
                             return 0, file
- 
+
     logger.debug('--- All files correspond to the same machine and FCM One/1.5 log file structure')
     return 1, mch_info_check
 
@@ -368,17 +371,17 @@ def Format_DF_ELogs(list_files):
     LogsEvents['Label'] = LogsEvents['EventNumber'] 
 
     #Create Labels of the Events
-    LogsEvents[['Label']] = LogsEvents[['Label']] .replace({0 : 'FCM Started',
-                                                            1 : 'FCM Stopped',
-                                                            2 : 'Changeover initiated',
-                                                            3 : 'Changeover Finsihed',
-                                                            4 : 'Any device in Manual Mode',
-                                                            5 : 'All device in Auto Mode',
-                                                            6 : 'P401 SPump value changed',
-                                                            7 : 'P501 CPump value changed',
-                                                            8 : 'P903 Heater In Use value changed',
-                                                            30 : 'Auto Mode Selected',
-                                                            31 : 'Manual Mode Selected'}).fillna('Unknown')
+    LogsEvents[['Label']] = LogsEvents[['Label']].replace({0 : 'FCM Started',
+                                                           1 : 'FCM Stopped',
+                                                           2 : 'Changeover initiated',
+                                                           3 : 'Changeover Finsihed',
+                                                           4 : 'Any device in Manual Mode',
+                                                           5 : 'All device in Auto Mode',
+                                                           6 : 'P401 SPump value changed',
+                                                           7 : 'P501 CPump value changed',
+                                                           8 : 'P903 Heater In Use value changed',
+                                                           30 : 'Auto Mode Selected',
+                                                           31 : 'Manual Mode Selected'}).fillna('Unknown')
 
     LogsEvents.loc[(LogsEvents['EventNumber'] == 6) |
                 (LogsEvents['EventNumber'] == 7) | 

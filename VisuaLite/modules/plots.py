@@ -43,6 +43,27 @@ ALcolors = ['rgba(17, 56, 127, 1)', #AL blue
             'rgba(0, 127, 200, 1)', #AL innovation
             ]
 
+change_over_vars = {
+    'Temperature': ['TT1','TT2','TargetTemperature','TemperatureLowLimit', 'TemperatureHighLimit'],
+    'Viscosity': ['VT','TargetViscosity','ViscosityLowLimit','ViscosityHighLimit'],
+    'Valves': ['CV1_Position', 'CV2_Position', 'CV3_Position', 'CV4_Position', 'CV5_Position'],
+    'Bool': ['ChangeOverInProgress'],
+    'Flow': ['FT_MassFlow','FT_VolumeFlow'],
+    'Pressure': ['PT1','PT2'],
+    'Density': ['Density']
+    }
+
+alarm_cats = {
+    'System Alarms': [0,199],
+    'ChangeOver Alarms': [200,299],
+    'Blending Alarms': [300,399],
+    'Pressure Alarms': [400,599],
+    'Filter Alarms': [500,699],
+    'Mixing Tank': [800,899],
+    'TempControl Alarms': [900,999],
+    'ViscMeas Alarms': [1000,1099]
+}
+
 #----------------------------------------------------------- DECORATORS
 def custom_callback(func):
     def wrapper(*args, **kwargs):
@@ -57,76 +78,7 @@ def custom_callback(func):
 with open(UNITS, 'r') as file:
     units = json.load(file)
 
-# plotly
-@custom_callback # wrapper to catch errors
-def custom_plot1 (dfs, dfa, dfe, cols, date1, date2, tittle): # n rows, one for each unit
-    logger.debug("custom_plot1 started ---")
-    
-    dfs = dfs[(dfs['DateTime'] >= date1) & (dfs['DateTime'] <= date2)]
-    dfa = dfa[(dfa['DateTime'] >= date1) & (dfa['DateTime'] <= date2)]
-    dfe = dfe[(dfe['DateTime'] >= date1) & (dfe['DateTime'] <= date2)]
-
-    cols2 = fcm.classify_cols(cols)
-
-    logger.debug("fig init")
-    fig = make_subplots(rows=len(cols2), cols=1, shared_xaxes=True, vertical_spacing=0.02)
-
-    for i, (unit, cols) in enumerate(cols2.items()):
-        logger.debug(f"{i=}, {unit=}, {cols=}")
-
-        fig.update_yaxes(title_text=unit,row=i+1)
-
-        for col in cols:
-            if col == 'AlarmNumber':
-                trace = go.Scatter(x=dfa['DateTime'], y=dfa['AlarmNumber'].astype(str),
-                        name=col,
-                        mode='markers', marker_symbol='x',
-                        marker_line_color=ALcolors[2], marker_color=ALcolors[3],
-                        marker_line_width=1, marker_size=8,
-                        legendgroup=unit,legendgrouptitle_text=unit,
-                        hovertext=dfa['Label'])
-                 
-            elif col == 'EventNumber':
-                trace = go.Scatter(x=dfe['DateTime'], y=dfe['EventNumber'].astype(str),
-                        name='Event Number',
-                        mode='markers',marker_symbol='star',
-                        marker_line_color=ALcolors[5], marker_color=ALcolors[5],
-                        marker_line_width=1, marker_size=8,
-                        legendgroup="Events",legendgrouptitle_text="Events",
-                        hovertext=dfe['Label'])
-            else:
-                trace = go.Scatter(
-                    x=dfs['DateTime'],
-                    y=dfs[col],
-                    name=col,
-                    legendgroup=unit,legendgrouptitle_text=unit,
-                )
-                
-            fig.add_trace(trace, row=i+1, col=1)
-
-    # Update layout properties
-    fig.update_layout(hovermode="x unified", hoverlabel=dict(bgcolor='rgba(255,255,255,0.75)', namelength = -1, font=dict(color='black')),  
-        legend=dict(groupclick="toggleitem"), #avoid grouping all traces #orientation="v", x = 1.1, 
-        title_text=tittle , title_x=0.5
-    )
-
-    # Add image
-    alLogo = Image.open(AL_LOGO)
-    fig.add_layout_image(
-        dict(
-            source=alLogo,
-            xref="paper", yref="paper",
-            x=0, y=1.025,
-            sizex=0.14, sizey=0.14,
-            xanchor="left", yanchor="bottom"
-        )
-    )
-    
-    logger.debug("fig done")
-
-    return fig
-
-# NEW PLOTLY
+#----------------------------------------------------------- PLOTLY
 def plot_alarms(x,y,labels,cat):
     trace = go.Scatter(x=x, y=y.astype(str),
                        name=cat,
@@ -147,18 +99,30 @@ def plot_events(x,y,labels):
                        hovertext=labels)
     return trace
 
-def line_trace(x,y,name,color,cat):
-    trace = go.Scatter(x=x, y=y,
-                       name = name,
-                       line=dict(color = color), line_shape='spline',
-                       legendgroup=cat, legendgrouptitle_text=cat)
+def line_trace(x,y,name,cat,color=None):
+    if color is not None:
+        trace = go.Scatter(x=x, y=y,
+                           name = name,
+                           line=dict(color = color), line_shape='spline',
+                           legendgroup=cat, legendgrouptitle_text=cat)    
+    else: #default plotly color assignment
+        trace = go.Scatter(x=x, y=y,
+                           name = name,
+                           line_shape='spline',
+                           legendgroup=cat, legendgrouptitle_text=cat)
     return trace
 
-def square_line_trace(x,y,name,color,cat,labels=None):
-    trace = go.Scatter(x=x, y=y,
-                       name = name,
-                       line=dict(color = color), line_shape='hv',
-                       legendgroup=cat, legendgrouptitle_text=cat)
+def square_line_trace(x,y,name,cat,color=None,labels=None):
+    if color is not None:
+        trace = go.Scatter(x=x, y=y,
+                           name = name,
+                           line=dict(color = color), line_shape='hv',
+                           legendgroup=cat, legendgrouptitle_text=cat)
+    else: #default plotly color assignment
+        trace = go.Scatter(x=x, y=y,
+                   name = name, line_shape='hv',
+                   legendgroup=cat, legendgrouptitle_text=cat)
+
     if isinstance(labels, pd.Series):
         trace.hovertext = labels
     
@@ -199,27 +163,6 @@ def change_over_overlap(LogsStandard, LogsAlarms, LogsEvents, mch_info):
         eve = LogsEvents[(LogsEvents['DateTime'] > mindate) & (LogsEvents['DateTime'] <= maxdate)]
     else:
         eve = pd.DataFrame()
-
-    change_over_vars = {
-        'Temperature': ['TT1','TT2','TargetTemperature','TemperatureLowLimit', 'TemperatureHighLimit'],
-        'Viscosity': ['VT','TargetViscosity','ViscosityLowLimit','ViscosityHighLimit'],
-        'Valves': ['CV1_Position', 'CV2_Position', 'CV3_Position', 'CV4_Position', 'CV5_Position'],
-        'Bool': ['ChangeOverInProgress'],
-        'Flow': ['FT_MassFlow','FT_VolumeFlow'],
-        'Pressure': ['PT1','PT2'],
-        'Density': ['Density']
-        }
-
-    alarm_cats = {
-        'System Alarms': [0,199],
-        'ChangeOver Alarms': [200,299],
-        'Blending Alarms': [300,399],
-        'Pressure Alarms': [400,599],
-        'Filter Alarms': [500,699],
-        'Mixing Tank': [800,899],
-        'TempControl Alarms': [900,999],
-        'ViscMeas Alarms': [1000,1099]
-    }
 
     logger.debug("fig init")
     fig = go.Figure()
@@ -494,27 +437,6 @@ def change_over_divided(LogsStandard, LogsAlarms, LogsEvents, mch_info):
         eve = LogsEvents[(LogsEvents['DateTime'] > mindate) & (LogsEvents['DateTime'] <= maxdate)]
     else:
         eve = pd.DataFrame()
-
-    change_over_vars = {
-        'Temperature': ['TT1','TT2','TargetTemperature','TemperatureLowLimit', 'TemperatureHighLimit'],
-        'Viscosity': ['VT','TargetViscosity','ViscosityLowLimit','ViscosityHighLimit'],
-        'Valves': ['CV1_Position', 'CV2_Position', 'CV3_Position', 'CV4_Position', 'CV5_Position'],
-        'Bool': ['ChangeOverInProgress'],
-        'Flow': ['FT_MassFlow','FT_VolumeFlow'],
-        'Pressure': ['PT1','PT2'],
-        'Density': ['Density']
-        }
-
-    alarm_cats = {
-        'System Alarms': [0,199],
-        'ChangeOver Alarms': [200,299],
-        'Blending Alarms': [300,399],
-        'Pressure Alarms': [400,599],
-        'Filter Alarms': [500,699],
-        'Mixing Tank': [800,899],
-        'TempControl Alarms': [900,999],
-        'ViscMeas Alarms': [1000,1099]
-    }
 
     logger.debug("fig init")
     chart_type = ''
@@ -801,7 +723,94 @@ def change_over_divided(LogsStandard, LogsAlarms, LogsEvents, mch_info):
     logger.debug('fig done')
     return fig
 
-# matplotlib plots
+@custom_callback # wrapper to catch errors
+def custom_plot_divided(dfs, dfa, dfe, cols, date1, date2, tittle): # n rows, one for each unit
+    logger.debug("custom_plot1 started ---")
+    logger.debug("date limits:")
+    logger.debug(f"{date1=},{date2=}")
+
+    dfs = dfs[(dfs['DateTime'] >= date1) & (dfs['DateTime'] <= date2)]
+    dfa = dfa[(dfa['DateTime'] >= date1) & (dfa['DateTime'] <= date2)]
+    dfe = dfe[(dfe['DateTime'] >= date1) & (dfe['DateTime'] <= date2)]
+
+    cols2 = fcm.classify_cols(cols)
+    logger.debug("selected units and columns:")
+    logger.debug(cols2)
+
+    logger.debug("fig init")
+    fig = make_subplots(rows=len(cols2), cols=1, shared_xaxes=True, vertical_spacing=0.02)
+
+    for i, (unit, cols) in enumerate(cols2.items()):
+        logger.debug(f"{i=}, {unit=}, {cols=}")
+
+        fig.update_yaxes(title_text=unit,row=i+1)
+
+        for col in cols:
+            logger.debug(f"{col=}")
+
+            if col == 'AlarmNumber':
+                for cat, limits in alarm_cats.items():
+                    logger.debug(cat)
+
+                    filter_alm = dfa[(dfa['AlarmNumber'] >= limits[0]) & (dfa['AlarmNumber'] <= limits[1])]
+                    if not filter_alm.empty:
+                        trace = plot_alarms(
+                            x=filter_alm['DateTime'],
+                            y=filter_alm['AlarmNumber'],
+                            labels=filter_alm['Label'],
+                            cat=cat)
+                        fig.add_trace(trace, row=i+1, col=1)
+
+            elif col == 'EventNumber':
+                if not dfe.empty:
+                    trace = plot_events(
+                        x=dfe['DateTime'],
+                        y=dfe['EventNumber'],
+                        labels=dfe['Label'])
+                    
+                    fig.add_trace(trace, row=i+1, col=1)
+
+            else:
+                if not dfs.empty:
+                    if unit in ['bool', 'int', 'valve_pos']:
+                        trace = square_line_trace(
+                            x=dfs['DateTime'],
+                            y=dfs[col],
+                            name=col,
+                            cat=unit)
+                    else:
+                        trace = line_trace(
+                            x=dfs['DateTime'],
+                            y=dfs[col],
+                            name=col,
+                            cat=unit)
+
+                    fig.add_trace(trace, row=i+1, col=1)
+
+    logger.debug("fig config")
+    # Update layout properties
+    fig.update_layout(hovermode="x unified", hoverlabel=dict(bgcolor='rgba(255,255,255,0.75)', namelength = -1, font=dict(color='black')),  
+        legend=dict(groupclick="toggleitem"), #avoid grouping all traces
+        title_text=tittle , title_x=0.5
+    )
+
+    # Add image
+    alLogo = Image.open(AL_LOGO)
+    fig.add_layout_image(
+        dict(
+            source=alLogo,
+            xref="paper", yref="paper",
+            x=0, y=1.025,
+            sizex=0.14, sizey=0.14,
+            xanchor="left", yanchor="bottom"
+        )
+    )
+    
+    logger.debug("fig done")
+
+    return fig
+
+#----------------------------------------------------------- MATPLOTLIB
 @custom_callback # wrapper to catch errors
 def create_aux_plot(LogsStandard, LogsAlarms, LogsEvents):
     logger.debug("create_aux_plot started ---")
