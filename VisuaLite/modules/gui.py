@@ -336,6 +336,9 @@ class App(ctk.CTk):
         #self.geometry(f"{1300}x{820}")
         self.geometry('%dx%d+%d+%d' % (w, h, x, y))
         self.iconbitmap(APP_ICON)
+        
+        # Bind the function to the Destroy event
+        self.protocol("WM_DELETE_WINDOW", self.before_close)
 
         self.grid_columnconfigure(0, weight=0)
         self.grid_columnconfigure(1, weight=1)
@@ -375,6 +378,19 @@ class App(ctk.CTk):
         #Disclaimer
         tk.messagebox.showinfo(title='DISCLAIMER', 
             message='Welcome to Visualite for FCM One / 1.5 \n\nPlease note this is a BETA Version, so it is currently not supported by Alfa Laval.\n\nHappy ploting!') # type: ignore
+
+    def before_close(self):
+        logger.debug("before_close started")
+        # Close matplotlib figures if they exist
+        if "TFrame" in self.frames:
+            if App.frames["TFrame"].fig1 is not None:
+                App.frames["TFrame"].clear_co_preview(App.frames["TFrame"].fig1)
+            
+            if App.frames["TFrame"].plot_fig is not None:
+                App.frames["TFrame"].close_plot(App.frames["TFrame"].plot_fig,
+                                                App.frames["TFrame"].plot_window)
+        
+        self.destroy()
 
     def change_appearance_mode_event(self, new_appearance_mode: str):
         logger.debug("change_appearance_mode_event")
@@ -512,17 +528,25 @@ class TabsFrame(ctk.CTkFrame):
         self.tabview.tab("Change Overs").grid_columnconfigure(0, minsize=480)
         self.tabview.tab("Change Overs").grid_rowconfigure(0, weight=1)
 
+        #Frame for plot preview
         self.co_preview = ctk.CTkFrame(self.tabview.tab("Change Overs"))
         self.co_preview.grid(row=0, column=0, padx=20, pady=20, sticky = 'nsew')
         self.co_preview.grid_columnconfigure(0, weight=1)
         self.co_preview.grid_rowconfigure(1, weight=1)
 
-        self.preview_options = ctk.CTkOptionMenu(self.co_preview)
+        #Option menu with CO options
+        self.co_sel = ctk.StringVar(value="")
+        self.preview_options = ctk.CTkOptionMenu(self.co_preview, dynamic_resizing=False, variable=self.co_sel)
         self.preview_options.grid(row=0, column=0, padx=20, pady=(20,10), sticky="w")
+        self.preview_options.set("Changeover #")
 
-        self.preview_btn = ctk.CTkButton(self.co_preview, text="Preview")
+        #Button to show preview
+        self.preview_btn = ctk.CTkButton(self.co_preview, text="Preview", command=self.preview_co)
         self.preview_btn.grid(row=0, column=1, padx=20, pady=(20,10), sticky="w")
 
+        #Plot declaration
+        self.fig1 = None
+        #Dummy img of plot
         dummy_plot_dark = os.path.join(RESOURCES, 'dark_co_preview.png')
         dummy_plot_light = os.path.join(RESOURCES, 'light_co_preview.png')
         self.dummy_plot_tk = ctk.CTkImage(light_image=Image.open(dummy_plot_light),
@@ -531,36 +555,50 @@ class TabsFrame(ctk.CTkFrame):
         self.dummy_plot = ctk.CTkLabel(self.co_preview, text="", image=self.dummy_plot_tk)
         self.dummy_plot.grid(row=1, column=0, columnspan=2, sticky="nsew", padx=5, pady=10)
 
-        self.clear_btn = ctk.CTkButton(self.co_preview, text="Clear")
+        #Clear preview plot
+        self.clear_btn = ctk.CTkButton(self.co_preview, text="Clear", command= lambda: self.clear_co_preview(self.fig1))
         self.clear_btn.grid(row=2,column=0, columnspan=2, padx=20, pady=(10,20))
 
+        #Frame with list of Change overs
         self.results_t1 = ctk.CTkScrollableFrame(self.tabview.tab("Change Overs"))
         self.results_t1.grid(row=0, column=1, padx=20, pady=20, sticky = 'nsew')
 
+        #Text before COs
         self.label1 = ctk.CTkLabel(self.results_t1)
         self.label1.grid(row=0, column=0, padx=20, pady=20, sticky = 'nw')
 
+        #Declaration of buttons
         self.plot_sel = ctk.CTkButton(self.results_t1, text="Save selected plots", command= self.plot_sel_COs)
         self.plot_all = ctk.CTkButton(self.results_t1, text="Save all plots", command= self.plot_all_COs)
-        self.plot_type = ctk.CTkOptionMenu(self.results_t1)
+        self.plot_type = ctk.StringVar(value="")
+        self.plot_type_tk = ctk.CTkOptionMenu(self.results_t1, dynamic_resizing=False, variable=self.plot_type, 
+                                            values=["Overlap","Separate"])
+        self.plot_type_tk.set("Separate")
         
         self.COs = []
         if self.app.COs:  
             self.COs = self.app.COs
 
+            #If Changeovers detected, create widgets
             self.checkbox_list = []
+            self.cos_options = []
             self.label1.configure(text="In the logs imported there are " + str(len(self.COs)) + " changeovers. Please select the ")
             for i, CO in enumerate(self.COs):
                 text= str(i+1) + '. From ' + str(CO['Start']) + ' to ' + str(CO['Finish']) + '. Duration: ' + str(CO['Duration'])
                 self.add_checkbox_t1(text)
+                self.cos_options.append("Changeover "+ str(i+1))
 
-            self.plot_type.grid(row=len(self.checkbox_list)+2, column=0, padx=10, pady=10, sticky="w")
+            self.preview_options.configure(values=self.cos_options)
+            self.plot_type_tk.grid(row=len(self.checkbox_list)+2, column=0, padx=10, pady=10, sticky="w")
             self.plot_sel.grid(row=len(self.checkbox_list)+2, column=0, padx=10, pady=10)
             self.plot_all.grid(row=len(self.checkbox_list)+2, column=0, padx=10, pady=10, sticky="e")
-
-        else:
-            self.label1.configure(text="No Change Overs detected in data inserted")
         
+        else:
+            #Disable widgets
+            self.label1.configure(text="No Change Overs detected in data inserted")
+            self.preview_btn.configure(state="disabled")
+            self.preview_options.configure(state="disabled")
+            self.clear_btn.configure(state="disabled")
 
         #-----------------------------------TAB2
         logger.debug("tab2 init")
@@ -592,26 +630,28 @@ class TabsFrame(ctk.CTkFrame):
 
         if not self.app.LogsStandard.empty:
             self.columns = self.columns + self.app.LogsStandard.columns.tolist()
-            remove_cols = ['DateTime', 'GpsPos', 'CV1_Label', 'CV2_Label', 'CV3_Label', 'CV4_Label', 'CV5_Label', 'ChangeoverCMDchange']
+            remove_cols = ['DateTime', 'GpsPos', 'CV1_Label', 'CV2_Label', 'CV3_Label', 
+                            'CV4_Label', 'CV5_Label', 'ChangeoverCMDchange']
             for col in remove_cols:
                 self.columns.remove(col)
 
-        # Label
+        # Label tab2
         self.label2 = ctk.CTkLabel(self.tabview.tab("Search Event/Alarm"), text="Please select an event/alarm bla bla")
         self.label2.grid(row=0, column=0, columnspan=5, padx=20, pady=5, sticky="nw")
 
         # Radio buttons to select Alarm or Event
         self.radio_var = tk.IntVar(value=0)
-        self.radio_button_1 = ctk.CTkRadioButton(self.tabview.tab("Search Event/Alarm"), variable=self.radio_var, text="Alarm" ,value=0,
-            command=self.update_optionmenu)
+        self.radio_button_1 = ctk.CTkRadioButton(self.tabview.tab("Search Event/Alarm"), variable=self.radio_var,
+                                                            text="Alarm" ,value=0, command=self.update_optionmenu)
         self.radio_button_1.grid(row=1, column=0, pady=5, padx=20, sticky="w")
-        self.radio_button_2 = ctk.CTkRadioButton(self.tabview.tab("Search Event/Alarm"), variable=self.radio_var, text="Event" , value=1,
-            command=self.update_optionmenu)
+        self.radio_button_2 = ctk.CTkRadioButton(self.tabview.tab("Search Event/Alarm"), variable=self.radio_var, 
+                                                            text="Event" , value=1, command=self.update_optionmenu)
         self.radio_button_2.grid(row=1, column=1, pady=5, padx=5, sticky="w")
 
         # Dropdown
         self.search_var = ctk.StringVar(value="")
-        self.optionmenu_1 = ctk.CTkOptionMenu(self.tabview.tab("Search Event/Alarm"), dynamic_resizing=False, variable=self.search_var)
+        self.optionmenu_1 = ctk.CTkOptionMenu(self.tabview.tab("Search Event/Alarm"), dynamic_resizing=False, 
+                                                                                            variable=self.search_var)
         self.optionmenu_1.grid(row=1, column=2, columnspan=2, padx=5, pady=5, sticky="ew")
         self.update_optionmenu()
 
@@ -620,7 +660,8 @@ class TabsFrame(ctk.CTkFrame):
         self.search_bt.grid(row=1, column=4, padx=(5,10), pady=5, sticky="w")
 
         # Variable Selection
-        self.label3 = ctk.CTkLabel(self.tabview.tab("Search Event/Alarm"), text="Variable list",font=ctk.CTkFont(weight="bold"))
+        self.label3 = ctk.CTkLabel(self.tabview.tab("Search Event/Alarm"), text="Variable list",
+                                                                            font=ctk.CTkFont(weight="bold"))
         self.label3.grid(row=1, column=5, padx=20, pady=5, sticky="w")
         self.var_sel = ctk.CTkScrollableFrame(self.tabview.tab("Search Event/Alarm"))
         self.var_sel.grid(row=2, column=5, padx=(10,20), pady=5, sticky="nsew")
@@ -634,28 +675,30 @@ class TabsFrame(ctk.CTkFrame):
         self.label_results_t2 = ctk.CTkLabel(self.results_t2, text="Search results shown here")
         self.label_results_t2.grid(row=0, column=0, padx=10, pady=10, sticky="nw")
 
-        #Dropdowns and Label for time interval
-        self.label6 = ctk.CTkLabel(self.tabview.tab("Search Event/Alarm"), text="Please select the time before/after the selected alarm/event to generate your report")
+        #Dropdowns and Labels for time interval
+        self.label6 = ctk.CTkLabel(self.tabview.tab("Search Event/Alarm"), 
+                                text="Please select the time before/after the selected alarm/event to generate your report")
         self.label6.grid(row=3, column=0, columnspan=5, padx=20, pady=5, sticky="nw")
 
         self.low_limit = ctk.StringVar(value="")
         self.label4 = ctk.CTkLabel(self.tabview.tab("Search Event/Alarm"), text="Time before: ")
         self.label4.grid(row=4, column=0, padx=5, pady=(5,20), sticky="e")
-        self.optionmenu_2 = ctk.CTkOptionMenu(self.tabview.tab("Search Event/Alarm"), dynamic_resizing=False, variable=self.low_limit,
-                                                        values=["1 hour", "2 hours", "4 hours", "8 hours", "1 day"])
+        self.optionmenu_2 = ctk.CTkOptionMenu(self.tabview.tab("Search Event/Alarm"), dynamic_resizing=False, 
+                                    variable=self.low_limit, values=["1 hour", "2 hours", "4 hours", "8 hours", "1 day"])
         self.optionmenu_2.grid(row=4, column=1, padx=5, pady=(5,20), sticky="ew")
         self.optionmenu_2.set("Select")
 
         self.high_limit = ctk.StringVar(value="")
         self.label5 = ctk.CTkLabel(self.tabview.tab("Search Event/Alarm"), text="Time after: ")
         self.label5.grid(row=4, column=2, padx=5, pady=(5,20), sticky="e")
-        self.optionmenu_3 = ctk.CTkOptionMenu(self.tabview.tab("Search Event/Alarm"), dynamic_resizing=False, variable=self.high_limit,
-                                                        values=["1 hour", "2 hours", "4 hours", "8 hours", "1 day"])
+        self.optionmenu_3 = ctk.CTkOptionMenu(self.tabview.tab("Search Event/Alarm"), dynamic_resizing=False, 
+                                    variable=self.high_limit, values=["1 hour", "2 hours", "4 hours", "8 hours", "1 day"])
         self.optionmenu_3.grid(row=4, column=3, padx=5, pady=(5,20), sticky="ew")
         self.optionmenu_3.set("Select")
 
         #Action Button
-        self.action_t2 = ctk.CTkButton(self.tabview.tab("Search Event/Alarm"), text="Generate and Save Plot", command=self.generate_search_ae_plot)
+        self.action_t2 = ctk.CTkButton(self.tabview.tab("Search Event/Alarm"), text="Generate and Save Plot",
+                                        command=self.generate_search_ae_plot)
         self.action_t2.grid(row=4, column=5, padx=(5,20), pady=(5,20), sticky="e")
         self.action_t2.configure(state="disabled")
 
@@ -680,12 +723,17 @@ class TabsFrame(ctk.CTkFrame):
         self.tabview.tab("Personalized Analysis").grid_columnconfigure(1, weight=1)
         self.tabview.tab("Personalized Analysis").grid_rowconfigure(1, weight=1)
 
-        self.aux_plot = ctk.CTkButton(self.tabview.tab("Personalized Analysis"), text="Show Auxiliary Plot", command=self.show_plot)
+        #Aux plot button
+        self.plot_fig = None
+        self.aux_plot = ctk.CTkButton(self.tabview.tab("Personalized Analysis"), text="Show Auxiliary Plot", 
+                                        command=self.show_plot)
         self.aux_plot.grid(row=0, column=0, columnspan=2, padx=20, pady=10)
 
+        #Frame for calendars
         self.frame_left_t3 = ctk.CTkFrame(self.tabview.tab("Personalized Analysis"))
         self.frame_left_t3.grid(row=1, column=0, padx=20, pady=10, sticky="nsew")
 
+        #Labels and Calendars LEFT side
         self.label_tab_3 = ctk.CTkLabel(self.frame_left_t3, text="Left side description")
         self.label_tab_3.grid(row=0, column=0, padx=20, columnspan=2, pady=5, sticky="nw")
         self.cal1_text = ctk.CTkLabel(self.frame_left_t3, text='From:')
@@ -704,14 +752,17 @@ class TabsFrame(ctk.CTkFrame):
         self.cal2t.grid(row=3, column=1, padx=20, pady=(10,20))
         self.cal2t.set("00:00")
 
-        self.action_t3 = ctk.CTkButton(self.tabview.tab("Personalized Analysis"), text="Generate and save Plot", command=self.generate_personalized_plot)
-        self.action_t3.grid(row=2, column=1, padx=20, pady=20, sticky="se")
-
+        #Variables RIGHT side
         self.var_sel_t3 = ctk.CTkScrollableFrame(self.tabview.tab("Personalized Analysis"))
         self.var_sel_t3.grid(row=1, column=1, padx=20, pady=10, sticky="nsew")
         self.switch_list_t3 = []
         for column_name in self.columns:
             self.add_switch_t3(column_name)
+
+        #Action button Tab3
+        self.action_t3 = ctk.CTkButton(self.tabview.tab("Personalized Analysis"), text="Generate and save Plot",
+                                         command=self.generate_personalized_plot)
+        self.action_t3.grid(row=2, column=1, padx=20, pady=20, sticky="se")
 
     #TAB1 functions
     def add_checkbox_t1(self, item):
@@ -734,7 +785,10 @@ class TabsFrame(ctk.CTkFrame):
         if dest_folder =='': #no folder selected
             logger.debug("no folder selected -> Stop")
             return #Stop
-        
+
+        plot_type = self.plot_type.get()
+        logger.debug(f"{plot_type=}")
+
         if self.app.COs:
             logger.debug("COs:")
             logger.debug(self.app.COs)            
@@ -743,8 +797,16 @@ class TabsFrame(ctk.CTkFrame):
 
             for i, CO in enumerate(self.app.COs):
                 df = fcm_da.ChangeOverToDF(CO, self.app.LogsStandard)
-                fig = fcm_plt.change_over_divided(df, self.app.LogsAlarms, self.app.LogsEvents, self.app.mch_info)
-                name_file= "CO"+ str(i+1) + "_" + str(CO['Start'].date()) + ".html"
+
+                #Plot Type
+                if plot_type == "Overlap":
+                    fig = fcm_plt.change_over_overlap(df, self.app.LogsAlarms, self.app.LogsEvents, self.app.mch_info)
+                    name_file= "ov_CO"+ str(i+1) + "_" + str(CO['Start'].date()) + ".html"
+
+                elif plot_type == "Separate":
+                    fig = fcm_plt.change_over_divided(df, self.app.LogsAlarms, self.app.LogsEvents, self.app.mch_info)
+                    name_file= "sp_CO"+ str(i+1) + "_" + str(CO['Start'].date()) + ".html"
+
                 file_path = os.path.join(dest_folder, name_file)
                 logger.debug("File to create:")
                 logger.debug(file_path)
@@ -779,6 +841,8 @@ class TabsFrame(ctk.CTkFrame):
         
         dest_folder =''
         flag = 0
+        plot_type = self.plot_type.get()
+        logger.debug(f"{plot_type=}")
         
         for i, CO_sts in enumerate(COs):
             logger.debug(f"{i=}")
@@ -796,8 +860,16 @@ class TabsFrame(ctk.CTkFrame):
                 
                 flag=1
                 df = fcm_da.ChangeOverToDF(self.app.COs[i], self.app.LogsStandard)
-                fig = fcm_plt.change_over_overlap(df, self.app.LogsAlarms, self.app.LogsEvents, self.app.mch_info)
-                name_file= "CO"+ str(i+1) + "_" + str(self.app.COs[i]['Start'].date()) + ".html"
+                
+                #Plot Type
+                if plot_type == "Overlap":
+                    fig = fcm_plt.change_over_overlap(df, self.app.LogsAlarms, self.app.LogsEvents, self.app.mch_info)
+                    name_file= "ov_CO"+ str(i+1) + "_" + str(self.app.COs[i]['Start'].date()) + ".html"
+
+                elif plot_type == "Separate":
+                    fig = fcm_plt.change_over_divided(df, self.app.LogsAlarms, self.app.LogsEvents, self.app.mch_info)
+                    name_file= "sp_CO"+ str(i+1) + "_" + str(self.app.COs[i]['Start'].date()) + ".html"
+
                 file_path = os.path.join(dest_folder, name_file)
                 logger.debug("File to save:")
                 logger.debug(file_path)
@@ -821,7 +893,34 @@ class TabsFrame(ctk.CTkFrame):
             tk.messagebox.showinfo(title='Error saving html files', message="Some error may have occured during saving the plots.") # type: ignore
 
         logger.debug("--- Tab1 - plot_sel_COs finished")
-                
+
+    def preview_co(self):
+        CO = self.co_sel.get()
+        
+        if CO == "Changeover #":
+            return #Stop
+        else:
+            if self.fig1 is not None:
+                self.clear_co_preview(self.fig1)
+
+            self.dummy_plot.grid_forget()
+
+            i = int(CO[-1]) #last character of string in options menu
+            self.fig1 = fcm_plt.change_over_preview(fcm_da.ChangeOverToDF(self.app.COs[i-1], self.app.LogsStandard))
+
+            self.canvas1 = FigureCanvasTkAgg(self.fig1, master=self.co_preview)
+            self.canvas1.draw()
+            self.canvas1.get_tk_widget().grid(row=1, column=0, columnspan=2, sticky="nsew", padx=5, pady=10)
+
+    def clear_co_preview(self, fig):
+        fig.clf()  # Clear the figure
+        fcm_plt.plt.close(fig)  # Close the figure
+        self.canvas1.get_tk_widget().grid_forget()
+        #Show dummy plot
+        self.dummy_plot.grid(row=1, column=0, columnspan=2, sticky="nsew", padx=5, pady=10)
+        # init fig
+        self.fig1 = None
+
     #TAB2 functions
     def update_optionmenu(self): 
         
@@ -948,23 +1047,25 @@ class TabsFrame(ctk.CTkFrame):
 
     #TAB3 functions
     def show_plot(self):
-        plot_fig = fcm_plt.create_aux_plot(self.app.LogsStandard, self.app.LogsAlarms, self.app.LogsEvents)
+        self.plot_fig = fcm_plt.create_aux_plot(self.app.LogsStandard, self.app.LogsAlarms, self.app.LogsEvents)
         self.plot_window = ctk.CTkToplevel(self.app)
         self.plot_window.resizable(width=False, height=False)
         self.plot_window.title("Auxiliary Plot")
         # Keep the toplevel window in front of the root window
         self.plot_window.wm_transient(self.app)
         
-        self.canvas = FigureCanvasTkAgg(plot_fig, master=self.plot_window)
+        self.canvas = FigureCanvasTkAgg(self.plot_fig, master=self.plot_window)
         self.canvas.draw()
         self.canvas.get_tk_widget().pack()
         # Ensure figures are closed properly when the window is closed
-        self.plot_window.protocol("WM_DELETE_WINDOW", lambda: self.close_plot(plot_fig, self.plot_window))
+        self.plot_window.protocol("WM_DELETE_WINDOW", lambda: self.close_plot(self.plot_fig, self.plot_window))
 
     def close_plot(self, fig, window):
         fig.clf()  # Clear the figure
         fcm_plt.plt.close(fig)  # Close the figure
         window.destroy()  # Destroy the Toplevel window
+        # Init plot
+        self.plot_fig = None
 
     def add_switch_t3(self, label):
         switch = ctk.CTkSwitch(self.var_sel_t3, text=label)
