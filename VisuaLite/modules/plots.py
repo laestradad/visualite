@@ -1,12 +1,12 @@
 import pandas as pd
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
-import plotly.express as px
-import matplotlib.pyplot as plt
 from PIL import Image
 import datetime
 import os
 import json
+import matplotlib.pyplot as plt
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+import plotly.express as px
 
 from modules import data_analysis as fcm
 

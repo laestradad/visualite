@@ -1,5 +1,5 @@
 customtkinter==5.2.0
-matplotlib==3.7.2
+matplotlib==3.7.0
 tkcalendar==1.6.1
 pandas==2.0.3
 plotly==5.16.1

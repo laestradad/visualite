@@ -1,0 +1,7 @@
+pyinstaller --onefile --windowed --noconsole --add-data "resources/*;resources/" --hidden-import babel.numbers --icon=resources/ad_logo.ico main.py
+for debugging:
+pyinstaller --onefile --add-data "resources/*;resources/" --hidden-import babel.numbers --icon=resources/ad_logo.ico main.py
+error with tkcalendar:
+--hidden-import babel.numbers
+for anaconda prompt:
+cd ..\..\_projects\_repo\_otherrepo\dataanalysis\visualite

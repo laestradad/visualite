@@ -1,13 +1,14 @@
-import tkinter as tk
-import customtkinter as ctk
-import tkinter.filedialog as fd
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-import tkcalendar
-from PIL import Image
-import os
 import pandas as pd
+import os
 import datetime
 import re
+from PIL import Image
+
+import tkinter as tk
+import tkinter.filedialog as fd
+import tkcalendar
+import customtkinter as ctk
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 from modules import data_analysis as fcm_da
 from modules import plots as fcm_plt
