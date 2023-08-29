@@ -7,6 +7,7 @@ from PIL import Image
 import os
 import pandas as pd
 import datetime
+import re
 
 from modules import data_analysis as fcm_da
 from modules import plots as fcm_plt
@@ -1100,7 +1101,11 @@ class TabsFrame(ctk.CTkFrame):
         elif (time_difference.days > 5):
             logger.debug("date range bigger than 5 days -> Stop")
             tk.messagebox.showwarning(title='Date range too big', message='Please select a date range smaller than 5 days') # type: ignore
-            return #Stop:
+            return #Stop
+        elif time_difference.days == 0 and time_difference.seconds // 3600 == 0: #//integer division
+            logger.debug("date range = 0 hours -> Stop")
+            tk.messagebox.showwarning(title='Date range = 0', message='Please select a valid date range') # type: ignore
+            return #Stop
         
         cols = self.get_selected_vars_t3()
         logger.debug(f"{cols=}")
@@ -1109,19 +1114,16 @@ class TabsFrame(ctk.CTkFrame):
             logger.debug("no variable selected -> Stop")
             tk.messagebox.showwarning(title='No variable selected', message='Please select at least one variable to plot') # type: ignore
             return #Stop:
-        
+
+        name_file = self.get_file_name()
+
         dest_folder = fd.askdirectory(parent=self, title='Select a destination directory')
         if dest_folder =='':
             logger.debug("no folder selected -> Stop")
             return #Stop
         logger.debug("Folder selected:")
         logger.debug(dest_folder)
-        
-        now_dt = datetime.datetime.now()
-        format_dt = now_dt.strftime('%Y.%m.%d_%H%M%S')
 
-        # TODO input dialog to get name of (def in App class??)
-        name_file="Custom_Plot_{}".format(format_dt)
         file_path = os.path.join(dest_folder, (name_file + ".html"))
         logger.debug("File to be saved:")
         logger.debug(file_path)
@@ -1137,6 +1139,52 @@ class TabsFrame(ctk.CTkFrame):
             logger.error("--- Error saving file")
             logger.error(e, exc_info=True)
             tk.messagebox.showwarning(title='Error saving file', message="Error saving file") # type: ignore
+
+    def get_file_name(self):
+        dialog = ctk.CTkInputDialog(text="Plot Tittle without special characters\n(Optional)", title="Plot tittle / File name (Optional)")
+        input_text = dialog.get_input()
+
+        if input_text is not None:
+            if self.is_valid_filename(input_text):
+                name_file = input_text
+            else:
+                #default name
+                now_dt = datetime.datetime.now()
+                format_dt = now_dt.strftime('%Y.%m.%d_%H%M%S')
+                name_file = "Custom_Plot_{}".format(format_dt)
+        else:
+            #default name
+            now_dt = datetime.datetime.now()
+            format_dt = now_dt.strftime('%Y.%m.%d_%H%M%S')
+            name_file = "Custom_Plot_{}".format(format_dt)
+
+        return name_file
+
+    def is_valid_filename(self, filename):
+        # Define a regular expression pattern for valid filenames
+        # This pattern allows letters, digits, spaces, underscores, and hyphens
+        pattern = r'^[a-zA-Z0-9 _-]+$'
+        """
+        ^: start of the string
+        [a-zA-Z0-9 _-]: defines the allowed characters in the string
+
+        a-z: Any lowercase letter from 'a' to 'z'.
+        A-Z: Any uppercase letter from 'A' to 'Z'.
+        0-9: Any digit from '0' to '9'.
+        _: The underscore character.
+        -: The hyphen character.
+        (space): A space character.
+        +: This quantifier indicates that the previous character set can appear one or more times
+
+        $: This indicates the end of the string
+        """
+        
+        # Use re.match to check if the filename matches the pattern
+        return re.match(pattern, filename) is not None
+
+
+
+
 
 
         
