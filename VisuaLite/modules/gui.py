@@ -303,6 +303,11 @@ class App(ctk.CTk):
         self.info_label.grid(row=1, column=0, padx=20, pady=(20, 10))
         # make middle empty row have the priority
         parent.grid_rowconfigure(2, weight=1)
+        self.progress = ctk.CTkProgressBar(parent, width=100)
+        # self.progress.grid(row=2, column=0, padx=20, pady=50, sticky="ew") 
+        self.progress.configure(mode="indeterminate")
+        self.progress.start()
+
         # create app controls of appearance and scaling
         self.appearance_mode_label = ctk.CTkLabel(parent, text="Appearance Mode:", anchor="w")
         self.appearance_mode_label.grid(row=3, column=0, padx=20, pady=(10, 0))
@@ -378,7 +383,7 @@ class App(ctk.CTk):
 
         #Disclaimer
         tk.messagebox.showinfo(title='DISCLAIMER', 
-            message='Welcome to Visualite for FCM One / 1.5 \n\nPlease note this is a BETA Version, so it is currently not supported by Alfa Laval.\n\nHappy ploting!') # type: ignore
+            message='Welcome to Visualite for FCM One / 1.5 \n\nPlease note this is a BETA Version, so it is currently not supported by Alfa Laval.\n\nHappy plotting!') # type: ignore
 
     def before_close(self):
         logger.debug("before_close started")
@@ -390,7 +395,7 @@ class App(ctk.CTk):
             if App.frames["TFrame"].plot_fig is not None:
                 App.frames["TFrame"].close_plot(App.frames["TFrame"].plot_fig,
                                                 App.frames["TFrame"].plot_window)
-        
+
         self.destroy()
 
     def change_appearance_mode_event(self, new_appearance_mode: str):
@@ -417,6 +422,15 @@ class App(ctk.CTk):
         self.LogsStandard = pd.DataFrame()
         self.LogsAlarms = pd.DataFrame()
         self.LogsEvents = pd.DataFrame()
+
+        # Close matplotlib figures if they exist
+        if "TFrame" in self.frames:
+            if App.frames["TFrame"].fig1 is not None:
+                App.frames["TFrame"].clear_co_preview(App.frames["TFrame"].fig1)
+            
+            if App.frames["TFrame"].plot_fig is not None:
+                App.frames["TFrame"].close_plot(App.frames["TFrame"].plot_fig,
+                                                App.frames["TFrame"].plot_window)
     
     def show_frame(self, frame_id):
         # method to change frames in position row 2, column 0 of right_side_panel
@@ -501,7 +515,7 @@ class App(ctk.CTk):
             tk.messagebox.showerror(title='Import failed', message='Please select at least one log file') # type: ignore
             return #Stop
         else:
-            # Show progressBar
+            # Show progressBar Frame
             self.step_20_importingData()
             logger.debug("wait 1000ms...")
             self.after(1000, self.importing_data) #wait 1000ms and next step
@@ -779,12 +793,14 @@ class TabsFrame(ctk.CTkFrame):
 
     def plot_all_COs(self):
         logger.debug("Tab1 - plot_all_COs started ---")
+        self.show_progress_bar() 
 
         dest_folder = fd.askdirectory(parent=self, title='Select a destination directory')
         logger.debug("Folder selected:")
         logger.debug(dest_folder)
         if dest_folder =='': #no folder selected
             logger.debug("no folder selected -> Stop")
+            self.hide_progress_bar()
             return #Stop
 
         plot_type = self.plot_type.get()
@@ -824,6 +840,7 @@ class TabsFrame(ctk.CTkFrame):
 
         if flag == 0:
             logger.debug("--- no changeovers to plot -> Stop")
+            self.hide_progress_bar()
             return #Stop
         elif flag == 1:
             tk.messagebox.showinfo(title='Plots saved!', message="Plots saved in destination folder") # type: ignore
@@ -831,10 +848,12 @@ class TabsFrame(ctk.CTkFrame):
         elif flag == 2:
             tk.messagebox.showinfo(title='Error saving html files', message="Some error may have occured during saving the plots.") # type: ignore
 
+        self.hide_progress_bar()
         logger.debug("--- Tab1 - plot_sel_COs finished")
 
     def plot_sel_COs(self):
         logger.debug("Tab1 - plot_sel_COs started ---")
+        self.show_progress_bar() 
 
         COs = self.get_checked_items()
         logger.debug("checked items:")
@@ -857,6 +876,7 @@ class TabsFrame(ctk.CTkFrame):
 
                     if dest_folder == '': #no folder selected
                         logger.debug("no folder selected -> Stop")
+                        self.hide_progress_bar()
                         return #Stop
                 
                 flag=1
@@ -886,6 +906,7 @@ class TabsFrame(ctk.CTkFrame):
         if flag == 0:
             logger.debug("--- no option selected -> Stop")
             tk.messagebox.showwarning(title='No option selected!', message='Select at least one ChangeOver to plot') # type: ignore
+            self.hide_progress_bar()
             return #Stop
         elif flag == 1:
             tk.messagebox.showinfo(title='Plots saved!', message="Plots saved in destination folder") # type: ignore
@@ -893,6 +914,7 @@ class TabsFrame(ctk.CTkFrame):
         elif flag == 2:
             tk.messagebox.showinfo(title='Error saving html files', message="Some error may have occured during saving the plots.") # type: ignore
 
+        self.hide_progress_bar()
         logger.debug("--- Tab1 - plot_sel_COs finished")
 
     def preview_co(self):
@@ -991,6 +1013,7 @@ class TabsFrame(ctk.CTkFrame):
 
     def generate_search_ae_plot (self):
         logger.debug("Tab2 - Generation search_AE plot started ---")
+        self.show_progress_bar() 
 
         logger.debug("Limits selected:")
         logger.debug(self.high_limit.get())
@@ -999,6 +1022,7 @@ class TabsFrame(ctk.CTkFrame):
         if (self.high_limit.get() == "Select") or (self.low_limit.get()== "Select"):
             tk.messagebox.showwarning(title='No option selected!', message='Select time boundaries for the report') # type: ignore
             logger.debug("default values selected -> Stop")
+            self.hide_progress_bar()
             return #Stop
         
         date1, date2 = fcm_da.date_limits(self.timestamps[self.result_selection.get()],self.low_limit.get(), self.high_limit.get())
@@ -1011,18 +1035,20 @@ class TabsFrame(ctk.CTkFrame):
         if cols == []:
             logger.debug("no variable selected -> Stop")
             tk.messagebox.showwarning(title='No variable selected', message='Please select at least one variable to plot') # type: ignore
+            self.hide_progress_bar()
             return #Stop:
 
         dest_folder = fd.askdirectory(parent=self, title='Select a destination directory')
         if dest_folder =='': #no folder selected
             logger.debug("No folder selected -> Stop")
+            self.hide_progress_bar()
             return #Stop
         logger.debug("Folder selected:")
         logger.debug(dest_folder)
         
         now_dt = datetime.datetime.now()
         format_dt = now_dt.strftime('%Y.%m.%d_%H%M%S')
-        # TODO input dialog to get name of (def in App class??)
+        
         name_file = ""
         if self.radio_var.get() == 0:
             name_file="Custom_Plot_A{}_{}".format(self.ae_number, format_dt)
@@ -1045,6 +1071,8 @@ class TabsFrame(ctk.CTkFrame):
             logger.error("--- Error saving file")
             logger.error(e, exc_info=True)
             tk.messagebox.showwarning(title='Error saving file', message="Error saving file") # type: ignore
+
+        self.hide_progress_bar()
 
     #TAB3 functions
     def show_plot(self):
@@ -1078,6 +1106,7 @@ class TabsFrame(ctk.CTkFrame):
 
     def generate_personalized_plot(self):
         logger.debug("Tab3 - PersonalizedPlot function started ---")
+        self.show_progress_bar() 
 
         date1 = self.cal1d.get_date()
         time1 = self.cal1t.get()
@@ -1140,6 +1169,8 @@ class TabsFrame(ctk.CTkFrame):
             logger.error(e, exc_info=True)
             tk.messagebox.showwarning(title='Error saving file', message="Error saving file") # type: ignore
 
+        self.hide_progress_bar()
+
     def get_file_name(self):
         dialog = ctk.CTkInputDialog(text="Plot Tittle without special characters\n(Optional)", title="Plot tittle / File name (Optional)")
         input_text = dialog.get_input()
@@ -1182,13 +1213,10 @@ class TabsFrame(ctk.CTkFrame):
         # Use re.match to check if the filename matches the pattern
         return re.match(pattern, filename) is not None
 
-
-
-
-
-
-        
-            
-
+    def show_progress_bar(self):
+        self.app.progress.grid(row=2, column=0, padx=10, pady=50, sticky="ew") 
+    
+    def hide_progress_bar(self):
+        self.app.progress.grid_forget()
 
 

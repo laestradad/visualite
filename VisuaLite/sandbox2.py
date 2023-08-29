@@ -32,18 +32,3 @@ button2 = customtkinter.CTkButton(app, text="close Dialog", command=button_click
 button2.grid(row=1, column=0, padx=20, pady=50, sticky="ew") 
 
 app.mainloop()
-
-#def show_progress(self):
-#    self.progress = ctk.CTkToplevel(self.app)
-#    #self.progress.protocol("WM_DELETE_WINDOW", lambda: None) # Disable the close button (X button)
-#    self.progress.resizable(width=False, height=False)
-#    self.progress.title("Working on it!")
-#    self.progress.wm_transient(self.app)
-#    self.progress_wdgt = ctk.CTkProgressBar(self.progress )
-#    self.progress_wdgt.grid(row=0, column=0, padx=20, pady=50, sticky="ew") 
-#    self.progress_wdgt.configure(mode="indeterminate")
-#    self.progress_wdgt.start()
-#
-#def close_progress(self):
-#    if hasattr(self, 'progress') and self.progress:
-#        self.progress.destroy()
