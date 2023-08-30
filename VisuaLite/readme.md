@@ -1,4 +1,11 @@
-# Visualite
+# VisuaLite
+
+## Pyinstaller
+To create the application, these were the pyinstaller attributes used:
+   ```sh
+   pyinstaller --onefile --windowed --noconsole --add-data "resources/*;resources/" --hidden-import babel.numbers --icon=resources/ad_logo.ico main.py
+   ```
+Note that ```--hidden-import babel.numbers``` was added as a bugfix of ```tkcalendar``` library
 
 ## Setting Up a Virtual Environment
 

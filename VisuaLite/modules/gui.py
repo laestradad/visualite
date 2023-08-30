@@ -17,27 +17,29 @@ from modules.logging_cfg import setup_logger
 logger = setup_logger()
 logger.info("gui.py imported")
 
-# Execution path
+#Execution path
 PATH = os.getcwd()
 logger.info(f"{PATH=}")
-# Get the path to the current script
+#Get the path to the current script
 SCRIPT_PATH = os.path.dirname(os.path.abspath(__file__))
 logger.info(f"{SCRIPT_PATH=}")
-# App icon path
+#App icon path
 APP_ICON = os.path.join(SCRIPT_PATH, '..', 'resources', 'ad_logo.ico')
-# Resources path
+#Resources path
 RESOURCES = os.path.join(SCRIPT_PATH, '..', 'resources')
-
-ctk.set_appearance_mode("dark")
-ctk.set_default_color_theme("dark-blue")
-
+#Options for dropdowns
 TIMES = ['00:00', '01:00', '02:00', '03:00', '04:00', '05:00',
          '06:00', '07:00', '08:00', '09:00', '10:00', '11:00',
          '12:00', '13:00', '14:00', '15:00', '16:00', '17:00',
-         '18:00', '19:00', '20:00', '21:00', '22:00', '23:00'
-         ]
-    
+         '18:00', '19:00', '20:00', '21:00', '22:00', '23:00']
+
+#Custom Tkinter theme
+ctk.set_appearance_mode("dark")
+ctk.set_default_color_theme("dark-blue")
+
+#--------------------------------------------------------------------- Frames Classes
 class BreadcrumbFrame(ctk.CTkFrame):
+    #Frame consisting 2 columns with 2 Label imgs used to show the steps of the App
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
 
@@ -74,6 +76,8 @@ class BreadcrumbFrame(ctk.CTkFrame):
         self.grid_rowconfigure(0, weight=1)
     
 class CurrentStep(ctk.CTkFrame):
+    # Frame composed by 2 labes with the title and explanation of the current step
+    # Texts are configured in the App methods
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
         
@@ -94,6 +98,7 @@ class CurrentStep(ctk.CTkFrame):
         self.grid_columnconfigure(0, weight=1)
 
 class EmptyFrame(ctk.CTkFrame):
+    # Placeholder for init App
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
 
@@ -104,13 +109,21 @@ class EmptyFrame(ctk.CTkFrame):
         self.grid_columnconfigure(0, weight=1)
     
 class CheckBoxFrame(ctk.CTkFrame):
-        
+    #Frame consisting of 1 Scrollable frame for checkboxes and 1 frame for (un)select all
+    
     def add_item(self, item):
+        # Creation of checkbox 
         checkbox = ctk.CTkCheckBox(self.checkboxesFrame, text=item)
         if self.command is not None:
             checkbox.configure(command=self.command)
+        
+        # Position
         checkbox.grid(row=len(self.checkbox_list), column=0, padx=5, pady=10, sticky="w")
+        
+        # Default value
         checkbox.select()
+
+        # Add to checkbox list
         self.checkbox_list.append(checkbox)
 
     def get_checked_items(self):
@@ -120,7 +133,7 @@ class CheckBoxFrame(ctk.CTkFrame):
         for checkbox in self.checkbox_list:
             checkbox.select()
 
-    def deselect_all_files(self):
+    def unselect_all_files(self):
         for checkbox in self.checkbox_list:
             checkbox.deselect()
             
@@ -128,27 +141,32 @@ class CheckBoxFrame(ctk.CTkFrame):
         super().__init__(master, **kwargs)
 
         logger.debug("CheckBoxFrame init")
-    
+
         self.command = command
 
-        self.checkboxesFrame = ctk.CTkScrollableFrame(self)
-        self.checkboxesFrame.grid(row=0, column=0, padx=5, pady=5, sticky="nsew")
-
-        self.btnsFrame = ctk.CTkFrame(self)
-        self.btnsFrame.grid(row=1, column=0, padx=5, pady=(0,5), sticky="nsew")
-        self.select_all = ctk.CTkButton(self.btnsFrame, text="Select all", command=self.select_all_files)
-        self.select_all.grid(row=0, column=0, padx=15, pady=5, sticky="w")
-        self.deselect_all = ctk.CTkButton(self.btnsFrame, text="Deselect all", command=self.deselect_all_files)
-        self.deselect_all.grid(row=0, column=1, padx=10, pady=5, sticky="e")
-
+        # Set row and column weights to make it take the entire space
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(0, weight=1)
 
+        # Scrollable frame
+        self.checkboxesFrame = ctk.CTkScrollableFrame(self)
+        self.checkboxesFrame.grid(row=0, column=0, padx=5, pady=5, sticky="nsew")
+        
+        # Add 1 checkbox for each item in list (csv files)
         self.checkbox_list = []
         for item in item_list:
             self.add_item(item)
 
+        # Frame with buttons
+        self.btnsFrame = ctk.CTkFrame(self)
+        self.btnsFrame.grid(row=1, column=0, padx=5, pady=(0,5), sticky="nsew")
+        self.select_all = ctk.CTkButton(self.btnsFrame, text="Select all", command=self.select_all_files)
+        self.select_all.grid(row=0, column=0, padx=15, pady=5, sticky="w")
+        self.unselect_all = ctk.CTkButton(self.btnsFrame, text="Unselect all", command=self.unselect_all_files)
+        self.unselect_all.grid(row=0, column=1, padx=10, pady=5, sticky="e")
+
 class ProgressFrame(ctk.CTkFrame):
+    # Frame with a generic Progess bar to show during import data
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
 
@@ -158,30 +176,36 @@ class ProgressFrame(ctk.CTkFrame):
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
 
+        # Progress bar
         self.progressbar_1 = ctk.CTkProgressBar(self)
         self.progressbar_1.grid(row=0, column=0, padx=20, pady=50, sticky="ew")
-        
-        self.progressbar_1.configure(mode="indeterminnate")
+        self.progressbar_1.configure(mode="indeterminate")
         self.progressbar_1.start()
 
 class NavFrame(ctk.CTkFrame):
+    # Frame in the bottom of the app to go back and forward
+
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
         logger.debug("NavFrame init")
 
-        # Add widgets to the blue frame
+        # Left button
         self.bt_navigation1 = ctk.CTkButton(self)
         self.bt_navigation1.grid(row=0, column=0, padx=20, pady=10, sticky="w")
 
-        # Add widgets to the blue frame
+        # Right button
         self.bt_navigation2 = ctk.CTkButton(self)
         self.bt_navigation2.grid(row=0, column=2, padx=20, pady=10, sticky="e")
 
-        # Set blue frame's row and column weights to make it take the entire space
+        # Set row and column weights to make it take the entire space
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
 
+#--------------------------------------------------------------------- Custom Tkinter App
 class App(ctk.CTk):
+
+    # Version
+    version = "V0.00.01"
 
     # GUI management
     frames = {} #dictionary containing frames
@@ -199,15 +223,15 @@ class App(ctk.CTk):
     LogsAlarms = pd.DataFrame() #DataFrame with alarm logs
     LogsEvents = pd.DataFrame() #DataFrame with event logs
 
+    # ------------------------ Methods to change widgets properties
     def step_00_init(self):
         logger.debug("Widgets update step_00_init()")
 
         #Update breadcrumb
         App.frames["BCFrame"].grid_columnconfigure(1, weight=0)
         App.frames["BCFrame"].grid_columnconfigure(0, weight=1)
-        App.frames["BCFrame"].step1_label.configure(font=ctk.CTkFont(size=18, weight="bold"))
-        App.frames["BCFrame"].step2_label.configure(font=ctk.CTkFont(size=15, weight="normal"))
-        #App.frames["BCFrame"].step3_label.configure(font=ctk.CTkFont(size=15, weight="normal"))
+        App.frames["BCFrame"].step1_label.configure(font=ctk.CTkFont(size=18, weight="bold"), image=App.frames["BCFrame"].step1_img_tk)
+        App.frames["BCFrame"].step2_label.configure(font=ctk.CTkFont(size=15, weight="normal"), image=App.frames["BCFrame"].step2g_img_tk)
 
         #Update texts and action button
         App.frames["CSFrame"].title.configure(text="Import Logs")
@@ -234,7 +258,7 @@ class App(ctk.CTk):
 
         #Update texts
         App.frames["CSFrame"].title.configure(text="Import Logs")
-        App.frames["CSFrame"].text.configure(text="Folder selected" + str(self.dirname))
+        App.frames["CSFrame"].text.configure(text="Folder selected: " + str(self.dirname))
 
         #WorkSpace: Scrollable frame
         App.frames["FilesUpload"] = CheckBoxFrame(self.right_side_panel, command=self.checkbox_frame_event,
@@ -276,11 +300,10 @@ class App(ctk.CTk):
         App.frames["BCFrame"].grid_columnconfigure(1, weight=1)
         App.frames["BCFrame"].step1_label.configure(font=ctk.CTkFont(size=15, weight="normal"), image=App.frames["BCFrame"].step1g_img_tk)
         App.frames["BCFrame"].step2_label.configure(font=ctk.CTkFont(size=18, weight="bold"), image=App.frames["BCFrame"].step2_img_tk)
-        #App.frames["BCFrame"].step3_label.configure(font=ctk.CTkFont(size=15, weight="normal"))
 
         #Update texts
         App.frames["CSFrame"].title.configure(text="Select Analysis type")
-        App.frames["CSFrame"].text.configure(text="You can do 1, 2 or 3")
+        App.frames["CSFrame"].text.configure(text="In each type you can generate plots to make your own analysis")
         App.frames["CSFrame"].action_bt.grid_forget()
         
         #WorkSpace: TabFrame
@@ -294,6 +317,7 @@ class App(ctk.CTk):
         App.frames["NFrame"].bt_navigation2.grid_forget()
 
     def left_side_widgets(self, parent):
+        # Left side panel / does not change during App execution
         logger.debug("Widgets update left_side_widgets()")
 
         # create sidebar logo
@@ -302,10 +326,10 @@ class App(ctk.CTk):
         # create info label
         self.info_label = ctk.CTkLabel(parent, text="FCM One | 1.5", font=ctk.CTkFont(size=15))
         self.info_label.grid(row=1, column=0, padx=20, pady=(20, 10))
-        # make middle empty row have the priority
+        # make middle "empty" row have the priority
         parent.grid_rowconfigure(2, weight=1)
+        # Progress bar (not positioned, only declared)
         self.progress = ctk.CTkProgressBar(parent, width=100)
-        # self.progress.grid(row=2, column=0, padx=20, pady=50, sticky="ew") 
         self.progress.configure(mode="indeterminate")
         self.progress.start()
 
@@ -315,6 +339,7 @@ class App(ctk.CTk):
         self.appearance_mode_optionemenu = ctk.CTkOptionMenu(parent, values=["Light", "Dark"],command=self.change_appearance_mode_event)
         self.appearance_mode_optionemenu.grid(row=4, column=0, padx=20, pady=(10, 10))
         self.appearance_mode_optionemenu.set("Dark")
+
         self.scaling_label = ctk.CTkLabel(parent, text="UI Scaling:", anchor="w")
         self.scaling_label.grid(row=5, column=0, padx=20, pady=(10, 0))
         self.scaling_optionemenu = ctk.CTkOptionMenu(parent, values=["80%", "90%", "100%", "110%", "120%"],command=self.change_scaling_event)
@@ -326,7 +351,7 @@ class App(ctk.CTk):
         logger.debug("App init")
 
         # configure window
-        self.title("VisuaLite V0.1")
+        self.title("VisuaLite " + self.version)
         # set the dimensions of the screen 
         w = 1380 # width
         h = 900 # height
@@ -340,24 +365,25 @@ class App(ctk.CTk):
         y = (hs/2) - (h/2)
 
         # and where it is placed
-        #self.geometry(f"{1300}x{820}")
+        #Simple call of geometry: self.geometry(f"{1300}x{820}")
         self.geometry('%dx%d+%d+%d' % (w, h, x, y))
         self.iconbitmap(APP_ICON)
         
-        # Bind the function to the Destroy event
+        # Function to be executed when app is closed
         self.protocol("WM_DELETE_WINDOW", self.before_close)
 
+        # Make right side (column 1) the main part of the App
         self.grid_columnconfigure(0, weight=0)
         self.grid_columnconfigure(1, weight=1)
 
-        # -------------------------------------------------------------------------------------------------------------- left side panel
+        # Left side panel
         self.left_side_panel = ctk.CTkFrame(self, corner_radius=8, width=300)
         self.left_side_panel.grid(row=0, column=0, rowspan=8, sticky="nsew", padx=(20, 10), pady=20)
         self.left_side_widgets(self.left_side_panel)
 
         self.grid_rowconfigure(0, weight=1)
 
-        # -------------------------------------------------------------------------------------------------------------- right side panel
+        # Right side panel
         self.right_side_panel = ctk.CTkFrame(self, corner_radius=8)
         self.right_side_panel.grid(row=0, column=1, sticky="nsew", padx=(10, 20), pady=20)
         
@@ -384,10 +410,9 @@ class App(ctk.CTk):
 
         #Disclaimer
         tk.messagebox.showinfo(title='DISCLAIMER', 
-            message='Welcome to Visualite for FCM One / 1.5 \n\nPlease note this is a BETA Version, so it is currently not supported by Alfa Laval.\n\nHappy plotting!') # type: ignore
+            message=f'Welcome to VisuaLite {self.version}\n\nPlease note this is a BETA Version, so it is currently not supported by Alfa Laval.\n\nHappy plotting!') # type: ignore
 
     def before_close(self):
-        logger.debug("before_close started")
         # Close matplotlib figures if they exist
         if "TFrame" in self.frames:
             if App.frames["TFrame"].fig1 is not None:
@@ -397,6 +422,7 @@ class App(ctk.CTk):
                 App.frames["TFrame"].close_plot(App.frames["TFrame"].plot_fig,
                                                 App.frames["TFrame"].plot_window)
 
+        # Close App
         self.destroy()
 
     def change_appearance_mode_event(self, new_appearance_mode: str):
@@ -447,6 +473,7 @@ class App(ctk.CTk):
     def back_to_selectfolder (self):
         logger.debug("Step1 - Back button pressed")
         
+        # Clear memory and upload widgets of init
         self.clear_all()
         self.step_00_init()
 
@@ -484,8 +511,15 @@ class App(ctk.CTk):
     def importing_data(self):
         logger.debug("...continue")
 
-        self.import_success, self.mch_info, self.COs, self.LogsStandard, self.LogsAlarms, self.LogsEvents = fcm_da.import_data(self.dirname, self.selected_files)
-        logger.debug(f"{self.import_success=}")
+        # Call Data Analysis function and assign outputs to App variables
+        try:
+            self.import_success, self.mch_info, self.COs,self.LogsStandard, self.LogsAlarms, self.LogsEvents = fcm_da.import_data(self.dirname, self.selected_files)
+            logger.debug(f"{self.import_success=}")
+
+        except Exception as e:
+            logger.error("--- Error importing data")
+            logger.error(e, exc_info=True)
+            self.import_success == 4
     
         if self.import_success == 1: #success
             self.step_30_dataImported()
@@ -506,7 +540,7 @@ class App(ctk.CTk):
 
     def import_data_cmd(self):
         logger.debug("Step1 - Import data started ")
-        # Get file names selected
+        # Get names of selected files
         self.selected_files = self.checkbox_frame_event()
         logger.debug("Files selected:")
         logger.debug(self.selected_files)
@@ -519,16 +553,19 @@ class App(ctk.CTk):
             # Show progressBar Frame
             self.step_20_importingData()
             logger.debug("wait 1000ms...")
-            self.after(1000, self.importing_data) #wait 1000ms and next step
+            self.after(1000, self.importing_data) #wait 1000ms to show frame and next step
 
 class TabsFrame(ctk.CTkFrame):
+    # Data Analysis Frame with 3 Tabs, need to be after App 
     def __init__(self, master, app_instance, **kwargs):
         super().__init__(master, **kwargs)
 
         logger.debug("TabsFrame init")
 
+        # Receive all App attributes and methods
         self.app = app_instance
 
+        # Make it of the entire width and height
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(0, weight=1)
 
@@ -580,7 +617,7 @@ class TabsFrame(ctk.CTkFrame):
         self.results_t1.grid(row=0, column=1, padx=20, pady=20, sticky = 'nsew')
 
         #Text before COs
-        self.label1 = ctk.CTkLabel(self.results_t1)
+        self.label1 = ctk.CTkLabel(self.results_t1) #text defined later if COs founded
         self.label1.grid(row=0, column=0, padx=20, pady=20, sticky = 'nw')
 
         #Declaration of buttons
@@ -598,7 +635,7 @@ class TabsFrame(ctk.CTkFrame):
             #If Changeovers detected, create widgets
             self.checkbox_list = []
             self.cos_options = []
-            self.label1.configure(text="In the logs imported there are " + str(len(self.COs)) + " changeovers. Please select the ")
+            self.label1.configure(text="In the logs imported there are " + str(len(self.COs)) + " changeovers.")
             for i, CO in enumerate(self.COs):
                 text= str(i+1) + '. From ' + str(CO['Start']) + ' to ' + str(CO['Finish']) + '. Duration: ' + str(CO['Duration'])
                 self.add_checkbox_t1(text)
@@ -610,7 +647,7 @@ class TabsFrame(ctk.CTkFrame):
             self.plot_all.grid(row=len(self.checkbox_list)+2, column=0, padx=10, pady=10, sticky="e")
         
         else:
-            #Disable widgets
+            #Disable widgets if no ChangeOvers detected
             self.label1.configure(text="No Change Overs detected in data inserted")
             self.preview_btn.configure(state="disabled")
             self.preview_options.configure(state="disabled")
@@ -627,7 +664,10 @@ class TabsFrame(ctk.CTkFrame):
         # Get arrays of options from dataframes
         self.columns = []
         if not self.app.LogsAlarms.empty:
+            # Alarms for Tab2 dropdown
             self.alm_list = self.app.LogsAlarms['Alm_Code_Label'].unique().tolist()
+
+            # Variables for Tab2 and Tab3 switches
             self.columns = self.columns + self.app.LogsAlarms.columns.tolist()
             remove_cols = ['DateTime', 'Alm_Code_Label', 'Label']
             for col in remove_cols:
@@ -636,7 +676,10 @@ class TabsFrame(ctk.CTkFrame):
             self.alm_list = []
 
         if not self.app.LogsEvents.empty:
+            # Events for Tab2 dropdown
             self.eve_list = self.app.LogsEvents['Evn_Code_Label'].unique().tolist()
+            
+            # Variables for Tab2 and Tab3 switches
             self.columns = self.columns + self.app.LogsEvents.columns.tolist()
             remove_cols = ['DateTime', 'Evn_Code_Label', 'Label', 'Data', 'GpsPos']
             for col in remove_cols:
@@ -645,6 +688,7 @@ class TabsFrame(ctk.CTkFrame):
             self.eve_list = []
 
         if not self.app.LogsStandard.empty:
+            # Variables for Tab2 and Tab3
             self.columns = self.columns + self.app.LogsStandard.columns.tolist()
             remove_cols = ['DateTime', 'GpsPos', 'CV1_Label', 'CV2_Label', 'CV3_Label', 
                             'CV4_Label', 'CV5_Label', 'ChangeoverCMDchange']
@@ -652,7 +696,8 @@ class TabsFrame(ctk.CTkFrame):
                 self.columns.remove(col)
 
         # Label tab2
-        self.label2 = ctk.CTkLabel(self.tabview.tab("Search Event/Alarm"), text="Please select an event/alarm bla bla")
+        self.label2 = ctk.CTkLabel(self.tabview.tab("Search Event/Alarm"),
+                                   text="Please select an event or alarm, and generate a customized plot around the selected occurence.")
         self.label2.grid(row=0, column=0, columnspan=5, padx=20, pady=5, sticky="nw")
 
         # Radio buttons to select Alarm or Event
@@ -684,6 +729,11 @@ class TabsFrame(ctk.CTkFrame):
         self.switch_list_t2 = []
         for column_name in self.columns:
             self.add_switch_t2(column_name)
+
+        # Aux plot
+        self.aux_plot2 = ctk.CTkButton(self.tabview.tab("Search Event/Alarm"), text="Show Auxiliary Plot", 
+                                        command=self.show_plot)
+        self.aux_plot2.grid(row=1, column=5, padx=20, pady=10, sticky="ne")
 
         # Search results
         self.results_t2 = ctk.CTkScrollableFrame(self.tabview.tab("Search Event/Alarm"))
@@ -743,32 +793,32 @@ class TabsFrame(ctk.CTkFrame):
         self.plot_fig = None
         self.aux_plot = ctk.CTkButton(self.tabview.tab("Personalized Analysis"), text="Show Auxiliary Plot", 
                                         command=self.show_plot)
-        self.aux_plot.grid(row=0, column=0, columnspan=2, padx=20, pady=10)
+        self.aux_plot.grid(row=0, column=1, padx=20, pady=10, sticky="ne")
+        self.label_tab_3 = ctk.CTkLabel(self.tabview.tab("Personalized Analysis"), text="Select the desired time interval and variables you want to plot:")
+        self.label_tab_3.grid(row=0, column=0, padx=20, columnspan=2, pady=5, sticky="sw")
 
         #Frame for calendars
         self.frame_left_t3 = ctk.CTkFrame(self.tabview.tab("Personalized Analysis"))
         self.frame_left_t3.grid(row=1, column=0, padx=20, pady=10, sticky="nsew")
 
-        #Labels and Calendars LEFT side
-        self.label_tab_3 = ctk.CTkLabel(self.frame_left_t3, text="Left side description")
-        self.label_tab_3.grid(row=0, column=0, padx=20, columnspan=2, pady=5, sticky="nw")
+        #Labels and Calendars left side
         self.cal1_text = ctk.CTkLabel(self.frame_left_t3, text='From:')
-        self.cal1_text.grid(row=1, column=0, padx=20, pady=2, sticky="nw") 
+        self.cal1_text.grid(row=0, column=0, padx=20, pady=2, sticky="nw") 
         self.cal1d = tkcalendar.Calendar(self.frame_left_t3, selectmode="day", date_pattern="yyyy/MM/dd")
-        self.cal1d.grid(row=2, column=0, padx=(20,10), pady=2)
+        self.cal1d.grid(row=1, column=0, padx=(20,10), pady=2)
         self.cal1t = ctk.CTkOptionMenu(self.frame_left_t3, dynamic_resizing=False, values=TIMES)
-        self.cal1t.grid(row=3, column=0, padx=20, pady=(10,20))
+        self.cal1t.grid(row=2, column=0, padx=20, pady=(10,20))
         self.cal1t.set("00:00")
 
         self.cal1_text = ctk.CTkLabel(self.frame_left_t3, text='To:')
-        self.cal1_text.grid(row=1, column=1, padx=20, pady=2, sticky="nw")
+        self.cal1_text.grid(row=0, column=1, padx=20, pady=2, sticky="nw")
         self.cal2d = tkcalendar.Calendar(self.frame_left_t3, selectmode="day", date_pattern="yyyy/MM/dd")
-        self.cal2d.grid(row=2, column=1, padx=(10,20), pady=2)
+        self.cal2d.grid(row=1, column=1, padx=(10,20), pady=2)
         self.cal2t = ctk.CTkOptionMenu(self.frame_left_t3, dynamic_resizing=False, values=TIMES)
-        self.cal2t.grid(row=3, column=1, padx=20, pady=(10,20))
+        self.cal2t.grid(row=2, column=1, padx=20, pady=(10,20))
         self.cal2t.set("00:00")
 
-        #Variables RIGHT side
+        #Variables right side
         self.var_sel_t3 = ctk.CTkScrollableFrame(self.tabview.tab("Personalized Analysis"))
         self.var_sel_t3.grid(row=1, column=1, padx=20, pady=10, sticky="nsew")
         self.switch_list_t3 = []
@@ -778,7 +828,7 @@ class TabsFrame(ctk.CTkFrame):
         #Action button Tab3
         self.action_t3 = ctk.CTkButton(self.tabview.tab("Personalized Analysis"), text="Generate and save Plot",
                                          command=self.generate_personalized_plot)
-        self.action_t3.grid(row=2, column=1, padx=20, pady=20, sticky="se")
+        self.action_t3.grid(row=2, column=0, columnspan=2, padx=20, pady=20)
 
     #TAB1 functions
     def add_checkbox_t1(self, item):
@@ -796,6 +846,7 @@ class TabsFrame(ctk.CTkFrame):
         logger.debug("Tab1 - plot_all_COs started ---")
         self.show_progress_bar() 
 
+        # Ask for destination folder
         dest_folder = fd.askdirectory(parent=self, title='Select a destination directory')
         logger.debug("Folder selected:")
         logger.debug(dest_folder)
@@ -811,7 +862,7 @@ class TabsFrame(ctk.CTkFrame):
             logger.debug("COs:")
             logger.debug(self.app.COs)            
             
-            flag = 0
+            flag = 0 #used to show output
 
             for i, CO in enumerate(self.app.COs):
                 df = fcm_da.ChangeOverToDF(CO, self.app.LogsStandard)
@@ -861,15 +912,16 @@ class TabsFrame(ctk.CTkFrame):
         logger.debug(COs)
         
         dest_folder =''
-        flag = 0
+
+        flag = 0 # if remains 0, no selection made
+
         plot_type = self.plot_type.get()
         logger.debug(f"{plot_type=}")
         
         for i, CO_sts in enumerate(COs):
             logger.debug(f"{i=}")
             if CO_sts == 1:
-                #first plot
-                if flag == 0: 
+                if flag == 0: #first iteration
                     #Open file dialog to select folder
                     dest_folder = fd.askdirectory(parent=self, title='Select a destination directory')
                     logger.debug("Selected folder:")
@@ -919,35 +971,49 @@ class TabsFrame(ctk.CTkFrame):
         logger.debug("--- Tab1 - plot_sel_COs finished")
 
     def preview_co(self):
+        logger.debug("preview_co started ---")
+
         CO = self.co_sel.get()
         
-        if CO == "Changeover #":
+        if CO == "Changeover #": #defult value of dropdown
+            logger.debug("no changeover selected -> Stop")
             return #Stop
+
         else:
             if self.fig1 is not None:
-                self.clear_co_preview(self.fig1)
+                self.clear_co_preview(self.fig1) #close fig if there is another plot
 
-            self.dummy_plot.grid_forget()
+            self.dummy_plot.grid_forget() #close dummy img
 
-            i = int(CO[-1]) #last character of string in options menu
+            i = int(CO[-1]) #last character of string in options menu to get index of Changeover
+            
+            # Create plot
             self.fig1 = fcm_plt.change_over_preview(fcm_da.ChangeOverToDF(self.app.COs[i-1], self.app.LogsStandard))
 
+            # Show plot in App
             self.canvas1 = FigureCanvasTkAgg(self.fig1, master=self.co_preview)
             self.canvas1.draw()
             self.canvas1.get_tk_widget().grid(row=1, column=0, columnspan=2, sticky="nsew", padx=5, pady=10)
+        
+        logger.debug("--- preview_co finished")
 
     def clear_co_preview(self, fig):
+        logger.debug("clear_co_preview started ---")
+
         fig.clf()  # Clear the figure
         fcm_plt.plt.close(fig)  # Close the figure
         self.canvas1.get_tk_widget().grid_forget()
+
         #Show dummy plot
         self.dummy_plot.grid(row=1, column=0, columnspan=2, sticky="nsew", padx=5, pady=10)
+
         # init fig
         self.fig1 = None
+        logger.debug("--- clear_co_preview finished")
 
     #TAB2 functions
     def update_optionmenu(self): 
-        
+        # Change options in optionmenu if Radio button choice change
         if self.radio_var.get() == 0:
             logger.debug("Tab2 - Alarm radiobutton selected")
             self.optionmenu_1.configure(values=self.alm_list)
@@ -955,6 +1021,7 @@ class TabsFrame(ctk.CTkFrame):
             logger.debug("Tab2 - Event radiobutton selected")
             self.optionmenu_1.configure(values=self.eve_list)
 
+        # Set default value
         self.optionmenu_1.set("Search value")
 
     def searchAE(self):
@@ -1000,11 +1067,13 @@ class TabsFrame(ctk.CTkFrame):
             tk.messagebox.showinfo(title='Search results', message="Found " + str(len(self.timestamps)) + " occurrences of " + selected_item) # type: ignore
 
     def add_radiobtn_t2(self, item, i):
+        # Occurences of search, radiobutton because user can only choose one
         radiobtn = ctk.CTkRadioButton(self.results_t2, text=item, variable=self.result_selection, value=i)
         radiobtn.grid(row=len(self.radiobtn_list)+1, column=0, padx=15, pady=5, sticky="w")
         self.radiobtn_list.append(radiobtn)
 
     def add_switch_t2(self, label):
+        # Loop to add variables switches
         switch = ctk.CTkSwitch(self.var_sel, text=label)
         switch.grid(row=len(self.switch_list_t2), column=0, padx=10, pady=5, sticky="w")
         self.switch_list_t2.append(switch)
@@ -1026,6 +1095,7 @@ class TabsFrame(ctk.CTkFrame):
             self.hide_progress_bar()
             return #Stop
         
+        # from "1hour" type input to exact datetime
         date1, date2 = fcm_da.date_limits(self.timestamps[self.result_selection.get()],self.low_limit.get(), self.high_limit.get())
         logger.debug("Dates to filter:")
         logger.debug(f"{date1=}, {date2=}")
@@ -1047,6 +1117,7 @@ class TabsFrame(ctk.CTkFrame):
         logger.debug("Folder selected:")
         logger.debug(dest_folder)
         
+        # Current datetime to create personalized file name
         now_dt = datetime.datetime.now()
         format_dt = now_dt.strftime('%Y.%m.%d_%H%M%S')
         
@@ -1060,9 +1131,11 @@ class TabsFrame(ctk.CTkFrame):
         logger.debug("File to be saved:")
         logger.debug(file_path)
 
+        #Create plot
         fig = fcm_plt.custom_plot_divided(self.app.LogsStandard, self.app.LogsAlarms, self.app.LogsEvents, cols, date1, date2, name_file)
         logger.debug("Tab2 - fig created")
         
+        #Save plot
         try:
             fig.write_html(file_path, config={'displaylogo': False})
             logger.debug("--- Tab2 - html created successfully")
@@ -1077,18 +1150,27 @@ class TabsFrame(ctk.CTkFrame):
 
     #TAB3 functions
     def show_plot(self):
-        self.plot_fig = fcm_plt.create_aux_plot(self.app.LogsStandard, self.app.LogsAlarms, self.app.LogsEvents)
-        self.plot_window = ctk.CTkToplevel(self.app)
-        self.plot_window.resizable(width=False, height=False)
-        self.plot_window.title("Auxiliary Plot")
-        # Keep the toplevel window in front of the root window
-        self.plot_window.wm_transient(self.app)
-        
-        self.canvas = FigureCanvasTkAgg(self.plot_fig, master=self.plot_window)
-        self.canvas.draw()
-        self.canvas.get_tk_widget().pack()
-        # Ensure figures are closed properly when the window is closed
-        self.plot_window.protocol("WM_DELETE_WINDOW", lambda: self.close_plot(self.plot_fig, self.plot_window))
+        #Create aux plot if it does not exit
+        if self.plot_fig is None:
+            self.plot_fig = fcm_plt.create_aux_plot(self.app.LogsStandard, self.app.LogsAlarms, self.app.LogsEvents)
+            
+            #Create popup
+            self.plot_window = ctk.CTkToplevel(self.app)
+            self.plot_window.resizable(width=False, height=False)
+            self.plot_window.title("Auxiliary Plot")
+            # Keep the toplevel window in front of the root window
+            self.plot_window.wm_transient(self.app)
+            
+            #Place plot in popup
+            self.canvas = FigureCanvasTkAgg(self.plot_fig, master=self.plot_window)
+            self.canvas.draw()
+            self.canvas.get_tk_widget().pack()
+
+            # Ensure figures are closed properly when the window is closed
+            self.plot_window.protocol("WM_DELETE_WINDOW", lambda: self.close_plot(self.plot_fig, self.plot_window))
+        else:
+            logger.debug("Plot already exists")
+            return #Stop
 
     def close_plot(self, fig, window):
         fig.clf()  # Clear the figure
@@ -1098,6 +1180,7 @@ class TabsFrame(ctk.CTkFrame):
         self.plot_fig = None
 
     def add_switch_t3(self, label):
+        # Add variable swithces 
         switch = ctk.CTkSwitch(self.var_sel_t3, text=label)
         switch.grid(row=len(self.switch_list_t3), column=0, padx=10, pady=5, sticky="w")
         self.switch_list_t3.append(switch)
@@ -1117,6 +1200,7 @@ class TabsFrame(ctk.CTkFrame):
         logger.debug("User selections:")
         logger.debug(f"{date1=}, {time1=}, {date2=}, {time2=}")
         
+        # Convert inputs to exact datetimes
         datetime1 = datetime.datetime(int(date1.split('/')[0]), int(date1.split('/')[1]), int(date1.split('/')[2]),
                                           int(time1.split(':')[0]), 0, 0)  # Year, month, day, hour, minute, second
         datetime2 = datetime.datetime(int(date2.split('/')[0]), int(date2.split('/')[1]), int(date2.split('/')[2]),
@@ -1124,17 +1208,21 @@ class TabsFrame(ctk.CTkFrame):
 
         time_difference = datetime2 - datetime1
 
+        # Input verification
         if (time_difference.days < 0):
             logger.debug("date range not valid -> Stop")
             tk.messagebox.showwarning(title='Incorrect dates', message='"From:" date is bigger than "To:" date') # type: ignore
+            self.hide_progress_bar()
             return #Stop
         elif (time_difference.days > 5):
             logger.debug("date range bigger than 5 days -> Stop")
             tk.messagebox.showwarning(title='Date range too big', message='Please select a date range smaller than 5 days') # type: ignore
+            self.hide_progress_bar()
             return #Stop
         elif time_difference.days == 0 and time_difference.seconds // 3600 == 0: #//integer division
             logger.debug("date range = 0 hours -> Stop")
             tk.messagebox.showwarning(title='Date range = 0', message='Please select a valid date range') # type: ignore
+            self.hide_progress_bar()
             return #Stop
         
         cols = self.get_selected_vars_t3()
@@ -1145,11 +1233,13 @@ class TabsFrame(ctk.CTkFrame):
             tk.messagebox.showwarning(title='No variable selected', message='Please select at least one variable to plot') # type: ignore
             return #Stop:
 
+        # Ask user for personalized tittle
         name_file = self.get_file_name()
 
         dest_folder = fd.askdirectory(parent=self, title='Select a destination directory')
         if dest_folder =='':
             logger.debug("no folder selected -> Stop")
+            self.hide_progress_bar()
             return #Stop
         logger.debug("Folder selected:")
         logger.debug(dest_folder)
@@ -1158,8 +1248,11 @@ class TabsFrame(ctk.CTkFrame):
         logger.debug("File to be saved:")
         logger.debug(file_path)
 
+        # Create plot
         fig = fcm_plt.custom_plot_divided(self.app.LogsStandard, self.app.LogsAlarms, self.app.LogsEvents, cols, datetime1, datetime2, name_file)
         logger.debug("Tab3 - fig creted")
+        
+        # Save plot
         try:
             fig.write_html(file_path, config={'displaylogo': False})
             logger.debug("--- Tab3 - html created successfully")
@@ -1177,6 +1270,7 @@ class TabsFrame(ctk.CTkFrame):
         input_text = dialog.get_input()
 
         if input_text is not None:
+            # Check input from user
             if self.is_valid_filename(input_text):
                 name_file = input_text
             else:

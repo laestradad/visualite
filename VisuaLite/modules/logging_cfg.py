@@ -1,13 +1,14 @@
 import logging
 import os
-#import datetime
 import shutil
 
+# Create log folder in execution path
 PATH = os.getcwd()
 log_dir = os.path.join(PATH, '__vl.log')
 filename = 'visualite_debug.log'
 
 def backup_log():
+    # Save last execution log as visualite_backup.log
     log_filename = os.path.join(log_dir, filename)
     if os.path.exists(log_filename):
         backup_filename = log_filename.replace("debug.log", "backup.log")
@@ -16,6 +17,7 @@ def backup_log():
         shutil.move(log_filename, backup_filename)
 
 def setup_logger():
+    # Create folder if it does not exits
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
 
@@ -26,7 +28,7 @@ def setup_logger():
     logging.basicConfig(filename= file_path,
                         level= logging.DEBUG,
                         format = LOG_FORMAT,
-                        filemode='w'
+                        filemode='w' #create new logger each execution of App
                         )
 
     logger = logging.getLogger()

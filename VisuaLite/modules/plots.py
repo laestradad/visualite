@@ -35,6 +35,7 @@ custom_dark_style = {
     'grid.color': '#333333',  # Color of grid lines / DEFAULT '#333333'
 }
 
+# Alfa Laval brand colors
 ALcolors = ['rgba(17, 56, 127, 1)', #AL blue
             'rgba(0, 0, 0, 1)', #AL white
             'rgba(220, 146, 118, 1)', #AL earth
@@ -43,6 +44,7 @@ ALcolors = ['rgba(17, 56, 127, 1)', #AL blue
             'rgba(0, 127, 200, 1)', #AL innovation
             ]
 
+# FCM One/1.5 change over variables and classification
 change_over_vars = {
     'Temperature': ['TT1','TT2','TargetTemperature','TemperatureLowLimit', 'TemperatureHighLimit'],
     'Viscosity': ['VT','TargetViscosity','ViscosityLowLimit','ViscosityHighLimit'],
@@ -53,6 +55,7 @@ change_over_vars = {
     'Density': ['Density']
     }
 
+# FCM One/1.5 alarms classification
 alarm_cats = {
     'System Alarms': [0,199],
     'ChangeOver Alarms': [200,299],
@@ -64,7 +67,11 @@ alarm_cats = {
     'ViscMeas Alarms': [1000,1099]
 }
 
-#----------------------------------------------------------- DECORATORS
+# FCM One/1.5 log columns classified by unit
+with open(UNITS, 'r') as file:
+    units = json.load(file)
+
+#----------------------------------------------------------- DECORATORS (to wrap functions and log errors if any)
 def custom_callback(func):
     def wrapper(*args, **kwargs):
         try:
@@ -74,11 +81,7 @@ def custom_callback(func):
             logger.error(e, exc_info=True)
     return wrapper
 
-#----------------------------------------------------------- IMPORT UNITS FOR FCM ONE LOG FILES
-with open(UNITS, 'r') as file:
-    units = json.load(file)
-
-#----------------------------------------------------------- PLOTLY
+#----------------------------------------------------------- PLOTLY Functions
 def plot_alarms(x,y,labels,cat):
     trace = go.Scatter(x=x, y=y.astype(str),
                        name=cat,
@@ -151,6 +154,7 @@ def filled_trace(x,y,name,color,cat):
 def change_over_overlap(LogsStandard, LogsAlarms, LogsEvents, mch_info):
     logger.debug("change_over_overlap started ---")
 
+    # dates of Standard logs to filter Events and Alarms
     mindate = LogsStandard['DateTime'].min()
     maxdate = LogsStandard['DateTime'].max()
 
@@ -205,6 +209,7 @@ def change_over_overlap(LogsStandard, LogsAlarms, LogsEvents, mch_info):
         legend=dict(orientation="v", x = 1.1)
     )
 
+    # Iterate change_over_vars, to plot each category of variables
     for i, (category, variables) in enumerate(change_over_vars.items()):
         logger.debug(category)
 
@@ -399,7 +404,8 @@ def change_over_overlap(LogsStandard, LogsAlarms, LogsEvents, mch_info):
 
                 fig.add_trace(trace)
     
-    logger.debug('fig config')            
+    logger.debug('fig config')
+
     # Update layout properties
     fig.update_layout(hovermode="x unified", hoverlabel=dict(bgcolor='rgba(255,255,255,0.75)', namelength = -1, font=dict(color='black')),  
         legend=dict(groupclick="toggleitem"), #avoid grouping all traces #orientation="v", x = 1.1, 
@@ -425,6 +431,7 @@ def change_over_overlap(LogsStandard, LogsAlarms, LogsEvents, mch_info):
 def change_over_divided(LogsStandard, LogsAlarms, LogsEvents, mch_info):
     logger.debug("change_over_divided started ---")
 
+    # dates of Standard logs to filter Events and Alarms
     mindate = LogsStandard['DateTime'].min()
     maxdate = LogsStandard['DateTime'].max()
 
@@ -439,6 +446,8 @@ def change_over_divided(LogsStandard, LogsAlarms, LogsEvents, mch_info):
         eve = pd.DataFrame()
 
     logger.debug("fig init")
+
+    # Change layout of plot based on if Alarms or Events where imported
     chart_type = ''
     if alm.empty and eve.empty:
 
@@ -497,6 +506,8 @@ def change_over_divided(LogsStandard, LogsAlarms, LogsEvents, mch_info):
         fig.update_yaxes(title_text="Alarms",
                         row=8, secondary_y=True)
     
+
+    # Iterate change_over_vars, to plot each category of variables
     for i, (category, variables) in enumerate(change_over_vars.items()):
         logger.debug(category)
 
@@ -728,29 +739,34 @@ def custom_plot_divided(dfs, dfa, dfe, cols, date1, date2, tittle): # n rows, on
     logger.debug("custom_plot1 started ---")
     logger.debug("date limits:")
     logger.debug(f"{date1=},{date2=}")
-
-    if dfs.empty and dfa.empty and dfe.empty:
-        fig = go.Figure()
-        fig.update_layout(title_text=tittle)
-        logger.debug("--- no data to plot")
-        return fig
     
+    # filter dataframes for date interval selected
     if not dfs.empty:
         dfs = dfs[(dfs['DateTime'] >= date1) & (dfs['DateTime'] <= date2)]
     else:
+        dfs = pd.DataFrame()
         logger.debug("Standard Logs empty in date range selected")
 
     if not dfa.empty:
         dfa = dfa[(dfa['DateTime'] >= date1) & (dfa['DateTime'] <= date2)]
     else:
+        dfa = pd.DataFrame()
         logger.debug("Alarm Logs empty in date range selected")
 
     if not dfe.empty:
         dfe = dfe[(dfe['DateTime'] >= date1) & (dfe['DateTime'] <= date2)]
     else:
+        dfe = pd.DataFrame()
         logger.debug("Event Logs empty in date range selected")
 
+    #returns an empty plot if no data to plot
+    if dfs.empty and dfa.empty and dfe.empty:
+        fig = go.Figure()
+        fig.update_layout(title_text=tittle)
+        logger.debug("--- no data to plot")
+        return fig
 
+    # From column list, get a dictionary with cols classified by unit type
     cols2 = fcm.classify_cols(cols)
     logger.debug("selected units and columns:")
     logger.debug(cols2)
@@ -758,6 +774,7 @@ def custom_plot_divided(dfs, dfa, dfe, cols, date1, date2, tittle): # n rows, on
     logger.debug("fig init")
     fig = make_subplots(rows=len(cols2), cols=1, shared_xaxes=True, vertical_spacing=0.02)
 
+    # Iterate classified cols and create traces
     for i, (unit, cols) in enumerate(cols2.items()):
         logger.debug(f"{i=}, {unit=}, {cols=}")
 
@@ -790,6 +807,7 @@ def custom_plot_divided(dfs, dfa, dfe, cols, date1, date2, tittle): # n rows, on
 
             else:
                 if not dfs.empty:
+                    # If unit is a bool, int or valve_pos(int), create a square line trace instead of spline
                     if unit in ['bool', 'int', 'valve_pos']:
                         trace = square_line_trace(
                             x=dfs['DateTime'],
@@ -806,6 +824,7 @@ def custom_plot_divided(dfs, dfa, dfe, cols, date1, date2, tittle): # n rows, on
                     fig.add_trace(trace, row=i+1, col=1)
 
     logger.debug("fig config")
+
     # Update layout properties
     fig.update_layout(hovermode="x unified", hoverlabel=dict(bgcolor='rgba(255,255,255,0.75)', namelength = -1, font=dict(color='black')),  
         legend=dict(groupclick="toggleitem"), #avoid grouping all traces
@@ -825,14 +844,13 @@ def custom_plot_divided(dfs, dfa, dfe, cols, date1, date2, tittle): # n rows, on
     )
     
     logger.debug("fig done")
-
     return fig
 
 #----------------------------------------------------------- MATPLOTLIB
-@custom_callback # wrapper to catch errors
 def create_aux_plot(LogsStandard, LogsAlarms, LogsEvents):
     logger.debug("create_aux_plot started ---")
 
+    # Plot Theme
     plt.style.use(custom_dark_style)
     #plt.style.use('default')
     #plt.style.use('dark_background')
@@ -843,9 +861,9 @@ def create_aux_plot(LogsStandard, LogsAlarms, LogsEvents):
 
     # ---------------------------------------------------------------------------- Row 1: Line plots
     axes[0].set_title('Date range of Log files')
-
-    dates = []
+   
     #Get min and max date for each dataframe and plot for each df
+    dates = []
     if not LogsStandard.empty:
         mindateS = LogsStandard['DateTime'].min()
         maxdateS = LogsStandard['DateTime'].max()
@@ -954,7 +972,6 @@ def create_aux_plot(LogsStandard, LogsAlarms, LogsEvents):
     logger.debug("fig done")
     return fig
 
-@custom_callback # wrapper to catch errors
 def change_over_preview(df):
     logger.debug("change_over_preview started ---")
 

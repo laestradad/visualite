@@ -148,12 +148,14 @@ def concat_files(AllFilesNames):
 def import_data(dirname, file_list):
     logger.debug("--- import_data started ---")
 
+    #Init variables
     mch_info = None
     LogsStandard = pd.DataFrame()
     COs = []
     LogsAlarms = pd.DataFrame()
     LogsEvents = pd.DataFrame()
 
+    #Create paths joining folder and file names
     if dirname != None:
         DataFiles = [dirname + '/' + x for x in file_list if x.startswith('S')]
         AlarmFiles = [dirname + '/' + x for x in file_list if x.startswith('A')]
@@ -450,6 +452,7 @@ def classify_cols(selected):
 @custom_callback # wrapper to catch errors
 def date_limits (timestamp, lower, upper):
     logger.debug("date_limits started ---")
+    #From dropdown options ("1hour", "2hours", etc) return datetimes
 
     date1 = timestamp
     date2 = timestamp
@@ -479,6 +482,7 @@ def date_limits (timestamp, lower, upper):
     return date1, date2
 
 def split_df(LogsStandard):
+    # Legacy function to divide dataframes in 5 days slices to minimize plot.html file size
     mindate = LogsStandard['DateTime'].min()
     maxdate = LogsStandard['DateTime'].max()
     print(mindate,maxdate)
