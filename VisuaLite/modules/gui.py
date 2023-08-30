@@ -205,7 +205,7 @@ class NavFrame(ctk.CTkFrame):
 class App(ctk.CTk):
 
     # Version
-    version = "V0.00.01"
+    version = "V0.00.02"
 
     # GUI management
     frames = {} #dictionary containing frames
@@ -738,7 +738,7 @@ class TabsFrame(ctk.CTkFrame):
         # Search results
         self.results_t2 = ctk.CTkScrollableFrame(self.tabview.tab("Search Event/Alarm"))
         self.results_t2.grid(row=2, column=0, columnspan=5, padx=(20,10), pady=5, sticky="nsew")
-        self.label_results_t2 = ctk.CTkLabel(self.results_t2, text="Search results shown here")
+        self.label_results_t2 = ctk.CTkLabel(self.results_t2, text="Search results shown here.")
         self.label_results_t2.grid(row=0, column=0, padx=10, pady=10, sticky="nw")
 
         #Dropdowns and Labels for time interval
@@ -773,14 +773,17 @@ class TabsFrame(ctk.CTkFrame):
             self.search_bt.configure(state="disabled")
             self.radio_button_1.configure(state="disabled")
             self.radio_button_2.configure(state="disabled")
+            self.label_results_t2.configure(text="Funtion not available. Please import Alarm or Event logs")
         
         if (not self.alm_list) and (self.eve_list):
             self.radio_var.set(1)
             self.radio_button_1.configure(state="disabled")
+            self.label_results_t2.configure(text="Search results shown here.\nAlarm logs not imported", justify='left')
 
         if (not self.eve_list) and (self.alm_list):
             self.radio_var.set(0)
             self.radio_button_2.configure(state="disabled")
+            self.label_results_t2.configure(text="Search results shown here.\nEvent logs not imported", justify='left')
 
         #-----------------------------------TAB3
         logger.debug("tab3 init")
@@ -817,6 +820,35 @@ class TabsFrame(ctk.CTkFrame):
         self.cal2t = ctk.CTkOptionMenu(self.frame_left_t3, dynamic_resizing=False, values=TIMES)
         self.cal2t.grid(row=2, column=1, padx=20, pady=(10,20))
         self.cal2t.set("00:00")
+
+        #Information of date limits
+        if not self.app.LogsStandard.empty:
+            mindateS = self.app.LogsStandard['DateTime'].min()
+            maxdateS = self.app.LogsStandard['DateTime'].max()
+            s_text = '  - Standard Logs:    ' + str(mindateS) + '  ---  ' + str(maxdateS) + '\n'
+        else:
+            s_text = '\n'
+
+        if not self.app.LogsAlarms.empty:
+            mindateA = self.app.LogsAlarms['DateTime'].min()
+            maxdateA = self.app.LogsAlarms['DateTime'].max()
+            a_text = '  - Alarm Logs:          ' + str(mindateA) + '  ---  ' + str(maxdateA) + '\n'
+        else:
+            a_text = '\n'
+
+        if not self.app.LogsEvents.empty:
+            mindateE = self.app.LogsEvents['DateTime'].min()
+            maxdateE = self.app.LogsEvents['DateTime'].max()
+            e_text = '  - Event Logs:           ' + str(mindateE) + '  ---  ' + str(maxdateE) + '\n\n'
+        else:
+            e_text = '\n\n'
+
+        self.dates_info = ctk.CTkLabel(self.frame_left_t3, 
+                                       text='*Be aware of date range of the logs imported:\n\n' +
+                                            s_text + a_text + e_text +
+                                            'For more details, use Auxiliary Plot (top right button)',
+                                       justify='left')
+        self.dates_info.grid(row=3, column=0, columnspan=2, padx=20, pady=10, sticky="nw") 
 
         #Variables right side
         self.var_sel_t3 = ctk.CTkScrollableFrame(self.tabview.tab("Personalized Analysis"))
