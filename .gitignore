@@ -2,6 +2,9 @@
 *.html
 *.xlsx
 VisuaLite/modules/__pycache__/*.pyc
+VisuaLite/build/
+VisuaLite/dist/
+VisuaLite/main.spec
 .ipynb_checkpoints/
 *.log
 *.png
