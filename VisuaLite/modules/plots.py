@@ -867,8 +867,9 @@ def create_aux_plot(LogsStandard, LogsAlarms, LogsEvents):
     if not LogsStandard.empty:
         mindateS = LogsStandard['DateTime'].min()
         maxdateS = LogsStandard['DateTime'].max()
-        dates.append(mindateS)
-        dates.append(maxdateS)
+        dates.append(mindateS.date())
+        dates.append(maxdateS.date())
+        dates.sort()
 
         axes[0].plot(LogsStandard['DateTime'], [3] * len(LogsStandard),
                         color='#FFCC00', linewidth=8, label='LogsStandard')
@@ -876,8 +877,11 @@ def create_aux_plot(LogsStandard, LogsAlarms, LogsEvents):
     if not LogsAlarms.empty:
         mindateA = LogsAlarms['DateTime'].min()
         maxdateA = LogsAlarms['DateTime'].max()
-        dates.append(mindateA)
-        dates.append(maxdateA)
+        if not (mindateA.date() in dates):
+            dates.append(mindateA.date())
+        if not (maxdateA.date() in dates):
+            dates.append(maxdateA.date())
+        dates.sort()
 
         axes[0].plot(LogsAlarms['DateTime'], [2] * len(LogsAlarms),
                         color='#ec6066ff', linewidth=8, label='LogsAlarms')
@@ -885,30 +889,31 @@ def create_aux_plot(LogsStandard, LogsAlarms, LogsEvents):
     if not LogsEvents.empty:
         mindateE = LogsEvents['DateTime'].min()
         maxdateE = LogsEvents['DateTime'].max()
-        dates.append(mindateE)
-        dates.append(maxdateE)
+        if not (mindateE.date() in dates):
+            dates.append(mindateE.date())
+        if not (maxdateE.date() in dates):
+            dates.append(maxdateE.date())
+        dates.sort()
 
         axes[0].plot(LogsEvents['DateTime'], [1] * len(LogsEvents),
                         color='#6699ccff', linewidth=8, label='LogsEvents')
 
     axes[0].grid(axis='both', linestyle='--', linewidth=0.5, alpha=0.7)  # Add auxiliary x-axis grid
 
-    # Filter datetime values to get unique dates ignoring time
-    ticks = list(set(dt.date() for dt in dates))
-    ticks.sort()
-
-    # Create a new list to store filtered dates
-    filtered_dates = [ticks[0]]
-    # Iterate through the sorted date list and delete dates near less than x days
-    for i in range(1, len(ticks)):
-        if (max(ticks) - min(ticks)).days > 2: #only if date range of logs is greater than 2 days
+    ticks = dates
+    #only if date range of logs is greater than 10 days, delete near dates
+    if (max(ticks) - min(ticks)).days > 10: 
+        # Create a new list to store filtered dates
+        filtered_dates = [ticks[0]]
+        # Iterate through the sorted date list and delete dates near less than x days
+        for i in range(1, len(ticks)):
             if (ticks[i] - filtered_dates[-1]).days >= 2:
                 filtered_dates.append(ticks[i])
-        else:
-            filtered_dates.append(ticks[i])
+    else:
+        filtered_dates = ticks
 
     # Format the unique dates as "01/01/23" strings
-    xtick_labels = [date.strftime('%d/%m/%y') for date in filtered_dates]
+    xtick_labels = [date.strftime('%d/%m/%Y') for date in filtered_dates]
 
     axes[0].set_xticks(filtered_dates)
     axes[0].set_xticklabels(xtick_labels, rotation=45)
@@ -958,13 +963,13 @@ def create_aux_plot(LogsStandard, LogsAlarms, LogsEvents):
     max_date = LogsStandard['DateTime'].max()
     x_ticks = pd.date_range(start=min_date, end=max_date, freq='D')
     
-    # Set fewer ticks on the x-axis (if possible)
+    # Set fewer ticks on the x-axis (if more than 10 days in logs)
     num_ticks = 10  # Choose the number of ticks you prefer
     if len(x_ticks) >= num_ticks:
         x_ticks = x_ticks[::len(x_ticks) // num_ticks]  # Select every Nth tick
         # Set custom tick positions and labels on the x-axis
         ax1.set_xticks(x_ticks)
-        ax1.set_xticklabels(x_ticks.strftime('%d/%m/%y'), rotation=45)  # Format and rotate tick labels
+        ax1.set_xticklabels(x_ticks.strftime('%d/%m/%Y'), rotation=45)  # Format and rotate tick labels
 
     # Adjust layout
     plt.tight_layout()
@@ -979,7 +984,7 @@ def change_over_preview(df):
 
     logger.debug("fig init")
     # Create a two-row plot
-    fig, ax1 = plt.subplots()
+    fig, ax1 = plt.subplots(figsize=(5, 3.75))
 
     ax1.set_title('Change Over Preview')
     ax1.grid(axis='both', linestyle='--', linewidth=0.5, alpha=0.7)  # Add auxiliary x-axis grid

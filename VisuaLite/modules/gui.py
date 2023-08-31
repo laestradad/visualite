@@ -87,7 +87,7 @@ class CurrentStep(ctk.CTkFrame):
         self.title = ctk.CTkLabel(self, fg_color="transparent", font=ctk.CTkFont(size=22, weight="bold"), anchor="nw")
         self.title.grid(row=0, column=0, padx=20, pady=10, sticky="nw")
         # create label with explanation
-        self.text = ctk.CTkLabel(self, fg_color="transparent", font=ctk.CTkFont(size=12), anchor="nw")
+        self.text = ctk.CTkLabel(self, fg_color="transparent", font=ctk.CTkFont(size=16), anchor="nw")
         self.text.grid(row=1, column=0, padx=25, pady=10, sticky="nw")
         # action button
         self.action_bt = ctk.CTkButton(self)
@@ -583,19 +583,20 @@ class TabsFrame(ctk.CTkFrame):
 
         #Frame for plot preview
         self.co_preview = ctk.CTkFrame(self.tabview.tab("Change Overs"))
-        self.co_preview.grid(row=0, column=0, padx=20, pady=20, sticky = 'nsew')
+        self.co_preview.grid(row=0, column=0, padx=(20,10), pady=20, sticky = 'nsew')
         self.co_preview.grid_columnconfigure(0, weight=1)
         self.co_preview.grid_rowconfigure(1, weight=1)
 
         #Option menu with CO options
         self.co_sel = ctk.StringVar(value="")
-        self.preview_options = ctk.CTkOptionMenu(self.co_preview, dynamic_resizing=False, variable=self.co_sel)
+        self.preview_options = ctk.CTkOptionMenu(self.co_preview, dynamic_resizing=False, variable=self.co_sel,
+                                                 command=self.preview_co)
         self.preview_options.grid(row=0, column=0, padx=20, pady=(20,10), sticky="w")
         self.preview_options.set("Changeover #")
 
-        #Button to show preview
-        self.preview_btn = ctk.CTkButton(self.co_preview, text="Preview", command=self.preview_co)
-        self.preview_btn.grid(row=0, column=1, padx=20, pady=(20,10), sticky="w")
+        #Button to clear preview
+        self.clear_btn = ctk.CTkButton(self.co_preview, text="Clear", command= lambda: self.clear_co_preview(self.fig1))
+        self.clear_btn.grid(row=0, column=1, padx=20, pady=(20,10), sticky="w")
 
         #Plot declaration
         self.fig1 = None
@@ -604,17 +605,13 @@ class TabsFrame(ctk.CTkFrame):
         dummy_plot_light = os.path.join(RESOURCES, 'light_co_preview.png')
         self.dummy_plot_tk = ctk.CTkImage(light_image=Image.open(dummy_plot_light),
                                           dark_image=Image.open(dummy_plot_dark),
-                                          size=(480, 360))
+                                          size=(500, 375))
         self.dummy_plot = ctk.CTkLabel(self.co_preview, text="", image=self.dummy_plot_tk)
-        self.dummy_plot.grid(row=1, column=0, columnspan=2, sticky="nsew", padx=5, pady=10)
-
-        #Clear preview plot
-        self.clear_btn = ctk.CTkButton(self.co_preview, text="Clear", command= lambda: self.clear_co_preview(self.fig1))
-        self.clear_btn.grid(row=2,column=0, columnspan=2, padx=20, pady=(10,20))
+        self.dummy_plot.grid(row=1, column=0, columnspan=2, sticky="nsew", padx=0, pady=10)
 
         #Frame with list of Change overs
         self.results_t1 = ctk.CTkScrollableFrame(self.tabview.tab("Change Overs"))
-        self.results_t1.grid(row=0, column=1, padx=20, pady=20, sticky = 'nsew')
+        self.results_t1.grid(row=0, column=1, padx=(10,20), pady=20, sticky = 'nsew')
 
         #Text before COs
         self.label1 = ctk.CTkLabel(self.results_t1) #text defined later if COs founded
@@ -649,7 +646,6 @@ class TabsFrame(ctk.CTkFrame):
         else:
             #Disable widgets if no ChangeOvers detected
             self.label1.configure(text="No Change Overs detected in data inserted")
-            self.preview_btn.configure(state="disabled")
             self.preview_options.configure(state="disabled")
             self.clear_btn.configure(state="disabled")
 
@@ -736,6 +732,7 @@ class TabsFrame(ctk.CTkFrame):
         self.aux_plot2.grid(row=1, column=5, padx=20, pady=10, sticky="ne")
 
         # Search results
+        self.radiobtn_list = []
         self.results_t2 = ctk.CTkScrollableFrame(self.tabview.tab("Search Event/Alarm"))
         self.results_t2.grid(row=2, column=0, columnspan=5, padx=(20,10), pady=5, sticky="nsew")
         self.label_results_t2 = ctk.CTkLabel(self.results_t2, text="Search results shown here.")
@@ -802,7 +799,7 @@ class TabsFrame(ctk.CTkFrame):
 
         #Frame for calendars
         self.frame_left_t3 = ctk.CTkFrame(self.tabview.tab("Personalized Analysis"))
-        self.frame_left_t3.grid(row=1, column=0, padx=20, pady=10, sticky="nsew")
+        self.frame_left_t3.grid(row=1, column=0, padx=(20,10), pady=10, sticky="nsew")
 
         #Labels and Calendars left side
         self.cal1_text = ctk.CTkLabel(self.frame_left_t3, text='From:')
@@ -810,7 +807,7 @@ class TabsFrame(ctk.CTkFrame):
         self.cal1d = tkcalendar.Calendar(self.frame_left_t3, selectmode="day", date_pattern="yyyy/MM/dd")
         self.cal1d.grid(row=1, column=0, padx=(20,10), pady=2)
         self.cal1t = ctk.CTkOptionMenu(self.frame_left_t3, dynamic_resizing=False, values=TIMES)
-        self.cal1t.grid(row=2, column=0, padx=20, pady=(10,20))
+        self.cal1t.grid(row=2, column=0, padx=20, pady=10)
         self.cal1t.set("00:00")
 
         self.cal1_text = ctk.CTkLabel(self.frame_left_t3, text='To:')
@@ -818,7 +815,7 @@ class TabsFrame(ctk.CTkFrame):
         self.cal2d = tkcalendar.Calendar(self.frame_left_t3, selectmode="day", date_pattern="yyyy/MM/dd")
         self.cal2d.grid(row=1, column=1, padx=(10,20), pady=2)
         self.cal2t = ctk.CTkOptionMenu(self.frame_left_t3, dynamic_resizing=False, values=TIMES)
-        self.cal2t.grid(row=2, column=1, padx=20, pady=(10,20))
+        self.cal2t.grid(row=2, column=1, padx=20, pady=10)
         self.cal2t.set("00:00")
 
         #Information of date limits
@@ -844,15 +841,15 @@ class TabsFrame(ctk.CTkFrame):
             e_text = '\n\n'
 
         self.dates_info = ctk.CTkLabel(self.frame_left_t3, 
-                                       text='*Be aware of date range of the logs imported:\n\n' +
+                                       text='* Be aware of date range of the logs imported:\n\n' +
                                             s_text + a_text + e_text +
                                             'For more details, use Auxiliary Plot (top right button)',
                                        justify='left')
-        self.dates_info.grid(row=3, column=0, columnspan=2, padx=20, pady=10, sticky="nw") 
+        self.dates_info.grid(row=3, column=0, columnspan=2, padx=20, pady=5, sticky="nw") 
 
         #Variables right side
         self.var_sel_t3 = ctk.CTkScrollableFrame(self.tabview.tab("Personalized Analysis"))
-        self.var_sel_t3.grid(row=1, column=1, padx=20, pady=10, sticky="nsew")
+        self.var_sel_t3.grid(row=1, column=1, padx=(10,20), pady=10, sticky="nsew")
         self.switch_list_t3 = []
         for column_name in self.columns:
             self.add_switch_t3(column_name)
@@ -860,7 +857,7 @@ class TabsFrame(ctk.CTkFrame):
         #Action button Tab3
         self.action_t3 = ctk.CTkButton(self.tabview.tab("Personalized Analysis"), text="Generate and save Plot",
                                          command=self.generate_personalized_plot)
-        self.action_t3.grid(row=2, column=0, columnspan=2, padx=20, pady=20)
+        self.action_t3.grid(row=2, column=0, columnspan=2, padx=20, pady=(5,10))
 
     #TAB1 functions
     def add_checkbox_t1(self, item):
@@ -1002,10 +999,11 @@ class TabsFrame(ctk.CTkFrame):
         self.hide_progress_bar()
         logger.debug("--- Tab1 - plot_sel_COs finished")
 
-    def preview_co(self):
+    def preview_co(self, CO):
         logger.debug("preview_co started ---")
 
-        CO = self.co_sel.get()
+        #If callback from optionmenu, value is passed as argument
+        #CO = self.co_sel.get()
         
         if CO == "Changeover #": #defult value of dropdown
             logger.debug("no changeover selected -> Stop")
@@ -1025,7 +1023,7 @@ class TabsFrame(ctk.CTkFrame):
             # Show plot in App
             self.canvas1 = FigureCanvasTkAgg(self.fig1, master=self.co_preview)
             self.canvas1.draw()
-            self.canvas1.get_tk_widget().grid(row=1, column=0, columnspan=2, sticky="nsew", padx=5, pady=10)
+            self.canvas1.get_tk_widget().grid(row=1, column=0, columnspan=2, sticky="nsew", padx=0, pady=10)
         
         logger.debug("--- preview_co finished")
 
@@ -1087,7 +1085,12 @@ class TabsFrame(ctk.CTkFrame):
             self.result_selection = tk.IntVar(value=0)
             if self.timestamps:
 
-                self.radiobtn_list = []
+                # Clean previous results
+                if self.radiobtn_list:
+                    for radiobtn in self.radiobtn_list:
+                        radiobtn.grid_forget()
+                    self.radiobtn_list = []
+
                 self.label_results_t2.configure(text="In the imported logs there are " + str(len(self.timestamps)) + " occurrences of " + selected_item + "." +
                                                 "\n\nPlease select the occurence you want to plot:", justify='left')
                 
