@@ -1,6 +1,7 @@
 *.csv
 *.html
 *.xlsx
+__pycache__/
 VisuaLite/modules/__pycache__/*.pyc
 VisuaLite/build/
 VisuaLite/dist/
