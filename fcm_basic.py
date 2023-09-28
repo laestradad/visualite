@@ -4,6 +4,82 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import plotly.express as px
 
+# Check csv files
+def read_mch_info(file):
+    with open(file, 'r') as csv_file:
+        csv_reader = reader(csv_file, delimiter=';')
+        mch_info = []
+        for i, row in enumerate(csv_reader):
+            # row variable is a list that represents a row in csv
+            mch_info.append(row[0])
+            if i == 2:
+                break          
+    return(mch_info)
+
+def check_files (files):
+    logger.debug("check_files started ---")
+
+    #Standard file name pattern
+    pattern = r"^[ASE]_\d{4}_\d{1,2}_\d{1,2}__\d{1,2}_\d{1,2}_\d{1,2}\.csv$"
+    """
+    ^: Start of the string 
+    [ASE]: either "A", "S", or "E" 
+    _: character 
+    \d{4}: Matches exactly 4 digits 
+    \d{1,2}: Matches 1 or 2 digits 
+    \.csv: Matches the ".csv" extension
+    $: End of the string
+    """
+
+    #Retrieve sample Machine information
+    mch_info_check = read_mch_info(files[0])
+    logger.debug(f"{mch_info_check=}")
+
+    for file in (files):
+        #Check file name
+        file_name = file.split('/')[-1] #get file name from path
+        if re.match(pattern, file_name) is None: #re library
+            logger.error('--- File name does not correspond to FCM structure')
+            logger.error(file)
+            return 0, file
+
+        with open(file, 'r') as csv_file:
+            csv_reader = reader(csv_file, delimiter=';')
+            mch_info = []
+            for i, row in enumerate(csv_reader):
+                if i < 3:
+                    #Save first three rows
+                    mch_info.append(row[0])
+                elif i == 3:
+                    # Compare it with sample machine info
+                    if mch_info != mch_info_check:
+                        logger.error('--- File does not correspond to the same machine')
+                        logger.error(file)
+                        return 0, file
+
+                    #Standard columns
+                    if file_name[0] == 'S':
+                        check_cols = std_cols
+                        
+                    elif file_name[0] == 'A':
+                        check_cols = alm_cols
+
+                    elif file_name[0] == 'E':
+                        check_cols = eve_cols
+
+                    # Iterate row4 and check cols are from fcm logs
+                    for col in check_cols:
+                        if not (col in row):
+                            logger.debug(row)
+                            logger.error("Column not found in std_cols: " + col)
+                            logger.debug(check_cols)
+                            logger.error(file)
+                            logger.error('--- File does not match with FCM One/1.5 log file structure')
+                            return 0, file
+
+    logger.debug('--- All files correspond to the same machine and FCM One/1.5 log file structure')
+    return 1, mch_info_check
+
 std_cols = ['DateTime','CV1_Position','CV2_Position','CV3_Position','CV4_Position',
             'ChangeoverInProgress','MachineStatus','ControlType',
             'Temperature','TemperatureSetPoint','TemperatureHighLimit','TemperatureLowLimit',

@@ -1,0 +1,177 @@
+{
+    "units" : {
+        "DateTime": "datetime",
+        "CV1_Position": "valve_pos",
+        "CV2_Position": "valve_pos",
+        "CV3_Position": "valve_pos",
+        "CV4_Position": "valve_pos",
+        "ChangeoverInProgress": "bool",
+        "MachineStatus": "int",
+        "ControlType": "int",
+        "Temperature": "degreesC",
+        "TemperatureSetPoint": "degreesC",
+        "TemperatureHighLimit": "degreesC",
+        "TemperatureLowLimit": "degreesC",
+        "Viscosity": "cSt",
+        "ViscositySetPoint": "cSt",
+        "ViscosityHighLimit": "cSt",
+        "ViscosityLowLimit": "cSt",
+        "ActualSetpoint": "degreesC | cSt",
+        "PID_OutputError": "degreesC | cSt",
+        "FlowMeter": "l/h | kg/h",
+        "PT1": "bar",
+        "PT2": "bar"
+    },
+
+    "std_cols" : [
+        "DateTime",
+        "CV1_Position",
+        "CV2_Position",
+        "CV3_Position",
+        "CV4_Position",
+        "ChangeoverInProgress",
+        "MachineStatus",
+        "ControlType",
+        "Temperature",
+        "TemperatureSetPoint",
+        "TemperatureHighLimit",
+        "TemperatureLowLimit",
+        "Viscosity",
+        "ViscositySetPoint",
+        "ViscosityHighLimit",
+        "ViscosityLowLimit",
+        "ActualSetpoint",
+        "PID_OutputError",
+        "FlowMeter",
+        "PT1",
+        "PT2"
+    ],
+
+    "alm_cols" : ["DateTime", "AlarmNumber"],
+    "eve_cols" : [],
+
+    "change_over_vars" : {
+        "Temperature": ["Temperature","TemperatureSetPoint","TemperatureHighLimit","TemperatureLowLimit"],
+        "Viscosity": ["Viscosity","ViscositySetPoint","ViscosityHighLimit","ViscosityLowLimit"],
+        "Valves": ["CV1_Position","CV2_Position","CV3_Position","CV4_Position"],
+        "Bool": ["ChangeoverInProgress"],
+        "Flow": ["FlowMeter"],
+        "Pressure": ["PT1","PT2"]
+    },
+
+    "alarm_cats" : {
+        "Main1": [1,14],
+        "Filter": [15,19],
+        "Fuel Handling": [20,29],
+        "Pumps": [30,49],
+        "Flow Meter": [50,54],
+        "Mixing Tank": [55,59],
+        "Cooler": [60,69],
+        "Others": [70,99],
+        "TempControl Alarms": [100,199],
+        "Main2": [200,255]
+    },
+
+    "alarm_labels": { 
+        "1": "A1 module fault",
+        "2": "A2 module fault",
+        "3": "A3 module fault",
+        "4": "A4 module fault",
+        "5": "A5 module fault",
+        "6": "A6 module fault",
+        "10": "Emergency stop button pressed",
+        "11": "Power failure",
+        "200": "PT1 Failure",
+        "201": "PT2 Failure",
+        "202": "PT1 Low pressure",
+        "203": "PT1 High pressure",
+        "204": "PT2 Low pressure",
+        "205": "PT2 High pressure",
+        "210": "External start consense missing",
+        "250": "Local HMI Panel disconnected",
+        "251": "Remote HMI panel disconnected",
+        "15": "Filter feedback is missing",
+        "16": "DPS activated",
+        "20": "CV1 fault - Both switches ON",
+        "21": "CV1 fault - No switches ON and the system is not changing fuel",
+        "22": "CV1 fault - Switch not changed in timeSwitch/5 seconds",
+        "23": "Fuel switch not in time",
+        "30": "Standby Supply pump not available",
+        "31": "Standby Circulation pump not available",
+        "32": "Pumps Voltage ON",
+        "50": "Mass flow meter low cut off",
+        "55": "Mixing tank low level",
+        "60": "CV6 fault - Both switches ON",
+        "61": "CV6 fault - No switches ON and the system is not changing fuel",
+        "62": "CV6 fault - Switch not changed in timeSwitch/5 seconds",
+        "63": "Cooler switch not in time",
+        "100": "El.Heater 1 fault",
+        "101": "El. Heater 2 fault",
+        "102": "TT2 fault",
+        "103": "Viscosity transmitter fault",
+        "104": "High viscosity",
+        "105": "Low viscosity",
+        "106": "High temperature",
+        "107": "Low temperature",
+        "108": "Control mode changed dute to sensor fault",
+        "109": "Temperature not reached during ramp",
+        "110": "Changeover not possible",
+        "111": "Design temperature reached",
+        "112": "Density transmitter fault"
+    },
+
+    "event_labels": {},
+
+    "cv1_labels" : {
+        "0": "Both LS activated",
+        "1": "Fuel 1 Position",
+        "2": "No LS activated",
+        "3": "Other fuel Position"
+    },
+
+    "cv2_labels" : {
+        "0": "Both LS activated",
+        "1": "Fuel 2 Position",
+        "2": "No LS activated",
+        "3": "Other Fuel Position"
+    },
+
+    "cv3_labels" : {
+        "0": "Both LS activated",
+        "1": "Heater Position",
+        "2": "No LS activated",
+        "3": "Cooler Position"
+    },
+
+    "cv4_labels" : {
+        "0": "Both LS activated",
+        "1": "Cooler Position",
+        "2": "No LS activated",
+        "3": "Bypass Position"
+    },
+
+    "cv5_labels" : {},
+
+    "current_ctrl_label" : {
+        "0": "Viscosity Control",
+        "1": "Temperature Control"
+    },
+
+    "machine_sts_label": {
+        "0": "System not started in manual mode OR TempCtrl_nothing",
+        "1": "System not started in auto mode",
+        "5": "System started",
+        "10": "Ramp paused",
+        "20": "Ramping",
+        "100": "Wait for CV1 signal lost",
+        "110": "Wait for Viscosity change",
+        "115": "Wait for CV6 in bypass",
+        "120": "Wait for temperature ramp completed",
+        "125": "Wait for cv4 to be moved",
+        "130": "Wait for changeover completed",
+        "135": "Waiting for CV1 in position",
+        "50": "Stopping",
+        "60": "System stopped in manual mode",
+        "61": "System stopped in auto mode"
+    }
+}

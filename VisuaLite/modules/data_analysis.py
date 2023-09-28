@@ -385,6 +385,7 @@ def Format_DF_ELogs(list_files):
                                                            30 : 'Auto Mode Selected',
                                                            31 : 'Manual Mode Selected'}).fillna('Unknown')
 
+    # For events with relevant "Data", add it to label (e.g. parameter value)
     LogsEvents.loc[(LogsEvents['EventNumber'] == 6) |
                 (LogsEvents['EventNumber'] == 7) | 
                 (LogsEvents['EventNumber'] == 8), 'Label'] = LogsEvents['Label'].astype(str) + ": " + LogsEvents['Data'].astype(str)

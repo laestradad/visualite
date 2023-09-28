@@ -1,0 +1,23 @@
+differences plot co:
+- input info (events + mch_info)
+- print for logger
+- alarm label
+
+differences data_analysis:
+- Format_DF_SLogs:
+	filter df std_cols
+	columns as float
+	CV Labels
+	ChangeOver column name
+
+- Format_DF_ALogs:
+	Labels
+
+- Format_DF_ELogs:
+	no in Basic
+
+- import_data:
+	eventfiles list
+	check files
+	call format event logs 
+	return values

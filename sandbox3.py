@@ -4,14 +4,25 @@ import tkinter.filedialog as fd
 # Execution path
 PATH = os.getcwd()
 
-dirname = fd.askdirectory(title='Select a directory with log files')
+import json
+TXT_FILE = 'Visualite/resources/fcm_one.txt'  # Replace with the path to your text file
 
-csv_files_list = []
-for filename in os.listdir(dirname):
-    if filename.lower().endswith('.csv'):
-        csv_files_list.append(filename)
+with open(TXT_FILE, 'r') as file:
+    data = json.load(file)
 
-COs, LogsStandard, LogsAlarms = import_data(dirname, csv_files_list)
+# Access data like this:
+std_cols = data['std_cols']
+print(std_cols)
+
+if False:
+    dirname = fd.askdirectory(title='Select a directory with log files')
+
+    csv_files_list = []
+    for filename in os.listdir(dirname):
+        if filename.lower().endswith('.csv'):
+            csv_files_list.append(filename)
+
+#COs, LogsStandard, LogsAlarms = import_data(dirname, csv_files_list)
 
 plot_type = "Overlap" # "Separate" or "Overlap"
 
