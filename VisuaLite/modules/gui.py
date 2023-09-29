@@ -240,6 +240,9 @@ class App(ctk.CTk):
         App.frames["CSFrame"].action_bt.configure(command=self.select_folder)
         App.frames["CSFrame"].action_bt.grid(row=1, column=2, padx=20, pady=10, sticky="se")
 
+        # Machine Type dropdown
+        self.mch_type_dropdown.configure(state="enabled")
+
         #WorkSpace: Empty
         self.show_frame("WSFrame")
         
@@ -260,6 +263,9 @@ class App(ctk.CTk):
         App.frames["CSFrame"].title.configure(text="Import Logs")
         App.frames["CSFrame"].text.configure(text="Folder selected: " + str(self.dirname))
 
+        # Machine Type dropdown
+        self.mch_type_dropdown.configure(state="enabled")
+
         #WorkSpace: Scrollable frame
         App.frames["FilesUpload"] = CheckBoxFrame(self.right_side_panel, command=self.checkbox_frame_event,
                                                                  item_list=self.csv_files_list)
@@ -278,6 +284,9 @@ class App(ctk.CTk):
         #Update breadcrumb
         App.frames["BCFrame"].grid_columnconfigure(1, weight=0)
         App.frames["BCFrame"].grid_columnconfigure(0, weight=1)
+
+        # Machine Type dropdown
+        self.mch_type_dropdown.configure(state="disabled")
 
         #Update texts
         App.frames["CSFrame"].title.configure(text="Importing data")
@@ -301,6 +310,9 @@ class App(ctk.CTk):
         App.frames["BCFrame"].step1_label.configure(font=ctk.CTkFont(size=15, weight="normal"), image=App.frames["BCFrame"].step1g_img_tk)
         App.frames["BCFrame"].step2_label.configure(font=ctk.CTkFont(size=18, weight="bold"), image=App.frames["BCFrame"].step2_img_tk)
 
+        # Machine Type dropdown
+        self.mch_type_dropdown.configure(state="disabled")
+
         #Update texts
         App.frames["CSFrame"].title.configure(text="Select Analysis type")
         App.frames["CSFrame"].text.configure(text="In each type you can generate plots to make your own analysis")
@@ -323,11 +335,18 @@ class App(ctk.CTk):
         # create sidebar logo
         self.logo_label = ctk.CTkLabel(parent, text="VisuaLite", font=ctk.CTkFont(size=22, weight="bold"))
         self.logo_label.grid(row=0, column=0, padx=20, pady=(20, 10))
-        # create info label
-        self.info_label = ctk.CTkLabel(parent, text="FCM One | 1.5", font=ctk.CTkFont(size=15))
-        self.info_label.grid(row=1, column=0, padx=20, pady=(20, 10))
+        
+        # create dropdown of machine type
+        self.mt_label = ctk.CTkLabel(parent, text="Machine type:", font=ctk.CTkFont(size=16))
+        self.mt_label.grid(row=1, column=0, padx=20, pady=(20, 5))
+        self.mch_type = ctk.StringVar(value="FCM One | 1.5")
+        self.mch_type_dropdown = ctk.CTkOptionMenu(parent, dynamic_resizing=False, 
+                                    variable=self.mch_type, values=["FCM One | 1.5", "FCM 2b | Basic"])
+        self.mch_type_dropdown.grid(row=2, column=0, padx=20, pady=0)
+        self.mch_type_dropdown.set("FCM One | 1.5")
+
         # make middle "empty" row have the priority
-        parent.grid_rowconfigure(2, weight=1)
+        parent.grid_rowconfigure(3, weight=1)
         # Progress bar (not positioned, only declared)
         self.progress = ctk.CTkProgressBar(parent, width=100)
         self.progress.configure(mode="indeterminate")
@@ -335,15 +354,15 @@ class App(ctk.CTk):
 
         # create app controls of appearance and scaling
         self.appearance_mode_label = ctk.CTkLabel(parent, text="Appearance Mode:", anchor="w")
-        self.appearance_mode_label.grid(row=3, column=0, padx=20, pady=(10, 0))
+        self.appearance_mode_label.grid(row=4, column=0, padx=20, pady=(10, 0))
         self.appearance_mode_optionemenu = ctk.CTkOptionMenu(parent, values=["Light", "Dark"],command=self.change_appearance_mode_event)
-        self.appearance_mode_optionemenu.grid(row=4, column=0, padx=20, pady=(10, 10))
+        self.appearance_mode_optionemenu.grid(row=5, column=0, padx=20, pady=(5, 10))
         self.appearance_mode_optionemenu.set("Dark")
 
         self.scaling_label = ctk.CTkLabel(parent, text="UI Scaling:", anchor="w")
-        self.scaling_label.grid(row=5, column=0, padx=20, pady=(10, 0))
+        self.scaling_label.grid(row=6, column=0, padx=20, pady=(10, 0))
         self.scaling_optionemenu = ctk.CTkOptionMenu(parent, values=["80%", "90%", "100%", "110%", "120%"],command=self.change_scaling_event)
-        self.scaling_optionemenu.grid(row=6, column=0, padx=20, pady=(10, 20))
+        self.scaling_optionemenu.grid(row=7, column=0, padx=20, pady=(5, 20))
         self.scaling_optionemenu.set("100%")
 
     def __init__(self):
@@ -513,7 +532,7 @@ class App(ctk.CTk):
 
         # Call Data Analysis function and assign outputs to App variables
         try:
-            self.import_success, self.mch_info, self.COs,self.LogsStandard, self.LogsAlarms, self.LogsEvents = fcm_da.import_data(self.dirname, self.selected_files)
+            self.import_success, self.mch_info, self.COs,self.LogsStandard, self.LogsAlarms, self.LogsEvents = fcm_da.import_data(self.dirname, self.selected_files, self.mch_type.get())
             logger.debug(f"{self.import_success=}")
 
         except Exception as e:
@@ -1344,7 +1363,7 @@ class TabsFrame(ctk.CTkFrame):
         return re.match(pattern, filename) is not None
 
     def show_progress_bar(self):
-        self.app.progress.grid(row=2, column=0, padx=10, pady=50, sticky="ew") 
+        self.app.progress.grid(row=3, column=0, padx=10, pady=50, sticky="ew") 
     
     def hide_progress_bar(self):
         self.app.progress.grid_forget()

@@ -14,21 +14,12 @@ SCRIPT_PATH = os.path.dirname(os.path.abspath(__file__))
 # Alfa Laval Logo path
 AL_LOGO = os.path.join(SCRIPT_PATH, '..', 'resources', 'ALlogo.png')
 # Construct the path to the file.txt in the resources directory
-UNITS = os.path.join(SCRIPT_PATH, '..', 'resources', 'units.txt')
-
-#----------------------------------------------------------- Standard columns of FCM_ONE log files
-std_cols = ['DateTime','PT1','PT2','TT1','TT2','TargetTemperature','TemperatureLowLimit','TemperatureHighLimit',
-            'VT','TargetViscosity','ViscosityLowLimit','ViscosityHighLimit','Density','FM1_MassFlow','FM1_Density',
-            'FM1_Temperature','FM2_MassFlow','FM2_Density','FM2_Temperature','FM3_MassFlow','FM3_Density',
-            'FM3_Temperature','FM4_MassFlow','FM4_Density','FM4_Temperature','FT_VolumeFlow','FT_MassFlow',
-            'FT_Density','FT_Temperature','SO2','CO2','SC','CV1_Position','CV2_Position','CV3_Position','CV4_Position','CV5_Position',
-            'CurrentControl','SupplyCurrentPump','CircCurrentPump','CurrentFilter','F60InAutoMode','ChangeOverInProgress','DPT_AI']
-alm_cols = ['DateTime', 'AlarmNumber']
-eve_cols = ['DateTime', 'GpsPos', 'EventNumber', 'Data']
-
-#----------------------------------------------------------- IMPORT UNITS FOR FCM ONE LOG FILES
-with open(UNITS, 'r') as file:
-    units = json.load(file)
+FCM_BASIC = os.path.join(SCRIPT_PATH, '..', 'resources', 'fcm_basic.txt')
+FCM_ONE = os.path.join(SCRIPT_PATH, '..', 'resources', 'fcm_one.txt')
+# Empty variable to load data of txt files
+DATA = None
+# Empty variable to save Machine Type
+MT = None
 
 #----------------------------------------------------------- DECORATORS
 def custom_callback(func):
@@ -52,6 +43,22 @@ def read_mch_info(file):
             if i == 2:
                 break          
     return(mch_info)
+
+def load_data(mch_type):
+    logger.debug("load_data started ---")
+    
+    if mch_type == "FCM One | 1.5":
+        txt_file = FCM_ONE
+
+    elif mch_type == "FCM 2b | Basic":
+        txt_file = FCM_BASIC
+
+    global DATA
+    with open(txt_file, 'r') as file:
+        DATA = json.load(file)
+
+    logger.debug(DATA)
+    logger.debug("--- load_data finsihed")
 
 def check_files (files):
     logger.debug("check_files started ---")
@@ -96,13 +103,13 @@ def check_files (files):
 
                     #Standard columns
                     if file_name[0] == 'S':
-                        check_cols = std_cols
+                        check_cols = DATA['std_cols']
                         
                     elif file_name[0] == 'A':
-                        check_cols = alm_cols
+                        check_cols = DATA['alm_cols']
 
                     elif file_name[0] == 'E':
-                        check_cols = eve_cols
+                        check_cols = DATA['eve_cols']
 
                     # Iterate row4 and check cols are from fcm logs
                     for col in check_cols:
@@ -145,8 +152,15 @@ def concat_files(AllFilesNames):
     return(DF_Data)
 
 @custom_callback # wrapper to catch errors
-def import_data(dirname, file_list):
+def import_data(dirname, file_list, mch_type):
     logger.debug("--- import_data started ---")
+    
+    # Save machine type
+    global MT
+    MT = mch_type
+
+    # Load data from txt files
+    load_data(MT)
 
     #Init variables
     mch_info = None
@@ -208,57 +222,23 @@ def Format_DF_SLogs(list_files):
     logger.debug("Formatting Standard Logs ---")
 
     # Format LogsStandard
-    LogsStandard = LogsStandard[['DateTime','GpsPos', 'ChangeOverInProgress','F60InAutoMode','CV1_Position', 'CV2_Position',
-                    'CV3_Position', 'CV4_Position', 'CV5_Position', 'SupplyCurrentPump',
-        'CircCurrentPump', 'CurrentControl', 'CurrentFilter',
-        'PT1', 'PT2', 'TT1', 'TT2', 'TargetTemperature',
-        'TemperatureLowLimit', 'TemperatureHighLimit', 'VT', 'TargetViscosity',
-        'ViscosityLowLimit', 'ViscosityHighLimit', 'Density', 'FM1_MassFlow',
-        'FM1_Density', 'FM1_Temperature', 'FM2_MassFlow', 'FM2_Density',
-        'FM2_Temperature', 'FM3_MassFlow', 'FM3_Density', 'FM3_Temperature',
-        'FM4_MassFlow', 'FM4_Density', 'FM4_Temperature', 'FT_VolumeFlow',
-        'FT_MassFlow', 'FT_Density', 'FT_Temperature', 'SO2', 'CO2', 'SC','DPT_AI']]
+    LogsStandard = LogsStandard[DATA['std_cols']]
 
     # Columns as float
     LogsStandard.iloc[:,13:] = LogsStandard.iloc[:,13:].astype(float)
 
     # Create labels for CV positions
-    LogsStandard[['CV1_Label','CV2_Label','CV3_Label','CV4_Label','CV5_Label']] = LogsStandard[['CV1_Position','CV2_Position','CV3_Position','CV4_Position','CV5_Position']]
+    LogsStandard[['CV1_Label','CV2_Label','CV3_Label','CV4_Label','CV5_Label']] = LogsStandard[['CV1_Position','CV2_Position','CV3_Position','CV4_Position','CV5_Position']].astype(str)
 
-    LogsStandard[['CV1_Label']] = LogsStandard[['CV1_Label']] .replace({ 
-        0: "Both LS activated",
-        1: "Fuel 1 Position",
-        2: "No LS activated",
-        3: "Other fuel Position"
-    }).fillna('Unknown')
+    LogsStandard[['CV1_Label']] = LogsStandard[['CV1_Label']] .replace(DATA['cv1_labels']).fillna('Unknown')
 
-    LogsStandard[['CV2_Label']] = LogsStandard[['CV2_Label']] .replace({ 
-        0: "Both LS activated",
-        1: "Fuel 2 Position",
-        2: "No LS activated",
-        3: "Other Fuel Position"
-    }).fillna('Unknown')
+    LogsStandard[['CV2_Label']] = LogsStandard[['CV2_Label']] .replace(DATA['cv2_labels']).fillna('Unknown')
 
-    LogsStandard[['CV3_Label']] = LogsStandard[['CV3_Label']] .replace({ 
-        0: "Both LS activated",
-        1: "Fuel 3 Position",
-        2: "No LS activated",
-        3: "Fuel 4 Position"
-    }).fillna('Unknown')
+    LogsStandard[['CV3_Label']] = LogsStandard[['CV3_Label']] .replace(DATA['cv3_labels']).fillna('Unknown')
 
-    LogsStandard[['CV4_Label']] = LogsStandard[['CV4_Label']] .replace({ 
-        0: "Both LS activated",
-        1: "Heater Position",
-        2: "No LS activated",
-        3: "Cooler Position"
-    }).fillna('Unknown')
+    LogsStandard[['CV4_Label']] = LogsStandard[['CV4_Label']] .replace(DATA['cv4_labels']).fillna('Unknown')
 
-    LogsStandard[['CV5_Label']] = LogsStandard[['CV5_Label']] .replace({ 
-        0: "Both LS activated",
-        1: "Cooler Position",
-        2: "No LS activated",
-        3: "Bypass Position"
-    }).fillna('Unknown')
+    LogsStandard[['CV5_Label']] = LogsStandard[['CV5_Label']] .replace(DATA['cv5_labels']).fillna('Unknown')
 
     # Identify when Change Over Started and Finished
     # ChangeOverInProgress = O : no change
@@ -283,78 +263,8 @@ def Format_DF_ALogs(list_files):
     LogsAlarms = LogsAlarms[['DateTime', 'AlarmNumber']]
 
     # Create Labels of the Alarms
-    LogsAlarms['Label'] = LogsAlarms['AlarmNumber'] 
-    LogsAlarms[['Label']] = LogsAlarms[['Label']] .replace({ 
-        0: "PLC battery low / Not present",
-        1: "Dynamic I/O Configuration Error",
-        2: "Dynamic I/O Configuration In Progress",
-        3: "Dynamic I/O Configuration Done",
-        4: "Invalid GPS Sig-nal ",
-        5: "I/O Module Error",
-        102: "Emergency stop",
-        103: "Power failure",
-        104: "Instrument Mod-bus Communi-cation Error",
-        105: "UPS Battery Low",
-        106: "Local HMI com-munication lost",
-        107: "Remote HMI communication lost",
-        200: "Changeover Valve 1 Alarm",
-        201: "Changeover Valve 2 Alarm",
-        202: "Changeover Valve 3 Alarm",
-        203: "Changeover Finished",
-        300: "SCT sensor fault, signal missing",
-        301: "Fuel consump-tion too low for blending",
-        400: "Supply Pump 1 failure",
-        401: "Supply Pump 2 failure",
-        402: "Supply pump 1 Not Available",
-        403: "Supply pump 2 Not Available",
-        404: "PT1 limit high",
-        405: "PT1 limit low",
-        406: "PT1 sensor fault, signal missing",
-        408: "Supply Pump switch over done",
-        409: "Automatic switch of Supply Pumps in a short time",
-        410: "Standby Supply Pump run time reset to zero",
-        411: "Supply Pump switch time elapsed",
-        412: "Supply Pump switching failed",
-        413: "Standby Supply Pump not avail-able Please re-store it",
-        414: "Warning/Alarm on VFD 1",
-        415: "Warning/Alarm on VFD 2",
-        500: "Circulation Pump 1 failure",
-        501: "Circulation Pump 2 failure",
-        502: "Circulation pump 1 Not Available",
-        503: "Circulation pump 2 Not Available",
-        504: "PT2 limit high",
-        505: "PT2 limit low",
-        506: "PT2 sensor fault, signal missing",
-        508: "Circulation Pump switch-over done",
-        509: "Automatic switch of Circulation Pumps in a short time",
-        510: "Standby Circulation Pump run time reset to zero",
-        511: "Circulation Pump switch time elapsed",
-        512: "Circulation Pump switching failed ",
-        513: "Standby Circula-tion Pump not available. Please restore it.",
-        600: "Automatic Filter Differential Pressure high",
-        601: "Automatic Filter Failure",
-        602: "DPT Filter Fault",
-        800: "Mixing tank low level",
-        900: "Electric Heater 1-Fault",
-        901: "Electric Heater 2-Fault",
-        902: "Fuel Temperature High",
-        903: "Fuel Temperature Low",
-        905: "Chiller Fault",
-        906: "Viscosity not reached during Changeover.",
-        907: "TT1 sensor fault, signal missing",
-        908: "TT2 sensor fault, signal missing",
-        911: "CV4 Alarm",
-        912: "CV5 Alarm",
-        913: "Switched to Vis-cosity control",
-        914: "Switched to Temperature control",
-        915: "Temperature control out of order, will be switched off within 5 minutes",
-        916: "Temperature control switched off",
-        917: "Very high temperature reached",
-        1000: "Viscosity Sensor Fault",
-        1002: "Density Sensor Fault",
-        1004: "Fuel viscosity High limit alarm",
-        1005: "Fuel viscosity Low limit alarm"
-    }).fillna('Unknown')
+    LogsAlarms['Label'] = LogsAlarms['AlarmNumber'].astype(str)
+    LogsAlarms[['Label']] = LogsAlarms[['Label']] .replace(DATA['alarm_labels']).fillna('Unknown')
 
     LogsAlarms['Alm_Code_Label'] = "A" + LogsAlarms['AlarmNumber'].astype(str) + "_" + LogsAlarms['Label'] 
     
@@ -370,20 +280,10 @@ def Format_DF_ELogs(list_files):
     logger.debug("Formatting Event Logs ---")
 
     LogsEvents = LogsEvents[['DateTime', 'GpsPos', 'EventNumber', 'Data']]
-    LogsEvents['Label'] = LogsEvents['EventNumber'] 
+    LogsEvents['Label'] = LogsEvents['EventNumber'].astype(str) 
 
     #Create Labels of the Events
-    LogsEvents[['Label']] = LogsEvents[['Label']].replace({0 : 'FCM Started',
-                                                           1 : 'FCM Stopped',
-                                                           2 : 'Changeover initiated',
-                                                           3 : 'Changeover Finsihed',
-                                                           4 : 'Any device in Manual Mode',
-                                                           5 : 'All device in Auto Mode',
-                                                           6 : 'P401 SPump value changed',
-                                                           7 : 'P501 CPump value changed',
-                                                           8 : 'P903 Heater In Use value changed',
-                                                           30 : 'Auto Mode Selected',
-                                                           31 : 'Manual Mode Selected'}).fillna('Unknown')
+    LogsEvents[['Label']] = LogsEvents[['Label']].replace(DATA['event_labels']).fillna('Unknown')
 
     # For events with relevant "Data", add it to label (e.g. parameter value)
     LogsEvents.loc[(LogsEvents['EventNumber'] == 6) |
@@ -436,6 +336,8 @@ def ChangeOverToDF(CO, logs):
 def classify_cols(selected):
     logger.debug("classify_cols started ---")
     logger.debug(f"{selected=}")
+
+    units = DATA['units']
 
     filter_unit_cols = {col : unit for col, unit in units.items() if col in selected}
     # {key_expression: value_expression for item in iterable if condition}

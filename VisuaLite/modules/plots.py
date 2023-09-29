@@ -18,8 +18,6 @@ logger.info("plots.py imported")
 SCRIPT_PATH = os.path.dirname(os.path.abspath(__file__))
 # Alfa Laval Logo path
 AL_LOGO = os.path.join(SCRIPT_PATH, '..', 'resources', 'ALlogo.png')
-# Construct the path to the file.txt in the resources directory
-UNITS = os.path.join(SCRIPT_PATH, '..', 'resources', 'units.txt')
 
 # Custom dark style for matplotlib
 custom_dark_style = {
@@ -43,33 +41,6 @@ ALcolors = ['rgba(17, 56, 127, 1)', #AL blue
             'rgba(147, 199, 198, 1)', #AL water
             'rgba(0, 127, 200, 1)', #AL innovation
             ]
-
-# FCM One/1.5 change over variables and classification
-change_over_vars = {
-    'Temperature': ['TT1','TT2','TargetTemperature','TemperatureLowLimit', 'TemperatureHighLimit'],
-    'Viscosity': ['VT','TargetViscosity','ViscosityLowLimit','ViscosityHighLimit'],
-    'Valves': ['CV1_Position', 'CV2_Position', 'CV3_Position', 'CV4_Position', 'CV5_Position'],
-    'Bool': ['ChangeOverInProgress'],
-    'Flow': ['FT_MassFlow','FT_VolumeFlow'],
-    'Pressure': ['PT1','PT2'],
-    'Density': ['Density']
-    }
-
-# FCM One/1.5 alarms classification
-alarm_cats = {
-    'System Alarms': [0,199],
-    'ChangeOver Alarms': [200,299],
-    'Blending Alarms': [300,399],
-    'Pressure Alarms': [400,599],
-    'Filter Alarms': [500,699],
-    'Mixing Tank': [800,899],
-    'TempControl Alarms': [900,999],
-    'ViscMeas Alarms': [1000,1099]
-}
-
-# FCM One/1.5 log columns classified by unit
-with open(UNITS, 'r') as file:
-    units = json.load(file)
 
 #----------------------------------------------------------- DECORATORS (to wrap functions and log errors if any)
 def custom_callback(func):
@@ -153,6 +124,12 @@ def filled_trace(x,y,name,color,cat):
 @custom_callback # wrapper to catch errors
 def change_over_overlap(LogsStandard, LogsAlarms, LogsEvents, mch_info):
     logger.debug("change_over_overlap started ---")
+
+    # Change over variables and classification
+    change_over_vars = fcm.DATA['change_over_vars']
+
+    # Alarms classification
+    alarm_cats = fcm.DATA['alarm_cats']
 
     # dates of Standard logs to filter Events and Alarms
     mindate = LogsStandard['DateTime'].min()
@@ -430,6 +407,12 @@ def change_over_overlap(LogsStandard, LogsAlarms, LogsEvents, mch_info):
 @custom_callback # wrapper to catch errors
 def change_over_divided(LogsStandard, LogsAlarms, LogsEvents, mch_info):
     logger.debug("change_over_divided started ---")
+
+    # Change over variables and classification
+    change_over_vars = fcm.DATA['change_over_vars']
+
+    # Alarms classification
+    alarm_cats = fcm.DATA['alarm_cats']
 
     # dates of Standard logs to filter Events and Alarms
     mindate = LogsStandard['DateTime'].min()
@@ -737,6 +720,14 @@ def change_over_divided(LogsStandard, LogsAlarms, LogsEvents, mch_info):
 @custom_callback # wrapper to catch errors
 def custom_plot_divided(dfs, dfa, dfe, cols, date1, date2, tittle): # n rows, one for each unit
     logger.debug("custom_plot1 started ---")
+
+
+    # Columns with its respective unit
+    units = fcm.DATA['units']
+
+    # Alarms classification
+    alarm_cats = fcm.DATA['alarm_cats']
+
     logger.debug("date limits:")
     logger.debug(f"{date1=},{date2=}")
     
