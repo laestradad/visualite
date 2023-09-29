@@ -158,6 +158,7 @@ def import_data(dirname, file_list, mch_type):
     # Save machine type
     global MT
     MT = mch_type
+    logger.debug(f"{mch_type=}")
 
     # Load data from txt files
     load_data(MT)
@@ -224,29 +225,56 @@ def Format_DF_SLogs(list_files):
     # Format LogsStandard
     LogsStandard = LogsStandard[DATA['std_cols']]
 
-    # Columns as float
-    LogsStandard.iloc[:,13:] = LogsStandard.iloc[:,13:].astype(float)
+    if MT == "FCM One | 1.5":
+        # Columns as float
+        LogsStandard.iloc[:,13:] = LogsStandard.iloc[:,13:].astype(float)
 
-    # Create labels for CV positions
-    LogsStandard[['CV1_Label','CV2_Label','CV3_Label','CV4_Label','CV5_Label']] = LogsStandard[['CV1_Position','CV2_Position','CV3_Position','CV4_Position','CV5_Position']].astype(str)
+        # Create labels for CV positions
+        LogsStandard[['CV1_Label','CV2_Label','CV3_Label','CV4_Label','CV5_Label']] = LogsStandard[['CV1_Position','CV2_Position','CV3_Position','CV4_Position','CV5_Position']].astype(str)
 
-    LogsStandard[['CV1_Label']] = LogsStandard[['CV1_Label']] .replace(DATA['cv1_labels']).fillna('Unknown')
+        LogsStandard[['CV1_Label']] = LogsStandard[['CV1_Label']].replace(DATA['cv1_labels']).fillna('Unknown')
 
-    LogsStandard[['CV2_Label']] = LogsStandard[['CV2_Label']] .replace(DATA['cv2_labels']).fillna('Unknown')
+        LogsStandard[['CV2_Label']] = LogsStandard[['CV2_Label']].replace(DATA['cv2_labels']).fillna('Unknown')
 
-    LogsStandard[['CV3_Label']] = LogsStandard[['CV3_Label']] .replace(DATA['cv3_labels']).fillna('Unknown')
+        LogsStandard[['CV3_Label']] = LogsStandard[['CV3_Label']].replace(DATA['cv3_labels']).fillna('Unknown')
 
-    LogsStandard[['CV4_Label']] = LogsStandard[['CV4_Label']] .replace(DATA['cv4_labels']).fillna('Unknown')
+        LogsStandard[['CV4_Label']] = LogsStandard[['CV4_Label']].replace(DATA['cv4_labels']).fillna('Unknown')
 
-    LogsStandard[['CV5_Label']] = LogsStandard[['CV5_Label']] .replace(DATA['cv5_labels']).fillna('Unknown')
+        LogsStandard[['CV5_Label']] = LogsStandard[['CV5_Label']].replace(DATA['cv5_labels']).fillna('Unknown')
 
-    # Identify when Change Over Started and Finished
-    # ChangeOverInProgress = O : no change
-    # ChangeOverInProgress = 1 : started
-    # ChangeOverInProgress = -1 : finished
+        # Identify when Change Over Started and Finished
+        # ChangeOverInProgress = O : no change
+        # ChangeOverInProgress = 1 : started
+        # ChangeOverInProgress = -1 : finished
 
-    # Create column with value change
-    LogsStandard['ChangeoverCMDchange'] = LogsStandard['ChangeOverInProgress'].diff()
+        # Create column with value change
+        LogsStandard['ChangeoverCMDchange'] = LogsStandard['ChangeOverInProgress'].diff()
+
+    elif MT == "FCM 2b | Basic":
+        # Columns as float
+        LogsStandard.iloc[:,8:] = LogsStandard.iloc[:,8:].astype(float)
+
+        # Create labels for CV positions
+        LogsStandard[['CV1_Label','CV2_Label','CV3_Label','CV4_Label']] = LogsStandard[['CV1_Position','CV2_Position','CV3_Position','CV4_Position']].astype(str)
+
+        LogsStandard[['CV1_Label']] = LogsStandard[['CV1_Label']].replace(DATA['cv1_labels']).fillna('Unknown')
+
+        LogsStandard[['CV2_Label']] = LogsStandard[['CV2_Label']].replace(DATA['cv2_labels']).fillna('Unknown')
+
+        LogsStandard[['CV3_Label']] = LogsStandard[['CV3_Label']].replace(DATA['cv3_labels']).fillna('Unknown')
+
+        LogsStandard[['CV4_Label']] = LogsStandard[['CV4_Label']].replace(DATA['cv4_labels']).fillna('Unknown')
+
+        LogsStandard['STS_Label'] = LogsStandard['MachineStatus'].astype(str)
+        LogsStandard['STS_Label'] = LogsStandard['STS_Label'].replace(DATA['machine_sts_label']).fillna('Unknown')
+
+        # Identify when Change Over Started and Finished
+        # ChangeOverInProgress = 0 : no change
+        # ChangeOverInProgress = 1 : started
+        # ChangeOverInProgress = -1 : finished
+
+        # Create column with value change
+        LogsStandard['ChangeoverCMDchange'] = LogsStandard['ChangeoverInProgress'].diff()
 
     logger.debug("--- Standard Logs formatted")
     logger.debug(LogsStandard.shape)

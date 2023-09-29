@@ -284,47 +284,61 @@ def change_over_overlap(LogsStandard, LogsAlarms, LogsEvents, mch_info):
             for variable in variables:
                 logger.debug(variable)
 
-                if variable == 'FT_MassFlow':
-                    flag=False
-                    if not (LogsStandard[variable] == 0).all():
-                        trace = line_trace(
-                            x=LogsStandard['DateTime'],
-                            y=LogsStandard[variable],
-                            name=variable,
-                            color=px.colors.qualitative.G10[j+1],
-                            cat=category)
-                        trace.visible = 'legendonly'
-                        trace.yaxis="y5"
+                if fcm.MT == "FCM 2b | Basic":
 
-                        fig.add_trace(trace)
+                    trace = line_trace(
+                        x=LogsStandard['DateTime'],
+                        y=LogsStandard[variables[0]],
+                        name=variables[0],
+                        color=px.colors.qualitative.G10[j+1],
+                        cat=category)
+                    trace.yaxis="y5"
+                    trace.visible = 'legendonly'
+                    fig.add_trace(trace)
 
-                    for j, fm in enumerate(['FM1_MassFlow','FM2_MassFlow','FM3_MassFlow','FM4_MassFlow']):
-                        if not (LogsStandard[fm] == 0).all():
+                elif fcm.MT == "FCM One | 1.5":
+
+                    if variable == 'FT_MassFlow':
+                        flag=False
+                        if not (LogsStandard[variable] == 0).all():
                             trace = line_trace(
-                                x=LogsStandard['DateTime'],
-                                y=LogsStandard[fm],
-                                name=fm,
-                                color=px.colors.qualitative.G10[j+2],
-                                cat=category)
-                            trace.visible = 'legendonly'
-                            trace.yaxis="y5"
-                            
-                            fig.add_trace(trace)
-                else:
-                    flag=True
-                            
-                if variable == 'FT_VolumeFlow':
-                    if flag:
-                        trace = line_trace(
                                 x=LogsStandard['DateTime'],
                                 y=LogsStandard[variable],
                                 name=variable,
-                                color=px.colors.qualitative.G10[j+2],
+                                color=px.colors.qualitative.G10[j+1],
                                 cat=category)
-                        trace.visible = 'legendonly'
-                        trace.yaxis="y5"
+                            trace.visible = 'legendonly'
+                            trace.yaxis="y5"
 
-                        fig.add_trace(trace)
+                            fig.add_trace(trace)
+
+                        for j, fm in enumerate(['FM1_MassFlow','FM2_MassFlow','FM3_MassFlow','FM4_MassFlow']):
+                            if not (LogsStandard[fm] == 0).all():
+                                trace = line_trace(
+                                    x=LogsStandard['DateTime'],
+                                    y=LogsStandard[fm],
+                                    name=fm,
+                                    color=px.colors.qualitative.G10[j+2],
+                                    cat=category)
+                                trace.visible = 'legendonly'
+                                trace.yaxis="y5"
+                                
+                                fig.add_trace(trace)
+                    else:
+                        flag=True
+                            
+                    if variable == 'FT_VolumeFlow':
+                        if flag:
+                            trace = line_trace(
+                                    x=LogsStandard['DateTime'],
+                                    y=LogsStandard[variable],
+                                    name=variable,
+                                    color=px.colors.qualitative.G10[j+2],
+                                    cat=category)
+                            trace.visible = 'legendonly'
+                            trace.yaxis="y5"
+
+                            fig.add_trace(trace)
 
         if category == 'Pressure':
 
@@ -355,16 +369,31 @@ def change_over_overlap(LogsStandard, LogsAlarms, LogsEvents, mch_info):
 
             fig.add_trace(trace)
 
-    if (not eve.empty):
-        logger.debug('events')
+    if fcm.MT == "FCM 2b | Basic":
 
-        trace = plot_events(
-                    x=eve['DateTime'],
-                    y=eve['EventNumber'],
-                    labels=eve['Label'])
+        trace = square_line_trace(
+            x=LogsStandard['DateTime'],
+            y=LogsStandard['MachineStatus'],
+            labels=LogsStandard['STS_Label'],
+            name='MachineStatus',
+            color=ALcolors[5],
+            cat='Events')
         trace.yaxis="y8"
+        trace.visible = 'legendonly'
 
         fig.add_trace(trace)
+
+    elif fcm.MT == "FCM One | 1.5":
+        if (not eve.empty):
+            logger.debug('events')
+
+            trace = plot_events(
+                        x=eve['DateTime'],
+                        y=eve['EventNumber'],
+                        labels=eve['Label'])
+            trace.yaxis="y8"
+
+            fig.add_trace(trace)
 
     if (not alm.empty):
         for cat, limits in alarm_cats.items():
@@ -432,7 +461,7 @@ def change_over_divided(LogsStandard, LogsAlarms, LogsEvents, mch_info):
 
     # Change layout of plot based on if Alarms or Events where imported
     chart_type = ''
-    if alm.empty and eve.empty:
+    if (fcm.MT == "FCM One | 1.5") and (alm.empty and eve.empty):
 
         fig = make_subplots(
             rows=7, cols=1,
@@ -447,8 +476,8 @@ def change_over_divided(LogsStandard, LogsAlarms, LogsEvents, mch_info):
 
         chart_type = 'NO_AE'
         
-    elif (alm.empty and (not eve.empty)) or ((not alm.empty) and eve.empty):
-
+    elif ((fcm.MT == "FCM One | 1.5") and ((alm.empty and (not eve.empty)) or ((not alm.empty) and eve.empty))) or ((fcm.MT == "FCM 2b | Basic") and (alm.empty)):
+            
         fig = make_subplots(
             rows=8, cols=1,
             specs=[[{"rowspan": 4, "colspan": 1, "secondary_y": True}], # 4 Rows for Visc and Temp Trends
@@ -469,7 +498,7 @@ def change_over_divided(LogsStandard, LogsAlarms, LogsEvents, mch_info):
             chart_type = 'NO_E'
             fig.update_yaxes(title_text="Alarms", row=8)
 
-    elif (not alm.empty) and (not eve.empty):
+    elif ((fcm.MT == "FCM One | 1.5") and (not alm.empty) and (not eve.empty)) or ((fcm.MT == "FCM 2b | Basic") and (not alm.empty)):
 
         fig = make_subplots(
             rows=8, cols=1,
@@ -489,6 +518,7 @@ def change_over_divided(LogsStandard, LogsAlarms, LogsEvents, mch_info):
         fig.update_yaxes(title_text="Alarms",
                         row=8, secondary_y=True)
     
+    logger.debug(f"{chart_type=}")
 
     # Iterate change_over_vars, to plot each category of variables
     for i, (category, variables) in enumerate(change_over_vars.items()):
@@ -595,41 +625,52 @@ def change_over_divided(LogsStandard, LogsAlarms, LogsEvents, mch_info):
 
             fig.update_yaxes(title_text="Flow", row=plot_row)
             
-            for variable in variables:
-                logger.debug(variable)
+            if fcm.MT == "FCM 2b | Basic":
 
-                if variable == 'FT_MassFlow':
-                    flag=False
-                    if not (LogsStandard[variable] == 0).all():
-                        trace = line_trace(
-                            x=LogsStandard['DateTime'],
-                            y=LogsStandard[variable],
-                            name=variable,
-                            color=px.colors.qualitative.G10[j+1],
-                            cat=category)
-                        fig.add_trace(trace, row=plot_row, col=1)
+                trace = line_trace(
+                    x=LogsStandard['DateTime'],
+                    y=LogsStandard[variables[0]],
+                    name=variables[0],
+                    color=px.colors.qualitative.G10[j+1],
+                    cat=category)
+                fig.add_trace(trace, row=plot_row, col=1)
 
-                    for j, fm in enumerate(['FM1_MassFlow','FM2_MassFlow','FM3_MassFlow','FM4_MassFlow']):
-                        if not (LogsStandard[fm] == 0).all():
+            elif fcm.MT == "FCM One | 1.5":
+                for variable in variables:
+                    logger.debug(variable)
+
+                    if variable == 'FT_MassFlow':
+                        flag=False
+                        if not (LogsStandard[variable] == 0).all():
                             trace = line_trace(
-                                x=LogsStandard['DateTime'],
-                                y=LogsStandard[fm],
-                                name=fm,
-                                color=px.colors.qualitative.G10[j+2],
-                                cat=category)
-                            fig.add_trace(trace, row=plot_row, col=1)
-                else:
-                    flag=True
-                            
-                if variable == 'FT_VolumeFlow': #Volumetric
-                    if flag:
-                        trace = line_trace(
                                 x=LogsStandard['DateTime'],
                                 y=LogsStandard[variable],
                                 name=variable,
-                                color=px.colors.qualitative.G10[j+2],
+                                color=px.colors.qualitative.G10[j+1],
                                 cat=category)
-                        fig.add_trace(trace, row=plot_row, col=1)
+                            fig.add_trace(trace, row=plot_row, col=1)
+
+                        for j, fm in enumerate(['FM1_MassFlow','FM2_MassFlow','FM3_MassFlow','FM4_MassFlow']):
+                            if not (LogsStandard[fm] == 0).all():
+                                trace = line_trace(
+                                    x=LogsStandard['DateTime'],
+                                    y=LogsStandard[fm],
+                                    name=fm,
+                                    color=px.colors.qualitative.G10[j+2],
+                                    cat=category)
+                                fig.add_trace(trace, row=plot_row, col=1)
+                    else:
+                        flag=True
+                                
+                    if variable == 'FT_VolumeFlow': #Volumetric
+                        if flag:
+                            trace = line_trace(
+                                    x=LogsStandard['DateTime'],
+                                    y=LogsStandard[variable],
+                                    name=variable,
+                                    color=px.colors.qualitative.G10[j+2],
+                                    cat=category)
+                            fig.add_trace(trace, row=plot_row, col=1)
 
         if category == 'Pressure':
             plot_row = 7
@@ -677,6 +718,21 @@ def change_over_divided(LogsStandard, LogsAlarms, LogsEvents, mch_info):
         elif chart_type == 'NO_A':
             fig.add_trace(trace, row=plot_row, col=1)
 
+    # For FCM Basic, no Event logs but Event Number
+    if fcm.MT == "FCM 2b | Basic":
+        trace = square_line_trace(
+            x=LogsStandard['DateTime'],
+            y=LogsStandard['MachineStatus'],
+            labels=LogsStandard['STS_Label'],
+            name='MachineStatus',
+            color=ALcolors[5],
+            cat='Events')
+
+        if chart_type == 'NO_A':
+            fig.add_trace(trace, row=plot_row, col=1)
+        else:
+            fig.add_trace(trace, row=plot_row, col=1,secondary_y=False)
+
     if (not alm.empty):
         for cat, limits in alarm_cats.items():
             logger.debug(cat)
@@ -689,10 +745,14 @@ def change_over_divided(LogsStandard, LogsAlarms, LogsEvents, mch_info):
                     labels=filter_alm['Label'],
                     cat=cat)
                 
-                if chart_type == 'AE':
+                if fcm.MT == "FCM 2b | Basic":
                     fig.add_trace(trace, row=plot_row, col=1,secondary_y=True)
-                elif chart_type == 'NO_E':
-                    fig.add_trace(trace, row=plot_row, col=1)
+
+                elif fcm.MT == "FCM One | 1.5":
+                    if chart_type == 'AE':
+                        fig.add_trace(trace, row=plot_row, col=1,secondary_y=True)
+                    elif chart_type == 'NO_E':
+                        fig.add_trace(trace, row=plot_row, col=1)
 
     logger.debug('fig config')
                     

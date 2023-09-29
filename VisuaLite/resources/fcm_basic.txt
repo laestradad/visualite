@@ -60,7 +60,7 @@
     },
 
     "alarm_cats" : {
-        "Main1": [1,14],
+        "Main1": [0,14],
         "Filter": [15,19],
         "Fuel Handling": [20,29],
         "Pumps": [30,49],
@@ -163,15 +163,15 @@
         "5": "System started",
         "10": "Ramp paused",
         "20": "Ramping",
+        "50": "Stopping",
+        "60": "System stopped in manual mode",
+        "61": "System stopped in auto mode",
         "100": "Wait for CV1 signal lost",
         "110": "Wait for Viscosity change",
         "115": "Wait for CV6 in bypass",
         "120": "Wait for temperature ramp completed",
         "125": "Wait for cv4 to be moved",
         "130": "Wait for changeover completed",
-        "135": "Waiting for CV1 in position",
-        "50": "Stopping",
-        "60": "System stopped in manual mode",
-        "61": "System stopped in auto mode"
+        "135": "Waiting for CV1 in position"
     }
 }

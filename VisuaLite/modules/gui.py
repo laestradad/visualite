@@ -259,9 +259,11 @@ class App(ctk.CTk):
         App.frames["BCFrame"].grid_columnconfigure(1, weight=0)
         App.frames["BCFrame"].grid_columnconfigure(0, weight=1)
 
-        #Update texts
+        #Update texts and buttons
         App.frames["CSFrame"].title.configure(text="Import Logs")
         App.frames["CSFrame"].text.configure(text="Folder selected: " + str(self.dirname))
+        App.frames["CSFrame"].action_bt.configure(text="Select folder")
+        App.frames["CSFrame"].action_bt.grid(row=1, column=2, padx=20, pady=10, sticky="se")
 
         # Machine Type dropdown
         self.mch_type_dropdown.configure(state="enabled")
@@ -277,6 +279,9 @@ class App(ctk.CTk):
         App.frames["NFrame"].bt_navigation1.configure(command= self.back_to_selectfolder)
         if len(self.csv_files_list) > 0:
             App.frames["NFrame"].bt_navigation2.configure(state="enabled")
+        else:
+            App.frames["NFrame"].bt_navigation2.configure(state="disabled")
+        App.frames["NFrame"].bt_navigation2.grid(row=0, column=2, padx=20, pady=10, sticky="e")
     
     def step_20_importingData(self):
         logger.debug("Widgets update step_20_importingData()")
@@ -705,8 +710,14 @@ class TabsFrame(ctk.CTkFrame):
         if not self.app.LogsStandard.empty:
             # Variables for Tab2 and Tab3
             self.columns = self.columns + self.app.LogsStandard.columns.tolist()
-            remove_cols = ['DateTime', 'GpsPos', 'CV1_Label', 'CV2_Label', 'CV3_Label', 
-                            'CV4_Label', 'CV5_Label', 'ChangeoverCMDchange']
+
+            # Remove columns not eligible to plot according to machine type
+            if self.app.mch_type.get() == "FCM One | 1.5":
+                remove_cols = ['DateTime', 'GpsPos', 'CV1_Label', 'CV2_Label', 'CV3_Label', 
+                                'CV4_Label', 'CV5_Label', 'ChangeoverCMDchange']
+            elif self.app.mch_type.get() == "FCM 2b | Basic":
+                remove_cols = ['DateTime', 'CV1_Label', 'CV2_Label', 'CV3_Label', 
+                                'CV4_Label', 'ChangeoverCMDchange']
             for col in remove_cols:
                 self.columns.remove(col)
 
