@@ -1,43 +1,36 @@
-from fcm_basic import *
 import os
 import tkinter.filedialog as fd
 # Execution path
 PATH = os.getcwd()
 
-dirname = fd.askdirectory(title='Select a directory with log files')
+#dirname = fd.askdirectory(title='Select a directory with log files')
+#
+#csv_files_list = []
+#for filename in os.listdir(dirname):
+#    if filename.lower().endswith('.csv'):
+#        csv_files_list.append(filename)
 
-csv_files_list = []
-for filename in os.listdir(dirname):
-    if filename.lower().endswith('.csv'):
-        csv_files_list.append(filename)
+import pandas as pd
 
-COs, LogsStandard, LogsAlarms = import_data(dirname, csv_files_list)
+data = {
+  "calories": [420, 380, 390],
+  "duration": [50, 40, 45]
+}
 
-plot_type = "Separate" # "Separate" or "Overlap"
+#load data into a DataFrame object:
+df = pd.DataFrame(data)
 
-if COs:
-    print("COs:")
-    print(COs)            
-    
-    for i, CO in enumerate(COs):
-        df = ChangeOverToDF(CO, LogsStandard)
+# Export to excel
+import xlsxwriter
+newfile=os.path.join(PATH,'LogsData.xlsx')
 
-        #Plot Type
-        if plot_type == "Overlap":
-            fig = change_over_overlap(df, LogsAlarms)
-            name_file= "ov_CO"+ str(i+1) + "_" + str(CO['Start'].date()) + ".html"
+writer = pd.ExcelWriter(newfile, engine='xlsxwriter')
+#workbook  = writer.book
 
-        elif plot_type == "Separate":
-            fig = change_over_divided(df, LogsAlarms)
-            name_file= "sp_CO"+ str(i+1) + "_" + str(CO['Start'].date()) + ".html"
+df.to_excel(writer, 'LogsStandard', index=False)
+worksheet = writer.sheets['LogsStandard'] 
 
-        file_path = os.path.join(PATH, name_file)
-        print("File to create:")
-        print(file_path)
+writer.save()
+#C:\_Projects\_REPO\_otherREPO\_VisuaLite_DEV\sandbox3.py:33: 
+#FutureWarning: save is not part of the public API, usage can give unexpected results and will be removed in a future version writer.save()
 
-        try:
-            fig.write_html(file_path, config={'displaylogo': False})
-
-        except Exception as e:
-            print("--- Error saving file")
-            print(e)

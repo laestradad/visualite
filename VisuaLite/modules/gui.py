@@ -205,7 +205,7 @@ class NavFrame(ctk.CTkFrame):
 class App(ctk.CTk):
 
     # Version
-    version = "V0.00.02"
+    version = "V0.00.03"
 
     # GUI management
     frames = {} #dictionary containing frames
@@ -434,7 +434,7 @@ class App(ctk.CTk):
 
         #Disclaimer
         tk.messagebox.showinfo(title='DISCLAIMER', 
-            message=f'Welcome to VisuaLite {self.version}\n\nPlease note this is a BETA Version, so it is currently not supported by Alfa Laval.\n\nHappy plotting!') # type: ignore
+            message=f'Welcome to VisuaLite {self.version}\n\nThis tool is intended for INTERNAL USE of ALFA LAVAL employees. Please note this is a BETA Version, so it is currently not supported.\n\nHappy plotting!') # type: ignore
 
     def before_close(self):
         # Close matplotlib figures if they exist

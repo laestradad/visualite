@@ -4,7 +4,6 @@
 __pycache__/
 VisuaLite/modules/__pycache__/*.pyc
 VisuaLite/build/
-VisuaLite/dist/
-VisuaLite/main.spec
+VisuaLite/venv/
 .ipynb_checkpoints/
 *.log
