@@ -267,17 +267,29 @@ def change_over_overlap(LogsStandard, LogsAlarms, LogsEvents, mch_info):
                 
                 fig.add_trace(trace)
         
-        if category == 'Bool': #ChangeOverInProgress
+        if category == 'Bool':
+            for variable in variables:
+                logger.debug(variable)
+                if (variable == 'ChangeoverInProgress') or (variable == 'ChangeOverInProgress'):
+                    trace = filled_trace(
+                        x=LogsStandard['DateTime'],
+                        y=LogsStandard[variable],
+                        name=variable,
+                        color='rgba(0, 128, 0, 0.1)', #green opacity 10%
+                        cat=None)
 
-            trace = filled_trace(
-                x=LogsStandard['DateTime'],
-                y=LogsStandard[variables[0]],
-                name=variables[0],
-                color='rgba(0, 128, 0, 0.1)', #green opacity 10%
-                cat=None)
-            trace.yaxis="y4"
-                        
-            fig.add_trace(trace)
+                elif (variable == 'ControlType') or (variable == 'CurrentControl'):
+                    trace = square_line_trace(
+                        x=LogsStandard['DateTime'],
+                        y=LogsStandard[variable],
+                        labels=LogsStandard['CC_Label'],
+                        name=variable,
+                        color=px.colors.qualitative.G10[6],
+                        cat=category)
+                    trace.visible = 'legendonly'
+
+                trace.yaxis="y4"           
+                fig.add_trace(trace)
         
         if category == 'Flow':
             
@@ -611,12 +623,23 @@ def change_over_divided(LogsStandard, LogsAlarms, LogsEvents, mch_info):
             for variable in variables:
                 logger.debug(variable)
 
-                trace = filled_trace(
-                    x=LogsStandard['DateTime'],
-                    y=LogsStandard[variable],
-                    name=variable,
-                    color='rgba(0, 128, 0, 0.1)', #green opacity 10%
-                    cat=None)
+                if (variable == 'ChangeoverInProgress') or (variable == 'ChangeOverInProgress'):
+
+                    trace = filled_trace(
+                        x=LogsStandard['DateTime'],
+                        y=LogsStandard[variable],
+                        name=variable,
+                        color='rgba(0, 128, 0, 0.1)', #green opacity 10%
+                        cat=None)
+
+                elif (variable == 'ControlType') or (variable == 'CurrentControl'):
+                    trace = square_line_trace(
+                        x=LogsStandard['DateTime'],
+                        y=LogsStandard[variable],
+                        labels=LogsStandard['CC_Label'],
+                        name=variable,
+                        color=px.colors.qualitative.G10[6],
+                        cat=category)
                     
                 fig.add_trace(trace, row=plot_row, col=1, secondary_y=True)
         
@@ -856,6 +879,35 @@ def custom_plot_divided(dfs, dfa, dfe, cols, date1, date2, tittle): # n rows, on
                     
                     fig.add_trace(trace, row=i+1, col=1)
 
+            elif col == 'MachineStatus':
+                trace = square_line_trace(
+                    x=dfs['DateTime'],
+                    y=dfs['MachineStatus'],
+                    labels=dfs['STS_Label'],
+                    name='MachineStatus',
+                    color=ALcolors[5],
+                    cat='Events')
+                    
+                fig.add_trace(trace, row=i+1, col=1)
+
+            elif 'CV' in col:
+                trace = square_line_trace(
+                    x=dfs['DateTime'],
+                    y=dfs[col],
+                    labels=dfs[col.split('_')[0]+'_Label'],
+                    name=col,
+                    cat=unit)
+                fig.add_trace(trace, row=i+1, col=1)
+
+            elif (col == 'ControlType') or (col == 'CurrentControl'):
+                trace = square_line_trace(
+                    x=dfs['DateTime'],
+                    y=dfs[col],
+                    labels=dfs['CC_Label'],
+                    name=col,
+                    cat=unit)
+                fig.add_trace(trace, row=i+1, col=1)
+
             else:
                 if not dfs.empty:
                     # If unit is a bool, int or valve_pos(int), create a square line trace instead of spline
@@ -984,13 +1036,20 @@ def create_aux_plot(LogsStandard, LogsAlarms, LogsEvents):
     else:
         ax1.set_title('Main variables trend')
         x = LogsStandard['DateTime']
-        # Plot Volumetric or Mass
-        if not (LogsStandard['FT_VolumeFlow'] == 0).all():
-            y1 = LogsStandard['FT_VolumeFlow']
-        else:
-            y1 = LogsStandard['FT_MassFlow']
-        y2 = LogsStandard['TT2']
-        y3 = LogsStandard['VT']
+
+        if fcm.MT == "FCM 2b | Basic":
+            y1 = LogsStandard['FlowMeter']
+            y2 = LogsStandard['Temperature']
+            y3 = LogsStandard['Viscosity']
+
+        elif fcm.MT == "FCM One | 1.5":
+            # Plot Volumetric or Mass
+            if not (LogsStandard['FT_VolumeFlow'] == 0).all():
+                y1 = LogsStandard['FT_VolumeFlow']
+            else:
+                y1 = LogsStandard['FT_MassFlow']
+            y2 = LogsStandard['TT2']
+            y3 = LogsStandard['VT']
 
     #y1
     ax1.plot(x, y1, color='#6699ccff', label='FT')
@@ -1042,8 +1101,13 @@ def change_over_preview(df):
 
     # Data
     x = df['DateTime']
-    y1 = df['TT2']
-    y2 = df['VT']
+    if fcm.MT == "FCM 2b | Basic":
+        y1 = df['Temperature']
+        y2 = df['Viscosity']
+
+    elif fcm.MT == "FCM One | 1.5":
+        y1 = df['TT2']
+        y2 = df['VT']
 
     #y1
     ax1.plot(x, y1, color='#ec6066ff', label='TT2')

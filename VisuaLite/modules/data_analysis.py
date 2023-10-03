@@ -242,6 +242,9 @@ def Format_DF_SLogs(list_files):
 
         LogsStandard[['CV5_Label']] = LogsStandard[['CV5_Label']].replace(DATA['cv5_labels']).fillna('Unknown')
 
+        LogsStandard['CC_Label'] = LogsStandard['CurrentControl'].astype(str)
+        LogsStandard['CC_Label'] = LogsStandard['CC_Label'].replace(DATA['current_ctrl_label']).fillna('Unknown')
+
         # Identify when Change Over Started and Finished
         # ChangeOverInProgress = O : no change
         # ChangeOverInProgress = 1 : started
@@ -267,6 +270,9 @@ def Format_DF_SLogs(list_files):
 
         LogsStandard['STS_Label'] = LogsStandard['MachineStatus'].astype(str)
         LogsStandard['STS_Label'] = LogsStandard['STS_Label'].replace(DATA['machine_sts_label']).fillna('Unknown')
+
+        LogsStandard['CC_Label'] = LogsStandard['ControlType'].astype(str)
+        LogsStandard['CC_Label'] = LogsStandard['CC_Label'].replace(DATA['current_ctrl_label']).fillna('Unknown')
 
         # Identify when Change Over Started and Finished
         # ChangeOverInProgress = 0 : no change

@@ -7,7 +7,7 @@
         "CV4_Position": "valve_pos",
         "ChangeoverInProgress": "bool",
         "MachineStatus": "int",
-        "ControlType": "int",
+        "ControlType": "bool",
         "Temperature": "degreesC",
         "TemperatureSetPoint": "degreesC",
         "TemperatureHighLimit": "degreesC",
@@ -20,7 +20,8 @@
         "PID_OutputError": "degreesC | cSt",
         "FlowMeter": "l/h | kg/h",
         "PT1": "bar",
-        "PT2": "bar"
+        "PT2": "bar",
+        "AlarmNumber": "alarms"
     },
 
     "std_cols" : [
@@ -54,7 +55,7 @@
         "Temperature": ["Temperature","TemperatureSetPoint","TemperatureHighLimit","TemperatureLowLimit"],
         "Viscosity": ["Viscosity","ViscositySetPoint","ViscosityHighLimit","ViscosityLowLimit"],
         "Valves": ["CV1_Position","CV2_Position","CV3_Position","CV4_Position"],
-        "Bool": ["ChangeoverInProgress"],
+        "Bool": ["ChangeoverInProgress", "ControlType"],
         "Flow": ["FlowMeter"],
         "Pressure": ["PT1","PT2"]
     },

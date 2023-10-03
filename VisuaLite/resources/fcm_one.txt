@@ -104,7 +104,7 @@
         "Temperature": ["TT1","TT2","TargetTemperature","TemperatureLowLimit", "TemperatureHighLimit"],
         "Viscosity": ["VT","TargetViscosity","ViscosityLowLimit","ViscosityHighLimit"],
         "Valves": ["CV1_Position", "CV2_Position", "CV3_Position", "CV4_Position", "CV5_Position"],
-        "Bool": ["ChangeOverInProgress"],
+        "Bool": ["ChangeOverInProgress", "CurrentControl"],
         "Flow": ["FT_MassFlow","FT_VolumeFlow"],
         "Pressure": ["PT1","PT2"],
         "Density": ["Density"]

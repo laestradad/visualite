@@ -714,10 +714,10 @@ class TabsFrame(ctk.CTkFrame):
             # Remove columns not eligible to plot according to machine type
             if self.app.mch_type.get() == "FCM One | 1.5":
                 remove_cols = ['DateTime', 'GpsPos', 'CV1_Label', 'CV2_Label', 'CV3_Label', 
-                                'CV4_Label', 'CV5_Label', 'ChangeoverCMDchange']
+                                'CV4_Label', 'CV5_Label', 'ChangeoverCMDchange', 'CC_Label']
             elif self.app.mch_type.get() == "FCM 2b | Basic":
                 remove_cols = ['DateTime', 'CV1_Label', 'CV2_Label', 'CV3_Label', 
-                                'CV4_Label', 'ChangeoverCMDchange']
+                                'CV4_Label', 'STS_Label', 'ChangeoverCMDchange', 'CC_Label']
             for col in remove_cols:
                 self.columns.remove(col)
 
