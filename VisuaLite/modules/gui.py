@@ -17,6 +17,7 @@ from modules.logging_cfg import setup_logger
 logger = setup_logger()
 logger.info("gui.py imported")
 
+VERSION = "V0.00.04"
 #Execution path
 PATH = os.getcwd()
 logger.info(f"{PATH=}")
@@ -205,7 +206,7 @@ class NavFrame(ctk.CTkFrame):
 class App(ctk.CTk):
 
     # Version
-    version = "V0.00.03"
+    version = VERSION
 
     # GUI management
     frames = {} #dictionary containing frames
@@ -1298,7 +1299,7 @@ class TabsFrame(ctk.CTkFrame):
             tk.messagebox.showwarning(title='No variable selected', message='Please select at least one variable to plot') # type: ignore
             return #Stop:
 
-        # Ask user for personalized tittle
+        # Ask user for personalized title
         name_file = self.get_file_name()
 
         dest_folder = fd.askdirectory(parent=self, title='Select a destination directory')
@@ -1331,7 +1332,7 @@ class TabsFrame(ctk.CTkFrame):
         self.hide_progress_bar()
 
     def get_file_name(self):
-        dialog = ctk.CTkInputDialog(text="Plot Tittle without special characters\n(Optional)", title="Plot tittle / File name (Optional)")
+        dialog = ctk.CTkInputDialog(text="Plot Title without special characters\n(Optional)", title="Plot title / File name (Optional)")
         input_text = dialog.get_input()
 
         if input_text is not None:
