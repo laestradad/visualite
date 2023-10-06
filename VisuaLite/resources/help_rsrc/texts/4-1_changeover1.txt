@@ -1,0 +1,1 @@
+The tool will identify changeovers in the data and display them in this panel. On the left side panel, you can see a preview of each changeover (1). Meanwhile, on the right side panel, a list of all identified changeovers in the logs is shown (2).

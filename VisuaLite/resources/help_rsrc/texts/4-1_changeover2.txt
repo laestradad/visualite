@@ -1,0 +1,1 @@
+You can select the changeover of interest and choose to export the plots as either “Separate” or “Overlap” plots, which only affect the formatting of the plot. Try both options and decide which one works better for you.

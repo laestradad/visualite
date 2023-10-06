@@ -1,0 +1,3 @@
+Feedback and Troubleshooting:
+
+VisuaLite creates the folder “__vl.log” in the same folder where the app is saved. If you encounter any issues, please save the visuaLite_debug.log file in another location and share it with your contact person in the PD FCS & Modules Team.

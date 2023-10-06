@@ -11,6 +11,7 @@ import customtkinter as ctk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 from modules import data_analysis as fcm_da
+from modules import help_app
 from modules import plots as fcm_plt
 
 from modules.logging_cfg import setup_logger
@@ -358,18 +359,29 @@ class App(ctk.CTk):
         self.progress.configure(mode="indeterminate")
         self.progress.start()
 
+        #Help button
+        self.help_img = ctk.CTkImage(Image.open(os.path.join(RESOURCES, 'help_rsrc','icons','help1_dark.png')), size=(20, 20))
+        self.btn_help = ctk.CTkButton(parent, text="Help", image=self.help_img, font=ctk.CTkFont(size=12), height=30, width=110,
+            compound="right", command=self.help_cmd)
+        self.btn_help.grid(row=4, column=0, padx=20, pady=10)
+
         # create app controls of appearance and scaling
         self.appearance_mode_label = ctk.CTkLabel(parent, text="Appearance Mode:", anchor="w")
-        self.appearance_mode_label.grid(row=4, column=0, padx=20, pady=(10, 0))
+        self.appearance_mode_label.grid(row=5, column=0, padx=20, pady=(10, 0))
         self.appearance_mode_optionemenu = ctk.CTkOptionMenu(parent, values=["Light", "Dark"],command=self.change_appearance_mode_event)
-        self.appearance_mode_optionemenu.grid(row=5, column=0, padx=20, pady=(5, 10))
+        self.appearance_mode_optionemenu.grid(row=6, column=0, padx=20, pady=(5, 10))
         self.appearance_mode_optionemenu.set("Dark")
 
         self.scaling_label = ctk.CTkLabel(parent, text="UI Scaling:", anchor="w")
-        self.scaling_label.grid(row=6, column=0, padx=20, pady=(10, 0))
+        self.scaling_label.grid(row=7, column=0, padx=20, pady=(10, 0))
         self.scaling_optionemenu = ctk.CTkOptionMenu(parent, values=["80%", "90%", "100%", "110%", "120%"],command=self.change_scaling_event)
-        self.scaling_optionemenu.grid(row=7, column=0, padx=20, pady=(5, 20))
+        self.scaling_optionemenu.grid(row=8, column=0, padx=20, pady=(5, 20))
         self.scaling_optionemenu.set("100%")
+
+    def help_cmd(self):
+        logger.info("help button pressed")
+        self.app2 = help_app.App()
+        self.app2.mainloop()
 
     def __init__(self):
         super().__init__()
