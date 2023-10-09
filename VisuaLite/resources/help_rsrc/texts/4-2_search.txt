@@ -1,7 +1,0 @@
-In this tab, as well as in “Personalized Analysis,” you can view the auxiliary plot (1), which helps you see an overview of all imported logs. For a more detailed explanation, refer to section 4.3.
-
-VisuaLite allows you to search for an Alarm or Event (2) (if Alarm or Event logs were imported) and select a specific value available from the logs (3).
-
-After clicking “Search,” the tool will locate all occurrences of the selected event in the results.
-
-Customize the analysis by choosing variables of interest from the right panel (5) and specifying the time interval before and after the event (6).

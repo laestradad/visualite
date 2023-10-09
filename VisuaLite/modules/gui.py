@@ -360,7 +360,7 @@ class App(ctk.CTk):
         self.progress.start()
 
         #Help button
-        self.help_img = ctk.CTkImage(Image.open(os.path.join(RESOURCES, 'help_rsrc','icons','help1_dark.png')), size=(20, 20))
+        self.help_img = ctk.CTkImage(Image.open(os.path.join(RESOURCES, 'help1_dark.png')), size=(20, 20))
         self.btn_help = ctk.CTkButton(parent, text="Help", image=self.help_img, font=ctk.CTkFont(size=12), height=30, width=110,
             compound="right", command=self.help_cmd)
         self.btn_help.grid(row=4, column=0, padx=20, pady=10)

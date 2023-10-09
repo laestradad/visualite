@@ -1,3 +1,6 @@
+pyi-makespec --onefile --windowed --noconsole --add-data "resources/*;resources/" --hidden-import babel.numbers --icon=resources/ad_logo.ico main.py
+pyinstaller main.spec
+
 pyinstaller --onefile --windowed --noconsole --add-data "resources/*;resources/" --hidden-import babel.numbers --icon=resources/ad_logo.ico main.py
 for debugging:
 pyinstaller --onefile --add-data "resources/*;resources/" --hidden-import babel.numbers --icon=resources/ad_logo.ico main.py

@@ -7,11 +7,9 @@ from modules.logging_cfg import setup_logger
 logger = setup_logger()
 logger.info("help_app.py imported")
 
-PATH = os.path.dirname(os.path.abspath(__file__))
-SCREEN = os.path.join(PATH, '..', 'resources/help_rsrc/screenshots')
-ICONS = os.path.join(PATH, '..', 'resources/help_rsrc/icons')
-TEXTS = os.path.join(PATH, '..', 'resources/help_rsrc/texts')
-APP_ICON = os.path.join(PATH, '..', 'resources', 'ad_logo.ico')
+SCRIPT_PATH = os.path.dirname(os.path.abspath(__file__))
+RESOURCES = os.path.join(SCRIPT_PATH, '..', 'resources')
+APP_ICON = os.path.join(RESOURCES, 'ad_logo.ico')
 VERSION = "V0.00.04"
 
 class overview_frame(ctk.CTkFrame):
@@ -28,9 +26,9 @@ class overview_frame(ctk.CTkFrame):
 		self.scroll_frame.grid_columnconfigure(0, weight=1)
 
 		# Import images
-		self.overview1 = ctk.CTkImage(Image.open(os.path.join(SCREEN, "1_overview1.jpg")), size=(156, 204))
-		self.overview2 = ctk.CTkImage(Image.open(os.path.join(SCREEN, "1_overview2.jpg")), size=(273, 91))
-		self.overview3 = ctk.CTkImage(Image.open(os.path.join(SCREEN, "1_overview3.jpg")), size=(614, 69))
+		self.overview1 = ctk.CTkImage(Image.open(os.path.join(RESOURCES, "1_overview1.jpg")), size=(156, 204))
+		self.overview2 = ctk.CTkImage(Image.open(os.path.join(RESOURCES, "1_overview2.jpg")), size=(273, 91))
+		self.overview3 = ctk.CTkImage(Image.open(os.path.join(RESOURCES, "1_overview3.jpg")), size=(614, 69))
 
 		# Title
 		self.title = ctk.CTkLabel(self.scroll_frame, text="Overview", font=ctk.CTkFont(size=22, weight="bold"))
@@ -60,7 +58,7 @@ class overview_frame(ctk.CTkFrame):
 		self.img_3.grid(row=5, column=0,  padx=30, pady=(5,30), sticky="nw")
 
 	def import_text(self, file_name):
-		with open(os.path.join(TEXTS, file_name), 'r', encoding='utf-8') as text_file:
+		with open(os.path.join(RESOURCES, file_name), 'r', encoding='utf-8') as text_file:
 			contents = text_file.read()
 		return contents
 
@@ -77,8 +75,8 @@ class gettingSt_frame(ctk.CTkFrame):
 		self.scroll_frame.grid_columnconfigure(0, weight=1)
 
 		# Import images
-		self.gettingSt1 = ctk.CTkImage(Image.open(os.path.join(SCREEN, "2_gettingSt1.png")), size=(600, 375))
-		self.gettingSt2 = ctk.CTkImage(Image.open(os.path.join(SCREEN, "2_gettingSt2.png")), size=(600, 404))
+		self.gettingSt1 = ctk.CTkImage(Image.open(os.path.join(RESOURCES, "2_gettingSt1.png")), size=(600, 375))
+		self.gettingSt2 = ctk.CTkImage(Image.open(os.path.join(RESOURCES, "2_gettingSt2.png")), size=(600, 404))
 
 		# Title
 		self.title = ctk.CTkLabel(self.scroll_frame, text="Getting Started", font=ctk.CTkFont(size=22, weight="bold"))
@@ -106,7 +104,7 @@ class gettingSt_frame(ctk.CTkFrame):
 		self.img_2.grid(row=4, column=0,  padx=30, pady=(5,30), sticky="nw")
 
 	def import_text(self, file_name):
-		with open(os.path.join(TEXTS, file_name), 'r', encoding='utf-8') as text_file:
+		with open(os.path.join(RESOURCES, file_name), 'r', encoding='utf-8') as text_file:
 			contents = text_file.read()
 		return contents
 
@@ -123,7 +121,7 @@ class import_frame(ctk.CTkFrame):
 		self.scroll_frame.grid_columnconfigure(0, weight=1)
 
 		# Import images
-		self.import1 = ctk.CTkImage(Image.open(os.path.join(SCREEN, "3_import1.jpg")), size=(600, 375))
+		self.import1 = ctk.CTkImage(Image.open(os.path.join(RESOURCES, "3_import1.jpg")), size=(600, 375))
 
 		# Title
 		self.title = ctk.CTkLabel(self.scroll_frame, text="Importing data", font=ctk.CTkFont(size=22, weight="bold"))
@@ -143,7 +141,7 @@ class import_frame(ctk.CTkFrame):
 		self.img_1.grid(row=2, column=0,  padx=30, pady=(5,30), sticky="nw")
 
 	def import_text(self, file_name):
-		with open(os.path.join(TEXTS, file_name), 'r', encoding='utf-8') as text_file:
+		with open(os.path.join(RESOURCES, file_name), 'r', encoding='utf-8') as text_file:
 			contents = text_file.read()
 		return contents
 
@@ -162,9 +160,9 @@ class dataA_frame(ctk.CTkFrame):
 		self.scroll_frame.grid_columnconfigure(0, weight=1)
 
 		# Import images
-		self.changeover_img = ctk.CTkImage(Image.open(os.path.join(ICONS, "changeover_dark.png")), size=(20, 20))
-		self.search_img = ctk.CTkImage(Image.open(os.path.join(ICONS, "search_dark.png")), size=(20, 20))
-		self.custom_img = ctk.CTkImage(Image.open(os.path.join(ICONS, "custom_dark.png")), size=(20, 20))
+		self.changeover_img = ctk.CTkImage(Image.open(os.path.join(RESOURCES, "changeover_dark.png")), size=(20, 20))
+		self.search_img = ctk.CTkImage(Image.open(os.path.join(RESOURCES, "search_dark.png")), size=(20, 20))
+		self.custom_img = ctk.CTkImage(Image.open(os.path.join(RESOURCES, "custom_dark.png")), size=(20, 20))
 
 		# Title
 		self.title = ctk.CTkLabel(self.scroll_frame, text="Data Analysis", font=ctk.CTkFont(size=22, weight="bold"))
@@ -193,7 +191,7 @@ class dataA_frame(ctk.CTkFrame):
 		self.btn_3.grid(row=4, column=0,  padx=30, pady=(10,30))
 
 	def import_text(self, file_name):
-		with open(os.path.join(TEXTS, file_name), 'r', encoding='utf-8') as text_file:
+		with open(os.path.join(RESOURCES, file_name), 'r', encoding='utf-8') as text_file:
 			contents = text_file.read()
 		return contents
 
@@ -210,8 +208,8 @@ class changeover_frame(ctk.CTkFrame):
 		self.scroll_frame.grid_columnconfigure(0, weight=1)
 
 		# Import images
-		self.changeover1 = ctk.CTkImage(Image.open(os.path.join(SCREEN, "4-1_changeover1.png")), size=(600, 354))
-		self.changeover2 = ctk.CTkImage(Image.open(os.path.join(SCREEN, "4-1_changeover2.jpg")), size=(520, 158))
+		self.changeover1 = ctk.CTkImage(Image.open(os.path.join(RESOURCES, "4-1_changeover1.png")), size=(600, 354))
+		self.changeover2 = ctk.CTkImage(Image.open(os.path.join(RESOURCES, "4-1_changeover2.jpg")), size=(520, 158))
 
 		# Title
 		self.title = ctk.CTkLabel(self.scroll_frame, text="Change Over", font=ctk.CTkFont(size=22, weight="bold"))
@@ -239,7 +237,7 @@ class changeover_frame(ctk.CTkFrame):
 		self.img_2.grid(row=4, column=0,  padx=30, pady=(5,30), sticky="nw")
 
 	def import_text(self, file_name):
-		with open(os.path.join(TEXTS, file_name), 'r', encoding='utf-8') as text_file:
+		with open(os.path.join(RESOURCES, file_name), 'r', encoding='utf-8') as text_file:
 			contents = text_file.read()
 		return contents
 
@@ -256,7 +254,7 @@ class search_frame(ctk.CTkFrame):
 		self.scroll_frame.grid_columnconfigure(0, weight=1)
 
 		# Import images
-		self.search1 = ctk.CTkImage(Image.open(os.path.join(SCREEN, "4-2_search1.png")), size=(600, 392))
+		self.search1 = ctk.CTkImage(Image.open(os.path.join(RESOURCES, "4-2_search1.png")), size=(600, 392))
 
 		# Title
 		self.title = ctk.CTkLabel(self.scroll_frame, text="Search for an Alarm or Event", font=ctk.CTkFont(size=22, weight="bold"))
@@ -276,7 +274,7 @@ class search_frame(ctk.CTkFrame):
 		self.img_1.grid(row=2, column=0,  padx=30, pady=(5,30), sticky="nw")
 
 	def import_text(self, file_name):
-		with open(os.path.join(TEXTS, file_name), 'r', encoding='utf-8') as text_file:
+		with open(os.path.join(RESOURCES, file_name), 'r', encoding='utf-8') as text_file:
 			contents = text_file.read()
 		return contents
 
@@ -293,8 +291,8 @@ class custom_frame(ctk.CTkFrame):
 		self.scroll_frame.grid_columnconfigure(0, weight=1)
 
 		# Import images
-		self.custom1 = ctk.CTkImage(Image.open(os.path.join(SCREEN, "4-3_custom1.png")), size=(600, 433))
-		self.custom2 = ctk.CTkImage(Image.open(os.path.join(SCREEN, "4-3_custom2.png")), size=(600, 404))
+		self.custom1 = ctk.CTkImage(Image.open(os.path.join(RESOURCES, "4-3_custom1.png")), size=(600, 433))
+		self.custom2 = ctk.CTkImage(Image.open(os.path.join(RESOURCES, "4-3_custom2.png")), size=(600, 404))
 
 		# Title
 		self.title = ctk.CTkLabel(self.scroll_frame, text="Personalized Analysis", font=ctk.CTkFont(size=22, weight="bold"))
@@ -322,7 +320,7 @@ class custom_frame(ctk.CTkFrame):
 		self.img_2.grid(row=4, column=0,  padx=30, pady=(5,30), sticky="nw")
 
 	def import_text(self, file_name):
-		with open(os.path.join(TEXTS, file_name), 'r', encoding='utf-8') as text_file:
+		with open(os.path.join(RESOURCES, file_name), 'r', encoding='utf-8') as text_file:
 			contents = text_file.read()
 		return contents
 
@@ -339,8 +337,8 @@ class output_frame(ctk.CTkFrame):
 		self.scroll_frame.grid_columnconfigure(0, weight=1)
 
 		# Import images
-		self.output1 = ctk.CTkImage(Image.open(os.path.join(SCREEN, "5_output1.jpg")), size=(377, 69))
-		self.output2 = ctk.CTkImage(Image.open(os.path.join(SCREEN, "5_output2.jpg")), size=(377, 355))
+		self.output1 = ctk.CTkImage(Image.open(os.path.join(RESOURCES, "5_output1.jpg")), size=(377, 69))
+		self.output2 = ctk.CTkImage(Image.open(os.path.join(RESOURCES, "5_output2.jpg")), size=(377, 355))
 
 		# Title
 		self.title = ctk.CTkLabel(self.scroll_frame, text="Output files", font=ctk.CTkFont(size=22, weight="bold"))
@@ -362,7 +360,7 @@ class output_frame(ctk.CTkFrame):
 		self.img_2.grid(row=3, column=0,  padx=30, pady=(0,30), sticky="nw")
 
 	def import_text(self, file_name):
-		with open(os.path.join(TEXTS, file_name), 'r', encoding='utf-8') as text_file:
+		with open(os.path.join(RESOURCES, file_name), 'r', encoding='utf-8') as text_file:
 			contents = text_file.read()
 		return contents
 
@@ -388,23 +386,23 @@ class App(ctk.CTkToplevel):
 		self.grid_columnconfigure(1, weight=1)
 
 		# load images with light and dark mode image
-		self.logo_image = ctk.CTkImage(Image.open(os.path.join(ICONS, "CustomTkinter_logo_single.png")), size=(26, 26))
-		self.overview_img = ctk.CTkImage(light_image=Image.open(os.path.join(ICONS, "overview_light.png")),
-											 dark_image=Image.open(os.path.join(ICONS, "overview_dark.png")), size=(20, 20))
-		self.gettingSt_img = ctk.CTkImage(light_image=Image.open(os.path.join(ICONS, "gettingSt_light.png")),
-											dark_image=Image.open(os.path.join(ICONS, "gettingSt_dark.png")), size=(20, 20))
-		self.import_img = ctk.CTkImage(light_image=Image.open(os.path.join(ICONS, "import_light.png")),
-											 dark_image=Image.open(os.path.join(ICONS, "import_dark.png")), size=(20, 20))
-		self.dataA_img = ctk.CTkImage(light_image=Image.open(os.path.join(ICONS, "data_light.png")),
-											 dark_image=Image.open(os.path.join(ICONS, "data_dark.png")), size=(20, 20))
-		self.changeover_img = ctk.CTkImage(light_image=Image.open(os.path.join(ICONS, "changeover_light.png")),
-											 dark_image=Image.open(os.path.join(ICONS, "changeover_dark.png")), size=(20, 20))
-		self.search_img = ctk.CTkImage(light_image=Image.open(os.path.join(ICONS, "search_light.png")),
-											 dark_image=Image.open(os.path.join(ICONS, "search_dark.png")), size=(20, 20))
-		self.custom_img = ctk.CTkImage(light_image=Image.open(os.path.join(ICONS, "custom_light.png")),
-											 dark_image=Image.open(os.path.join(ICONS, "custom_dark.png")), size=(20, 20))
-		self.output_img = ctk.CTkImage(light_image=Image.open(os.path.join(ICONS, "output_light.png")),
-											 dark_image=Image.open(os.path.join(ICONS, "output_dark.png")), size=(20, 20))
+		self.logo_image = ctk.CTkImage(Image.open(os.path.join(RESOURCES, "CustomTkinter_logo_single.png")), size=(26, 26))
+		self.overview_img = ctk.CTkImage(light_image=Image.open(os.path.join(RESOURCES, "overview_light.png")),
+											 dark_image=Image.open(os.path.join(RESOURCES, "overview_dark.png")), size=(20, 20))
+		self.gettingSt_img = ctk.CTkImage(light_image=Image.open(os.path.join(RESOURCES, "gettingSt_light.png")),
+											dark_image=Image.open(os.path.join(RESOURCES, "gettingSt_dark.png")), size=(20, 20))
+		self.import_img = ctk.CTkImage(light_image=Image.open(os.path.join(RESOURCES, "import_light.png")),
+											 dark_image=Image.open(os.path.join(RESOURCES, "import_dark.png")), size=(20, 20))
+		self.dataA_img = ctk.CTkImage(light_image=Image.open(os.path.join(RESOURCES, "data_light.png")),
+											 dark_image=Image.open(os.path.join(RESOURCES, "data_dark.png")), size=(20, 20))
+		self.changeover_img = ctk.CTkImage(light_image=Image.open(os.path.join(RESOURCES, "changeover_light.png")),
+											 dark_image=Image.open(os.path.join(RESOURCES, "changeover_dark.png")), size=(20, 20))
+		self.search_img = ctk.CTkImage(light_image=Image.open(os.path.join(RESOURCES, "search_light.png")),
+											 dark_image=Image.open(os.path.join(RESOURCES, "search_dark.png")), size=(20, 20))
+		self.custom_img = ctk.CTkImage(light_image=Image.open(os.path.join(RESOURCES, "custom_light.png")),
+											 dark_image=Image.open(os.path.join(RESOURCES, "custom_dark.png")), size=(20, 20))
+		self.output_img = ctk.CTkImage(light_image=Image.open(os.path.join(RESOURCES, "output_light.png")),
+											 dark_image=Image.open(os.path.join(RESOURCES, "output_dark.png")), size=(20, 20))
 
 		# create navigation frame
 		self.navigation_frame = ctk.CTkFrame(self, corner_radius=0)

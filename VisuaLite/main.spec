@@ -1,11 +1,12 @@
-# -*- mode: python ; coding: utf-8 -*-S
+# -*- mode: python ; coding: utf-8 -*-
+
 
 a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=[],
     datas=[('resources/*', 'resources/')],
-    hiddenimports=['babel.numbers'],
+    hiddenimports=['babel.numbers', 'pandas'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -20,7 +21,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='Visualite_V0.00.03',
+    name='V0.00.04',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
