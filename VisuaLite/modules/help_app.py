@@ -1,7 +1,6 @@
 import customtkinter as ctk
 import os
 from PIL import Image
-from functools import partial
 
 from modules.logging_cfg import setup_logger
 logger = setup_logger()
@@ -26,7 +25,7 @@ class overview_frame(ctk.CTkFrame):
 		self.scroll_frame.grid_columnconfigure(0, weight=1)
 
 		# Import images
-		self.overview1 = ctk.CTkImage(Image.open(os.path.join(RESOURCES, "1_overview1.jpg")), size=(156, 204))
+		self.overview1 = ctk.CTkImage(Image.open(os.path.join(RESOURCES, "1_overview1.jpg")), size=(155, 179))
 		self.overview2 = ctk.CTkImage(Image.open(os.path.join(RESOURCES, "1_overview2.jpg")), size=(273, 91))
 		self.overview3 = ctk.CTkImage(Image.open(os.path.join(RESOURCES, "1_overview3.jpg")), size=(614, 69))
 
