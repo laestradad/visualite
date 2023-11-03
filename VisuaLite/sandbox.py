@@ -34,6 +34,10 @@ fcm_plt.fcm.load_data('FCM One | 1.5')
 #file_path = "__vl.log/preview.png"
 #fig.write_image(file_path)
 
+# ------------------------------------------------------------ GET ALL COLUMNS IN CHANGEOVER VARS
+all_co_cols = [col for category in fcm_plt.fcm.DATA['change_over_vars'].values() for col in category]
+print(all_co_cols)
+
 # ------------------------------------------------------------- FUNCTION TO EXPORT EXCEL
 def export_excel(dfs, sheetNames, date1, date2, cols, fileName):
 	

@@ -676,6 +676,7 @@ class TabsFrame(ctk.CTkFrame):
             self.checkbox_list = []
             self.cos_options = []
             self.label1.configure(text="In the logs imported there are " + str(len(self.COs)) + " changeovers.")
+            # TODO create variable of radiobuttons with index
             for i, CO in enumerate(self.COs):
                 text= str(i+1) + '. From ' + str(CO['Start']) + ' to ' + str(CO['Finish']) + '. Duration: ' + str(CO['Duration'])
                 self.add_checkbox_t1(text)
@@ -910,6 +911,7 @@ class TabsFrame(ctk.CTkFrame):
 
     #TAB1 functions
     def add_checkbox_t1(self, item):
+        # TODO change it to Radiobutton
         checkbox = ctk.CTkCheckBox(self.results_t1, text=item)
         checkbox.grid(row=len(self.checkbox_list)+1, column=0, padx=5, pady=10, sticky="w")
         self.checkbox_list.append(checkbox)
@@ -920,7 +922,17 @@ class TabsFrame(ctk.CTkFrame):
             COs_sts.append(checkbox.get())
         return COs_sts
 
+    def export_excel_T1(self):
+        #TODO: get radiobutton index, filter logs according to CO in index position, export excel
+        logger.debug("Tab1 - plot_sel_COs started ---")
+        self.show_progress_bar() 
+
+        COs = self.get_checked_items()
+        logger.debug("checked items:")
+        logger.debug(COs)
+
     def plot_all_COs(self):
+        # TODO, delete this function
         logger.debug("Tab1 - plot_all_COs started ---")
         self.show_progress_bar() 
 
@@ -1221,6 +1233,7 @@ class TabsFrame(ctk.CTkFrame):
         
         #Save plot
         try:
+            # TODO: CREATE PNG, OPEN POP UP, DELETE PNG, IF CONFIRM: write HTML & destroy popup ELSE destroy pop up
             fig.write_html(file_path, config={'displaylogo': False})
             logger.debug("--- Tab2 - html created successfully")
             tk.messagebox.showinfo(title='Plot saved!', message="Plot saved in destination folder") # type: ignore
@@ -1229,6 +1242,18 @@ class TabsFrame(ctk.CTkFrame):
             logger.error("--- Error saving file")
             logger.error(e, exc_info=True)
             tk.messagebox.showwarning(title='Error saving file', message="Error saving file") # type: ignore
+
+        self.hide_progress_bar()
+
+    def export_excel_T2(self):
+        #TODO copypaste from generate_search_ae_plot
+        logger.debug("Tab2 - PersonalizedPlot function started ---")
+        self.show_progress_bar() 
+
+        date1 = self.cal1d.get_date()
+        time1 = self.cal1t.get()
+        date2 = self.cal2d.get_date()
+        time2 = self.cal2t.get() 
 
         self.hide_progress_bar()
 
@@ -1338,7 +1363,7 @@ class TabsFrame(ctk.CTkFrame):
         
         # Preview plot window
         try:
-            #fig.write_image("my_image.png", width=400, height=300, scale=1)
+            # TODO: CREATE PNG, OPEN POP UP, DELETE PNG, IF CONFIRM: write HTML & destroy popup ELSE destroy pop up
             fig.write_html(file_path, config={'displaylogo': False})
             logger.debug("--- Tab3 - html created successfully")
             tk.messagebox.showinfo(title='Plot saved!', message="Plot saved in destination folder") # type: ignore
@@ -1398,5 +1423,18 @@ class TabsFrame(ctk.CTkFrame):
     
     def hide_progress_bar(self):
         self.app.progress.grid_forget()
+
+    def export_excel_T3(self):
+        logger.debug("Tab3 - PersonalizedPlot function started ---")
+        # TODO: copy paste from generate_personalized_plot
+        self.show_progress_bar() 
+
+        date1 = self.cal1d.get_date()
+        time1 = self.cal1t.get()
+        date2 = self.cal2d.get_date()
+        time2 = self.cal2t.get() 
+
+        self.hide_progress_bar()
+
 
 
