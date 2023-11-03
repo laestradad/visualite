@@ -11,7 +11,7 @@ bugfix for tkcalendar:
 --hidden-import babel.numbers
 
 for anaconda prompt:
-cd ..\..\_projects\_repo\_otherrepo\_visualite
+cd ..\..\_projects\_repo\_otherrepo\_visualite\visualite
 
 for venv:
 .\venv\Scripts\activate

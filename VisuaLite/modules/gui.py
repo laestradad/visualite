@@ -561,6 +561,12 @@ class App(ctk.CTk):
         if self.import_success == 1: #success
             self.step_30_dataImported()
             tk.messagebox.showinfo(title='Information', message='Import procedure successful!') # type: ignore
+
+            ## Save DataFrames to .pkl for debugging 
+            #import pickle 
+            #self.LogsStandard.to_pickle('LogsStandard.pkl')
+            #self.LogsAlarms.to_pickle('LogsAlarms.pkl')
+            #self.LogsEvents.to_pickle('LogsEvents.pkl')
         
         # ERRORS
         elif self.import_success == 0: #file from another machine / file wrong columns / file name not standard
