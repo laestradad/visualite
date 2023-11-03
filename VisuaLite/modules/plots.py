@@ -296,7 +296,7 @@ def change_over_overlap(LogsStandard, LogsAlarms, LogsEvents, mch_info):
             for variable in variables:
                 logger.debug(variable)
 
-                if fcm.MT == "FCM 2b | Basic":
+                if fcm.MT == "FCM Oil 2b":
 
                     trace = line_trace(
                         x=LogsStandard['DateTime'],
@@ -381,7 +381,7 @@ def change_over_overlap(LogsStandard, LogsAlarms, LogsEvents, mch_info):
 
             fig.add_trace(trace)
 
-    if fcm.MT == "FCM 2b | Basic":
+    if fcm.MT == "FCM Oil 2b":
 
         trace = square_line_trace(
             x=LogsStandard['DateTime'],
@@ -488,7 +488,7 @@ def change_over_divided(LogsStandard, LogsAlarms, LogsEvents, mch_info):
 
         chart_type = 'NO_AE'
         
-    elif ((fcm.MT == "FCM One | 1.5") and ((alm.empty and (not eve.empty)) or ((not alm.empty) and eve.empty))) or ((fcm.MT == "FCM 2b | Basic") and (alm.empty)):
+    elif ((fcm.MT == "FCM One | 1.5") and ((alm.empty and (not eve.empty)) or ((not alm.empty) and eve.empty))) or ((fcm.MT == "FCM Oil 2b") and (alm.empty)):
             
         fig = make_subplots(
             rows=8, cols=1,
@@ -510,7 +510,7 @@ def change_over_divided(LogsStandard, LogsAlarms, LogsEvents, mch_info):
             chart_type = 'NO_E'
             fig.update_yaxes(title_text="Alarms", row=8)
 
-    elif ((fcm.MT == "FCM One | 1.5") and (not alm.empty) and (not eve.empty)) or ((fcm.MT == "FCM 2b | Basic") and (not alm.empty)):
+    elif ((fcm.MT == "FCM One | 1.5") and (not alm.empty) and (not eve.empty)) or ((fcm.MT == "FCM Oil 2b") and (not alm.empty)):
 
         fig = make_subplots(
             rows=8, cols=1,
@@ -648,7 +648,7 @@ def change_over_divided(LogsStandard, LogsAlarms, LogsEvents, mch_info):
 
             fig.update_yaxes(title_text="Flow", row=plot_row)
             
-            if fcm.MT == "FCM 2b | Basic":
+            if fcm.MT == "FCM Oil 2b":
 
                 trace = line_trace(
                     x=LogsStandard['DateTime'],
@@ -742,7 +742,7 @@ def change_over_divided(LogsStandard, LogsAlarms, LogsEvents, mch_info):
             fig.add_trace(trace, row=plot_row, col=1)
 
     # For FCM Basic, no Event logs but Event Number
-    if fcm.MT == "FCM 2b | Basic":
+    if fcm.MT == "FCM Oil 2b":
         trace = square_line_trace(
             x=LogsStandard['DateTime'],
             y=LogsStandard['MachineStatus'],
@@ -768,7 +768,7 @@ def change_over_divided(LogsStandard, LogsAlarms, LogsEvents, mch_info):
                     labels=filter_alm['Label'],
                     cat=cat)
                 
-                if fcm.MT == "FCM 2b | Basic":
+                if fcm.MT == "FCM Oil 2b":
                     fig.add_trace(trace, row=plot_row, col=1,secondary_y=True)
 
                 elif fcm.MT == "FCM One | 1.5":
@@ -1037,7 +1037,7 @@ def create_aux_plot(LogsStandard, LogsAlarms, LogsEvents):
         ax1.set_title('Main variables trend')
         x = LogsStandard['DateTime']
 
-        if fcm.MT == "FCM 2b | Basic":
+        if fcm.MT == "FCM Oil 2b":
             y1 = LogsStandard['FlowMeter']
             y2 = LogsStandard['Temperature']
             y3 = LogsStandard['Viscosity']
@@ -1101,7 +1101,7 @@ def change_over_preview(df):
 
     # Data
     x = df['DateTime']
-    if fcm.MT == "FCM 2b | Basic":
+    if fcm.MT == "FCM Oil 2b":
         y1 = df['Temperature']
         y2 = df['Viscosity']
 

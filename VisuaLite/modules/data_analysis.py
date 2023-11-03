@@ -50,7 +50,7 @@ def load_data(mch_type):
     if mch_type == "FCM One | 1.5":
         txt_file = FCM_ONE
 
-    elif mch_type == "FCM 2b | Basic":
+    elif mch_type == "FCM Oil 2b":
         txt_file = FCM_BASIC
 
     global DATA
@@ -253,7 +253,7 @@ def Format_DF_SLogs(list_files):
         # Create column with value change
         LogsStandard['ChangeoverCMDchange'] = LogsStandard['ChangeOverInProgress'].diff()
 
-    elif MT == "FCM 2b | Basic":
+    elif MT == "FCM Oil 2b":
         # Columns as float
         LogsStandard.iloc[:,8:] = LogsStandard.iloc[:,8:].astype(float)
 

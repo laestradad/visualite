@@ -12,4 +12,4 @@ Important Notes:
  - The tool itself will not modify the logs.
  - Supported machine types include:
     - FCM One / FCM 1.5
-    - FCM Basic 2.b.
+    - FCM Oil 2b

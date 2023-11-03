@@ -44,7 +44,7 @@
         "SO2": "float",
         "CO2": "float",
         "SC": "float",
-        "DPT_AI": "float",
+        "DPT_AI": "bar",
         "AlarmNumber": "alarms",
         "EventNumber": "events"
     },

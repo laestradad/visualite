@@ -348,7 +348,7 @@ class App(ctk.CTk):
         self.mt_label.grid(row=1, column=0, padx=20, pady=(20, 5))
         self.mch_type = ctk.StringVar(value="FCM One | 1.5")
         self.mch_type_dropdown = ctk.CTkOptionMenu(parent, dynamic_resizing=False, 
-                                    variable=self.mch_type, values=["FCM One | 1.5", "FCM 2b | Basic"])
+                                    variable=self.mch_type, values=["FCM One | 1.5", "FCM Oil 2b"])
         self.mch_type_dropdown.grid(row=2, column=0, padx=20, pady=0)
         self.mch_type_dropdown.set("FCM One | 1.5")
 
@@ -728,7 +728,7 @@ class TabsFrame(ctk.CTkFrame):
             if self.app.mch_type.get() == "FCM One | 1.5":
                 remove_cols = ['DateTime', 'GpsPos', 'CV1_Label', 'CV2_Label', 'CV3_Label', 
                                 'CV4_Label', 'CV5_Label', 'ChangeoverCMDchange', 'CC_Label']
-            elif self.app.mch_type.get() == "FCM 2b | Basic":
+            elif self.app.mch_type.get() == "FCM Oil 2b":
                 remove_cols = ['DateTime', 'CV1_Label', 'CV2_Label', 'CV3_Label', 
                                 'CV4_Label', 'STS_Label', 'ChangeoverCMDchange', 'CC_Label']
             for col in remove_cols:
@@ -1330,8 +1330,9 @@ class TabsFrame(ctk.CTkFrame):
         fig = fcm_plt.custom_plot_divided(self.app.LogsStandard, self.app.LogsAlarms, self.app.LogsEvents, cols, datetime1, datetime2, name_file)
         logger.debug("Tab3 - fig creted")
         
-        # Save plot
+        # Preview plot window
         try:
+            #fig.write_image("my_image.png", width=400, height=300, scale=1)
             fig.write_html(file_path, config={'displaylogo': False})
             logger.debug("--- Tab3 - html created successfully")
             tk.messagebox.showinfo(title='Plot saved!', message="Plot saved in destination folder") # type: ignore
