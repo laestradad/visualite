@@ -859,6 +859,7 @@ class TabsFrame(ctk.CTkFrame):
         #Labels and Calendars left side
         self.cal1_text = ctk.CTkLabel(self.frame_left_t3, text='From:')
         self.cal1_text.grid(row=0, column=0, padx=20, pady=2, sticky="nw") 
+        # TODO: set default date to min StdLogs date, if no StdLogs then min of Alm or Eve
         self.cal1d = tkcalendar.Calendar(self.frame_left_t3, selectmode="day", date_pattern="yyyy/MM/dd")
         self.cal1d.grid(row=1, column=0, padx=(20,10), pady=2)
         self.cal1t = ctk.CTkOptionMenu(self.frame_left_t3, dynamic_resizing=False, values=TIMES)
@@ -867,6 +868,7 @@ class TabsFrame(ctk.CTkFrame):
 
         self.cal1_text = ctk.CTkLabel(self.frame_left_t3, text='To:')
         self.cal1_text.grid(row=0, column=1, padx=20, pady=2, sticky="nw")
+        # TODO: set default date to max StdLogs date, if no StdLogs then max of Alm or Eve
         self.cal2d = tkcalendar.Calendar(self.frame_left_t3, selectmode="day", date_pattern="yyyy/MM/dd")
         self.cal2d.grid(row=1, column=1, padx=(10,20), pady=2)
         self.cal2t = ctk.CTkOptionMenu(self.frame_left_t3, dynamic_resizing=False, values=TIMES)
@@ -1210,43 +1212,39 @@ class TabsFrame(ctk.CTkFrame):
             self.hide_progress_bar()
             return #Stop:
 
-        dest_folder = fd.askdirectory(parent=self, title='Select a destination directory')
-        if dest_folder =='': #no folder selected
-            logger.debug("No folder selected -> Stop")
-            self.hide_progress_bar()
-            return #Stop
-        logger.debug("Folder selected:")
-        logger.debug(dest_folder)
-        
         # Current datetime to create personalized file name
         now_dt = datetime.datetime.now()
         format_dt = now_dt.strftime('%Y.%m.%d_%H%M%S')
         
-        name_file = ""
+        self.name_file = ""
         if self.radio_var.get() == 0:
-            name_file="Custom_Plot_A{}_{}".format(self.ae_number, format_dt)
+            self.name_file="Custom_Plot_A{}_{}".format(self.ae_number, format_dt)
         elif self.radio_var.get() == 1:
-            name_file="Custom_Plot_E{}_{}".format(self.ae_number, format_dt)
-
-        file_path = os.path.join(dest_folder, (name_file + '.html')) # type: ignore
-        logger.debug("File to be saved:")
-        logger.debug(file_path)
+            self.name_file="Custom_Plot_E{}_{}".format(self.ae_number, format_dt)
 
         #Create plot
-        fig = fcm_plt.custom_plot_divided(self.app.LogsStandard, self.app.LogsAlarms, self.app.LogsEvents, cols, date1, date2, name_file)
+        self.fig = fcm_plt.custom_plot_divided(self.app.LogsStandard, self.app.LogsAlarms, self.app.LogsEvents, cols, date1, date2, self.name_file)
         logger.debug("Tab2 - fig created")
-        
-        #Save plot
-        try:
-            # TODO: CREATE PNG, OPEN POP UP, DELETE PNG, IF CONFIRM: write HTML & destroy popup ELSE destroy pop up
-            fig.write_html(file_path, config={'displaylogo': False})
-            logger.debug("--- Tab2 - html created successfully")
-            tk.messagebox.showinfo(title='Plot saved!', message="Plot saved in destination folder") # type: ignore
 
+        # Save png preview
+        png_path = os.path.join(PATH, '__vl.log', 'preview.png')
+        try:
+            logger.debug("saving image")
+            self.fig.write_image(png_path)
+            logger.debug("--- png saved")
+    
         except Exception as e:
             logger.error("--- Error saving file")
             logger.error(e, exc_info=True)
-            tk.messagebox.showwarning(title='Error saving file', message="Error saving file") # type: ignore
+            tk.messagebox.showwarning(title='Error creating preview png', message="Error creating preview png") # type: ignore
+            # Load an image for the popup
+
+        # Load image file
+        self.image_preview = ctk.CTkImage(Image.open(png_path), size=(700, 500))
+        # Create PopUp
+        self.create_preview_popup()        
+        # Delete image file
+        os.remove(png_path)
 
         self.hide_progress_bar()
 
@@ -1353,9 +1351,9 @@ class TabsFrame(ctk.CTkFrame):
         # Create plot
         self.fig = fcm_plt.custom_plot_divided(self.app.LogsStandard, self.app.LogsAlarms, self.app.LogsEvents, cols, datetime1, datetime2, self.name_file)
         logger.debug("Tab3 - fig created")
-        png_path = os.path.join(PATH, '__vl.log', 'preview.png')
         
         # Save png preview
+        png_path = os.path.join(PATH, '__vl.log', 'preview.png')
         try:
             logger.debug("saving image")
             self.fig.write_image(png_path)
