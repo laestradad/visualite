@@ -495,6 +495,11 @@ class App(ctk.CTk):
             if App.frames["TFrame"].plot_fig is not None:
                 App.frames["TFrame"].close_plot(App.frames["TFrame"].plot_fig,
                                                 App.frames["TFrame"].plot_window)
+
+            if App.frames["TFrame"].preview is not None:
+                App.frames["TFrame"].preview.destroy()
+
+            App.frames["TFrame"].hide_progress_bar()
     
     def show_frame(self, frame_id):
         # method to change frames in position row 2, column 0 of right_side_panel
@@ -1343,13 +1348,70 @@ class TabsFrame(ctk.CTkFrame):
             return #Stop:
 
         # Ask user for personalized title
-        name_file = self.get_file_name()
+        self.name_file = self.get_file_name()
+
+        # Create plot
+        self.fig = fcm_plt.custom_plot_divided(self.app.LogsStandard, self.app.LogsAlarms, self.app.LogsEvents, cols, datetime1, datetime2, self.name_file)
+        logger.debug("Tab3 - fig created")
+        png_path = os.path.join(PATH, '__vl.log', 'preview.png')
+        
+        # Save png preview
+        try:
+            logger.debug("saving image")
+            self.fig.write_image(png_path)
+            logger.debug("--- png saved")
+    
+        except Exception as e:
+            logger.error("--- Error saving file")
+            logger.error(e, exc_info=True)
+            tk.messagebox.showwarning(title='Error creating preview png', message="Error creating preview png") # type: ignore
+            # Load an image for the popup
+        
+        # Load image file
+        self.image_preview = ctk.CTkImage(Image.open(png_path), size=(700, 500))
+        # Create PopUp
+        self.create_preview_popup()        
+        # Delete image file
+        os.remove(png_path)
+
+        self.hide_progress_bar()
+
+    def create_preview_popup(self):
+        logger.debug("creating popup")
+        
+        # Create a new TopLevel window for the popup
+        self.preview = ctk.CTkToplevel(self.app)
+        self.preview.title("Preview Plot")
+        self.preview.grab_set()
+
+        # TopLevel widgets
+        self.popup_label = ctk.CTkLabel(self.preview, text="Do you want to save the following plot?", font=ctk.CTkFont(size=18))
+        self.popup_label.grid(row=0, column=0, padx=10, pady=(20,10))
+        self.popup_img = ctk.CTkLabel(self.preview, text="", image=self.image_preview)
+        self.popup_img.grid(row=1, column=0, padx=20, pady=10)
+        self.popup_btn1 = ctk.CTkButton(self.preview, text="Confirm", command= lambda: self.save_html(self.fig, self.name_file))
+        self.popup_btn1.grid(row=2, column=0, padx=30, pady=(10,20), sticky="nw")
+        self.popup_btn2 = ctk.CTkButton(self.preview, text="Abort", command=self.close_preview)
+        self.popup_btn2.grid(row=2, column=0, padx=30, pady=(10,20), sticky="ne")
+
+    def close_preview(self):
+        self.preview.grab_release()
+        self.preview.destroy()
+
+    def save_html (self, fig, name_file):
+        logger.debug("save_html started ---")
+        self.show_progress_bar() 
 
         dest_folder = fd.askdirectory(parent=self, title='Select a destination directory')
         if dest_folder =='':
-            logger.debug("no folder selected -> Stop")
-            self.hide_progress_bar()
-            return #Stop
+            logger.debug("no folder selected")
+            tk.messagebox.showwarning(title='No folder selected', message="Figure not saved as no folder was selected.\nPlease try again.") # type: ignore
+            self.hide_progress_bar()    
+            self.close_preview()
+            logger.debug("--- save_html finished")
+            self.fig = None
+            return
+
         logger.debug("Folder selected:")
         logger.debug(dest_folder)
 
@@ -1357,23 +1419,21 @@ class TabsFrame(ctk.CTkFrame):
         logger.debug("File to be saved:")
         logger.debug(file_path)
 
-        # Create plot
-        fig = fcm_plt.custom_plot_divided(self.app.LogsStandard, self.app.LogsAlarms, self.app.LogsEvents, cols, datetime1, datetime2, name_file)
-        logger.debug("Tab3 - fig creted")
-        
-        # Preview plot window
         try:
-            # TODO: CREATE PNG, OPEN POP UP, DELETE PNG, IF CONFIRM: write HTML & destroy popup ELSE destroy pop up
             fig.write_html(file_path, config={'displaylogo': False})
-            logger.debug("--- Tab3 - html created successfully")
+            logger.debug("--- save_html successful")
             tk.messagebox.showinfo(title='Plot saved!', message="Plot saved in destination folder") # type: ignore
+            self.hide_progress_bar()
+            self.close_preview()
+            self.fig = None
 
         except Exception as e:
             logger.error("--- Error saving file")
             logger.error(e, exc_info=True)
-            tk.messagebox.showwarning(title='Error saving file', message="Error saving file") # type: ignore
-
-        self.hide_progress_bar()
+            tk.messagebox.showwarning(title='Error creating html', message="Error creating figure, check permissions") # type: ignore
+            self.hide_progress_bar()
+            self.close_preview()
+            self.fig = None
 
     def get_file_name(self):
         dialog = ctk.CTkInputDialog(text="Plot Title without special characters\n(Optional)", title="Plot title / File name (Optional)")
