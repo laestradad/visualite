@@ -666,8 +666,8 @@ class TabsFrame(ctk.CTkFrame):
         self.label1.grid(row=0, column=0, padx=20, pady=20, sticky = 'nw')
 
         #Declaration of buttons
-        self.plot_sel = ctk.CTkButton(self.results_t1, text="Save selected plots", command= self.plot_sel_COs)
-        self.plot_all = ctk.CTkButton(self.results_t1, text="Save all plots", command= self.plot_all_COs)
+        self.plot_sel = ctk.CTkButton(self.results_t1, text="Save plot", command= self.plot_sel_COs)
+        self.plot_all = ctk.CTkButton(self.results_t1, text="Export data", command= self.export_excel_T1)
         self.plot_type = ctk.StringVar(value="")
         self.plot_type_tk = ctk.CTkOptionMenu(self.results_t1, dynamic_resizing=False, variable=self.plot_type, 
                                             values=["Overlap","Separate"])
@@ -678,20 +678,21 @@ class TabsFrame(ctk.CTkFrame):
             self.COs = self.app.COs
 
             #If Changeovers detected, create widgets
-            self.checkbox_list = []
-            self.cos_options = []
+            self.co_list = [] #list of radiobuttons for each Changeover#
+            self.cos_options = [] #list of strings with Changeover#
             self.label1.configure(text="In the logs imported there are " + str(len(self.COs)) + " changeovers.")
-            # TODO create variable of radiobuttons with index
-            #self.sel_co = tk.IntVar(value=0)
+            
+            # Add radiobuttons for each Changeover
+            self.sel_co = tk.IntVar(value=0)
             for i, CO in enumerate(self.COs):
                 text= str(i+1) + '. From ' + str(CO['Start']) + ' to ' + str(CO['Finish']) + '. Duration: ' + str(CO['Duration'])
-                self.add_checkbox_t1(text)
+                self.add_co_radiobtn(text, i+1)
                 self.cos_options.append("Changeover "+ str(i+1))
 
             self.preview_options.configure(values=self.cos_options)
-            self.plot_type_tk.grid(row=len(self.checkbox_list)+2, column=0, padx=10, pady=10, sticky="w")
-            self.plot_sel.grid(row=len(self.checkbox_list)+2, column=0, padx=10, pady=10)
-            self.plot_all.grid(row=len(self.checkbox_list)+2, column=0, padx=10, pady=10, sticky="e")
+            self.plot_type_tk.grid(row=len(self.co_list)+2, column=0, padx=10, pady=10, sticky="w")
+            self.plot_sel.grid(row=len(self.co_list)+2, column=0, padx=10, pady=10)
+            self.plot_all.grid(row=len(self.co_list)+2, column=0, padx=10, pady=10, sticky="e")
         
         else:
             #Disable widgets if no ChangeOvers detected
@@ -927,39 +928,61 @@ class TabsFrame(ctk.CTkFrame):
         self.plot_t3.grid(row=2, column=1, padx=10, pady=(5,10), sticky="w")
 
     #TAB1 functions
-    def add_checkbox_t1(self, item):
-        # TODO change it to Radiobutton
-        #radiobutton = ctk.CTkRadioButton(self.results_t1, variable=self.sel_co, text=item, value=0, command=self.update_optionmenu)
-        #radiobutton.grid(row=len(self.checkbox_list)+1, column=0, padx=5, pady=10, sticky="w")
-        checkbox = ctk.CTkCheckBox(self.results_t1, text=item)
-        checkbox.grid(row=len(self.checkbox_list)+1, column=0, padx=5, pady=10, sticky="w")
-        self.checkbox_list.append(checkbox)
-
-    def get_checked_items(self):
-        COs_sts = []
-        for checkbox in self.checkbox_list:
-            COs_sts.append(checkbox.get())
-        return COs_sts
+    def add_co_radiobtn(self, item, i):
+        radiobutton = ctk.CTkRadioButton(self.results_t1, variable=self.sel_co, text=item, value=i)
+        radiobutton.grid(row=len(self.co_list)+1, column=0, padx=5, pady=10, sticky="w")
+        self.co_list.append(radiobutton)
 
     def export_excel_T1(self):
-        #TODO: get radiobutton index, filter logs according to CO in index position, export excel
+        logger.debug("Tab1 - export_excel_T1 started ---")
+        self.show_progress_bar()
+
+        index = self.sel_co.get()
+        logger.debug("selected item:")
+        logger.debug(index)
+
+        if index == 0:
+            logger.debug("--- no option selected -> Stop")
+            tk.messagebox.showwarning(title='No option selected!', message='Select one ChangeOver to plot') # type: ignore
+            self.hide_progress_bar()
+            return #Stop
+        
+        df = fcm_da.ChangeOverToDF(self.app.COs[index-1], self.app.LogsStandard)
+        all_co_cols = [col for category in fcm_da.DATA['change_over_vars'].values() for col in category]
+
+        self.name_file = "CO"+ str(index) + "_" + str(self.app.COs[index-1]['Start'].date())
+
+        # Filter DFs and save excel
+        self.export_excel(
+            dfs = [df, self.app.LogsAlarms, self.app.LogsEvents],
+            sheetNames = ['Standard', 'Alarms', 'Events'],
+            date1 = df['DateTime'].min(), date2 = df['DateTime'].max(),
+            cols = all_co_cols,
+            fileName = self.name_file)
+
+        self.hide_progress_bar()
+        logger.debug("--- Tab1 - export_excel_T1 finished")
+
+    def plot_sel_COs(self):
         logger.debug("Tab1 - plot_sel_COs started ---")
-        self.show_progress_bar() 
+        self.show_progress_bar()
 
-        COs = self.get_checked_items()
-        logger.debug("checked items:")
-        logger.debug(COs)
+        index = self.sel_co.get()
+        logger.debug("selected item:")
+        logger.debug(index)
 
-    def plot_all_COs(self):
-        # TODO, delete this function
-        logger.debug("Tab1 - plot_all_COs started ---")
-        self.show_progress_bar() 
-
-        # Ask for destination folder
+        if index == 0:
+            logger.debug("--- no option selected -> Stop")
+            tk.messagebox.showwarning(title='No option selected!', message='Select one ChangeOver to plot') # type: ignore
+            self.hide_progress_bar()
+            return #Stop
+        
+        dest_folder =''
         dest_folder = fd.askdirectory(parent=self, title='Select a destination directory')
-        logger.debug("Folder selected:")
+        logger.debug("Selected folder:")
         logger.debug(dest_folder)
-        if dest_folder =='': #no folder selected
+
+        if dest_folder == '': #no folder selected
             logger.debug("no folder selected -> Stop")
             self.hide_progress_bar()
             return #Stop
@@ -967,114 +990,29 @@ class TabsFrame(ctk.CTkFrame):
         plot_type = self.plot_type.get()
         logger.debug(f"{plot_type=}")
 
-        if self.app.COs:
-            logger.debug("COs:")
-            logger.debug(self.app.COs)            
-            
-            flag = 0 #used to show output
-
-            for i, CO in enumerate(self.app.COs):
-                df = fcm_da.ChangeOverToDF(CO, self.app.LogsStandard)
-
-                #Plot Type
-                if plot_type == "Overlap":
-                    fig = fcm_plt.change_over_overlap(df, self.app.LogsAlarms, self.app.LogsEvents, self.app.mch_info)
-                    name_file= "ov_CO"+ str(i+1) + "_" + str(CO['Start'].date()) + ".html"
-
-                elif plot_type == "Separate":
-                    fig = fcm_plt.change_over_divided(df, self.app.LogsAlarms, self.app.LogsEvents, self.app.mch_info)
-                    name_file= "sp_CO"+ str(i+1) + "_" + str(CO['Start'].date()) + ".html"
-
-                file_path = os.path.join(dest_folder, name_file)
-                logger.debug("File to create:")
-                logger.debug(file_path)
-
-                try:
-                    fig.write_html(file_path, config={'displaylogo': False})
-                    logger.debug("File saved successfully.")
-                    flag = 1
-
-                except Exception as e:
-                    logger.error("--- Error saving file")
-                    logger.error(e, exc_info=True)
-                    flag = 2
-
-        if flag == 0:
-            logger.debug("--- no changeovers to plot -> Stop")
-            self.hide_progress_bar()
-            return #Stop
-        elif flag == 1:
-            tk.messagebox.showinfo(title='Plots saved!', message="Plots saved in destination folder") # type: ignore
-
-        elif flag == 2:
-            tk.messagebox.showinfo(title='Error saving html files', message="Some error may have occured during saving the plots.") # type: ignore
-
-        self.hide_progress_bar()
-        logger.debug("--- Tab1 - plot_sel_COs finished")
-
-    def plot_sel_COs(self):
-        logger.debug("Tab1 - plot_sel_COs started ---")
-        self.show_progress_bar() 
-
-        COs = self.get_checked_items()
-        logger.debug("checked items:")
-        logger.debug(COs)
+        df = fcm_da.ChangeOverToDF(self.app.COs[index-1], self.app.LogsStandard)
         
-        dest_folder =''
+        #Plot Type
+        if plot_type == "Overlap":
+            fig = fcm_plt.change_over_overlap(df, self.app.LogsAlarms, self.app.LogsEvents, self.app.mch_info)
+            name_file= "ov_CO"+ str(index) + "_" + str(self.app.COs[index-1]['Start'].date()) + ".html"
 
-        flag = 0 # if remains 0, no selection made
+        elif plot_type == "Separate":
+            fig = fcm_plt.change_over_divided(df, self.app.LogsAlarms, self.app.LogsEvents, self.app.mch_info)
+            name_file= "sp_CO"+ str(index) + "_" + str(self.app.COs[index-1]['Start'].date()) + ".html"
 
-        plot_type = self.plot_type.get()
-        logger.debug(f"{plot_type=}")
-        
-        for i, CO_sts in enumerate(COs):
-            logger.debug(f"{i=}")
-            if CO_sts == 1:
-                if flag == 0: #first iteration
-                    #Open file dialog to select folder
-                    dest_folder = fd.askdirectory(parent=self, title='Select a destination directory')
-                    logger.debug("Selected folder:")
-                    logger.debug(dest_folder)
+        file_path = os.path.join(dest_folder, name_file)
+        logger.debug("File to save:")
+        logger.debug(file_path)
+        try:
+            fig.write_html(file_path, config={'displaylogo': False})
+            logger.debug("File saved successfully.")
+            tk.messagebox.showinfo(title='Plot saved!', message="Plot saved in destination folder") # type: ignore
 
-                    if dest_folder == '': #no folder selected
-                        logger.debug("no folder selected -> Stop")
-                        self.hide_progress_bar()
-                        return #Stop
-                
-                flag=1
-                df = fcm_da.ChangeOverToDF(self.app.COs[i], self.app.LogsStandard)
-                
-                #Plot Type
-                if plot_type == "Overlap":
-                    fig = fcm_plt.change_over_overlap(df, self.app.LogsAlarms, self.app.LogsEvents, self.app.mch_info)
-                    name_file= "ov_CO"+ str(i+1) + "_" + str(self.app.COs[i]['Start'].date()) + ".html"
-
-                elif plot_type == "Separate":
-                    fig = fcm_plt.change_over_divided(df, self.app.LogsAlarms, self.app.LogsEvents, self.app.mch_info)
-                    name_file= "sp_CO"+ str(i+1) + "_" + str(self.app.COs[i]['Start'].date()) + ".html"
-
-                file_path = os.path.join(dest_folder, name_file)
-                logger.debug("File to save:")
-                logger.debug(file_path)
-                try:
-                    fig.write_html(file_path, config={'displaylogo': False})
-                    logger.debug("File saved successfully.")
-
-                except Exception as e:
-                    logger.error("--- Error saving file")
-                    logger.error(e, exc_info=True)
-                    flag = 2
-
-        if flag == 0:
-            logger.debug("--- no option selected -> Stop")
-            tk.messagebox.showwarning(title='No option selected!', message='Select at least one ChangeOver to plot') # type: ignore
-            self.hide_progress_bar()
-            return #Stop
-        elif flag == 1:
-            tk.messagebox.showinfo(title='Plots saved!', message="Plots saved in destination folder") # type: ignore
-
-        elif flag == 2:
-            tk.messagebox.showinfo(title='Error saving html files', message="Some error may have occured during saving the plots.") # type: ignore
+        except Exception as e:
+            logger.error("--- Error saving file")
+            logger.error(e, exc_info=True)
+            tk.messagebox.showinfo(title='Error saving html file', message="Some error may have occured saving the plot.") # type: ignore
 
         self.hide_progress_bar()
         logger.debug("--- Tab1 - plot_sel_COs finished")
