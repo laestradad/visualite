@@ -37,7 +37,8 @@ TIMES = ['00:00', '01:00', '02:00', '03:00', '04:00', '05:00',
 
 #Custom Tkinter theme
 ctk.set_appearance_mode("dark")
-ctk.set_default_color_theme("dark-blue")
+#ctk.set_default_color_theme("dark-blue")
+ctk.set_default_color_theme(os.path.join(RESOURCES, "al-blue.json"))
 
 #--------------------------------------------------------------------- Frames Classes
 class BreadcrumbFrame(ctk.CTkFrame):
