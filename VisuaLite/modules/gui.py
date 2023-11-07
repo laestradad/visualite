@@ -496,8 +496,8 @@ class App(ctk.CTk):
                 App.frames["TFrame"].close_plot(App.frames["TFrame"].plot_fig,
                                                 App.frames["TFrame"].plot_window)
 
-            if App.frames["TFrame"].preview is not None:
-                App.frames["TFrame"].preview.destroy()
+            #if App.frames["TFrame"].preview is not None:
+            #    App.frames["TFrame"].preview.destroy()
 
             App.frames["TFrame"].hide_progress_bar()
     
@@ -682,6 +682,7 @@ class TabsFrame(ctk.CTkFrame):
             self.cos_options = []
             self.label1.configure(text="In the logs imported there are " + str(len(self.COs)) + " changeovers.")
             # TODO create variable of radiobuttons with index
+            #self.sel_co = tk.IntVar(value=0)
             for i, CO in enumerate(self.COs):
                 text= str(i+1) + '. From ' + str(CO['Start']) + ' to ' + str(CO['Finish']) + '. Duration: ' + str(CO['Duration'])
                 self.add_checkbox_t1(text)
@@ -752,11 +753,11 @@ class TabsFrame(ctk.CTkFrame):
         self.label2.grid(row=0, column=0, columnspan=5, padx=20, pady=5, sticky="nw")
 
         # Radio buttons to select Alarm or Event
-        self.radio_var = tk.IntVar(value=0)
-        self.radio_button_1 = ctk.CTkRadioButton(self.tabview.tab("Search Event/Alarm"), variable=self.radio_var,
+        self.sel_ae = tk.IntVar(value=0)
+        self.radio_button_1 = ctk.CTkRadioButton(self.tabview.tab("Search Event/Alarm"), variable=self.sel_ae,
                                                             text="Alarm" ,value=0, command=self.update_optionmenu)
         self.radio_button_1.grid(row=1, column=0, pady=5, padx=20, sticky="w")
-        self.radio_button_2 = ctk.CTkRadioButton(self.tabview.tab("Search Event/Alarm"), variable=self.radio_var, 
+        self.radio_button_2 = ctk.CTkRadioButton(self.tabview.tab("Search Event/Alarm"), variable=self.sel_ae, 
                                                             text="Event" , value=1, command=self.update_optionmenu)
         self.radio_button_2.grid(row=1, column=1, pady=5, padx=5, sticky="w")
 
@@ -814,11 +815,17 @@ class TabsFrame(ctk.CTkFrame):
         self.optionmenu_3.grid(row=4, column=3, padx=5, pady=(5,20), sticky="ew")
         self.optionmenu_3.set("Select")
 
-        #Action Button
-        self.action_t2 = ctk.CTkButton(self.tabview.tab("Search Event/Alarm"), text="Generate and Save Plot",
+        #Plot Button
+        self.plot_t2 = ctk.CTkButton(self.tabview.tab("Search Event/Alarm"), text="Generate and save plot",
                                         command=self.generate_search_ae_plot)
-        self.action_t2.grid(row=4, column=5, padx=(5,20), pady=(5,20), sticky="e")
-        self.action_t2.configure(state="disabled")
+        self.plot_t2.grid(row=4, column=5, padx=(5,20), pady=(5,20), sticky="e")
+        self.plot_t2.configure(state="disabled")
+        
+        #Export Button
+        self.export_t2 = ctk.CTkButton(self.tabview.tab("Search Event/Alarm"), text="Export data",
+                                        command=self.export_excel_T2)
+        self.export_t2.grid(row=4, column=5, padx=(5,20), pady=(5,20), sticky="w")
+        self.export_t2.configure(state="disabled")
 
         # Enable or disable buttons based on alarms/events not imported
         if (not self.alm_list) and (not self.eve_list):
@@ -828,12 +835,12 @@ class TabsFrame(ctk.CTkFrame):
             self.label_results_t2.configure(text="Funtion not available. Please import Alarm or Event logs")
         
         if (not self.alm_list) and (self.eve_list):
-            self.radio_var.set(1)
+            self.sel_ae.set(1)
             self.radio_button_1.configure(state="disabled")
             self.label_results_t2.configure(text="Search results shown here.\nAlarm logs not imported", justify='left')
 
         if (not self.eve_list) and (self.alm_list):
-            self.radio_var.set(0)
+            self.sel_ae.set(0)
             self.radio_button_2.configure(state="disabled")
             self.label_results_t2.configure(text="Search results shown here.\nEvent logs not imported", justify='left')
 
@@ -912,13 +919,18 @@ class TabsFrame(ctk.CTkFrame):
             self.add_switch_t3(column_name)
 
         #Action button Tab3
-        self.action_t3 = ctk.CTkButton(self.tabview.tab("Personalized Analysis"), text="Generate and save Plot",
+        self.export_t3 = ctk.CTkButton(self.tabview.tab("Personalized Analysis"), text="Export data",
+                                         command=self.export_excel_T3)
+        self.export_t3.grid(row=2, column=0, padx=10, pady=(5,10), sticky="e")
+        self.plot_t3 = ctk.CTkButton(self.tabview.tab("Personalized Analysis"), text="Generate and save plot",
                                          command=self.generate_personalized_plot)
-        self.action_t3.grid(row=2, column=0, columnspan=2, padx=20, pady=(5,10))
+        self.plot_t3.grid(row=2, column=1, padx=10, pady=(5,10), sticky="w")
 
     #TAB1 functions
     def add_checkbox_t1(self, item):
         # TODO change it to Radiobutton
+        #radiobutton = ctk.CTkRadioButton(self.results_t1, variable=self.sel_co, text=item, value=0, command=self.update_optionmenu)
+        #radiobutton.grid(row=len(self.checkbox_list)+1, column=0, padx=5, pady=10, sticky="w")
         checkbox = ctk.CTkCheckBox(self.results_t1, text=item)
         checkbox.grid(row=len(self.checkbox_list)+1, column=0, padx=5, pady=10, sticky="w")
         self.checkbox_list.append(checkbox)
@@ -1112,10 +1124,10 @@ class TabsFrame(ctk.CTkFrame):
     #TAB2 functions
     def update_optionmenu(self): 
         # Change options in optionmenu if Radio button choice change
-        if self.radio_var.get() == 0:
+        if self.sel_ae.get() == 0:
             logger.debug("Tab2 - Alarm radiobutton selected")
             self.optionmenu_1.configure(values=self.alm_list)
-        elif self.radio_var.get() == 1:
+        elif self.sel_ae.get() == 1:
             logger.debug("Tab2 - Event radiobutton selected")
             self.optionmenu_1.configure(values=self.eve_list)
 
@@ -1129,7 +1141,8 @@ class TabsFrame(ctk.CTkFrame):
             tk.messagebox.showwarning(title='No option selected!', message='Select an Alarm o Event to search') # type: ignore
             return #Stop
         else:
-            self.action_t2.configure(state="enabled")
+            self.plot_t2.configure(state="enabled")
+            self.export_t2.configure(state="enabled")
 
             selected_item = self.search_var.get()
             logger.debug("%s selected", selected_item)
@@ -1217,9 +1230,9 @@ class TabsFrame(ctk.CTkFrame):
         format_dt = now_dt.strftime('%Y.%m.%d_%H%M%S')
         
         self.name_file = ""
-        if self.radio_var.get() == 0:
+        if self.sel_ae.get() == 0:
             self.name_file="Custom_Plot_A{}_{}".format(self.ae_number, format_dt)
-        elif self.radio_var.get() == 1:
+        elif self.sel_ae.get() == 1:
             self.name_file="Custom_Plot_E{}_{}".format(self.ae_number, format_dt)
 
         #Create plot
@@ -1241,7 +1254,7 @@ class TabsFrame(ctk.CTkFrame):
 
         # Load image file
         self.image_preview = ctk.CTkImage(Image.open(png_path), size=(700, 500))
-        # Create PopUp
+        # Create PopUp with preview / In popup save html or abort
         self.create_preview_popup()        
         # Delete image file
         os.remove(png_path)
@@ -1249,14 +1262,50 @@ class TabsFrame(ctk.CTkFrame):
         self.hide_progress_bar()
 
     def export_excel_T2(self):
-        #TODO copypaste from generate_search_ae_plot
-        logger.debug("Tab2 - PersonalizedPlot function started ---")
+        logger.debug("Tab2 - export_excel_T2 plot started ---")
         self.show_progress_bar() 
 
-        date1 = self.cal1d.get_date()
-        time1 = self.cal1t.get()
-        date2 = self.cal2d.get_date()
-        time2 = self.cal2t.get() 
+        logger.debug("Limits selected:")
+        logger.debug(self.high_limit.get())
+        logger.debug(self.low_limit.get())
+
+        if (self.high_limit.get() == "Select") or (self.low_limit.get()== "Select"):
+            tk.messagebox.showwarning(title='No option selected!', message='Select time boundaries for the report') # type: ignore
+            logger.debug("default values selected -> Stop")
+            self.hide_progress_bar()
+            return #Stop
+        
+        # from "1hour" type input to exact datetime
+        date1, date2 = fcm_da.date_limits(self.timestamps[self.result_selection.get()],self.low_limit.get(), self.high_limit.get())
+        logger.debug("Dates to filter:")
+        logger.debug(f"{date1=}, {date2=}")
+        
+        cols = self.get_selected_vars_t2()
+        logger.debug("Variables selected:")
+        logger.debug(cols)
+        if cols == []:
+            logger.debug("no variable selected -> Stop")
+            tk.messagebox.showwarning(title='No variable selected', message='Please select at least one variable to plot') # type: ignore
+            self.hide_progress_bar()
+            return #Stop:
+
+        # Current datetime to create personalized file name
+        now_dt = datetime.datetime.now()
+        format_dt = now_dt.strftime('%Y.%m.%d_%H%M%S')
+        
+        self.name_file = ""
+        if self.sel_ae.get() == 0:
+            self.name_file="Filtered_Logs_A{}_{}".format(self.ae_number, format_dt)
+        elif self.sel_ae.get() == 1:
+            self.name_file="Filtered_Logs_E{}_{}".format(self.ae_number, format_dt)
+
+        # Filter DFs and save excel
+        self.export_excel(
+            dfs = [self.app.LogsStandard, self.app.LogsAlarms, self.app.LogsEvents],
+            sheetNames = ['Standard', 'Alarms', 'Events'],
+            date1 = date1, date2 = date2,
+            cols = cols,
+            fileName = self.name_file)
 
         self.hide_progress_bar()
 
@@ -1367,7 +1416,7 @@ class TabsFrame(ctk.CTkFrame):
         
         # Load image file
         self.image_preview = ctk.CTkImage(Image.open(png_path), size=(700, 500))
-        # Create PopUp
+        # Create PopUp with preview / In popup save html or abort
         self.create_preview_popup()        
         # Delete image file
         os.remove(png_path)
@@ -1483,8 +1532,7 @@ class TabsFrame(ctk.CTkFrame):
         self.app.progress.grid_forget()
 
     def export_excel_T3(self):
-        logger.debug("Tab3 - PersonalizedPlot function started ---")
-        # TODO: copy paste from generate_personalized_plot
+        logger.debug("Tab3 - export_excel_T3 function started ---")
         self.show_progress_bar() 
 
         date1 = self.cal1d.get_date()
@@ -1492,7 +1540,108 @@ class TabsFrame(ctk.CTkFrame):
         date2 = self.cal2d.get_date()
         time2 = self.cal2t.get() 
 
+        logger.debug("User selections:")
+        logger.debug(f"{date1=}, {time1=}, {date2=}, {time2=}")
+        
+        # Convert inputs to exact datetimes
+        datetime1 = datetime.datetime(int(date1.split('/')[0]), int(date1.split('/')[1]), int(date1.split('/')[2]),
+                                          int(time1.split(':')[0]), 0, 0)  # Year, month, day, hour, minute, second
+        datetime2 = datetime.datetime(int(date2.split('/')[0]), int(date2.split('/')[1]), int(date2.split('/')[2]),
+                                          int(time2.split(':')[0]), 0, 0)  # Year, month, day, hour, minute, second
+
+        time_difference = datetime2 - datetime1
+
+        # Input verification
+        if (time_difference.days < 0):
+            logger.debug("date range not valid -> Stop")
+            tk.messagebox.showwarning(title='Incorrect dates', message='"From:" date is bigger than "To:" date') # type: ignore
+            self.hide_progress_bar()
+            return #Stop
+        elif (time_difference.days > 5):
+            logger.debug("date range bigger than 5 days -> Stop")
+            tk.messagebox.showwarning(title='Date range too big', message='Please select a date range smaller than 5 days') # type: ignore
+            self.hide_progress_bar()
+            return #Stop
+        elif time_difference.days == 0 and time_difference.seconds // 3600 == 0: #//integer division
+            logger.debug("date range = 0 hours -> Stop")
+            tk.messagebox.showwarning(title='Date range = 0', message='Please select a valid date range') # type: ignore
+            self.hide_progress_bar()
+            return #Stop
+        
+        cols = self.get_selected_vars_t3()
+        logger.debug(f"{cols=}")
+
+        if cols == []:
+            logger.debug("no variable selected -> Stop")
+            tk.messagebox.showwarning(title='No variable selected', message='Please select at least one variable to plot') # type: ignore
+            return #Stop:
+
+        # Current datetime to create personalized file name
+        now_dt = datetime.datetime.now()
+        format_dt = now_dt.strftime('%Y.%m.%d_%H%M%S')
+        name_file="Filtered_Logs_{}".format(format_dt)
+
+        # Filter DFs and save excel
+        self.export_excel(
+            dfs = [self.app.LogsStandard, self.app.LogsAlarms, self.app.LogsEvents],
+            sheetNames = ['Standard', 'Alarms', 'Events'],
+            date1 = datetime1, date2 = datetime2,
+            cols = cols,
+            fileName = name_file)
+
         self.hide_progress_bar()
 
+    def export_excel(self, dfs, sheetNames, date1, date2, cols, fileName):
+        logger.debug('export_excel started ---')
 
+        dest_folder = fd.askdirectory(parent=self, title='Select a destination directory')
+        if dest_folder =='':
+            logger.debug("no folder selected")
+            tk.messagebox.showwarning(title='No folder selected', message="File not saved as no folder was selected.\nPlease try again.") # type: ignore
+            self.hide_progress_bar()
+            logger.debug("--- export_excel finished")
+            return
+
+        logger.debug("Folder selected:")
+        logger.debug(dest_folder)
+
+        file_path = os.path.join(dest_folder, (fileName + ".xlsx"))
+        logger.debug("File to be saved:")
+        logger.debug(file_path)
+
+        try:
+            with pd.ExcelWriter(file_path) as writer:  
+                for i, df in enumerate(dfs):
+                    if not df.empty:
+                        logger.debug(i)
+                        logger.debug(sheetNames[i])
+
+                        df_export = df[(df['DateTime'] >= date1) & (df['DateTime'] <= date2)]
+
+                        if 'AlarmNumber' in cols:
+                            cols.remove('AlarmNumber')
+                        if 'EventNumber' in cols:
+                            cols.remove('EventNumber')
+
+                        if set(cols).issubset(df_export.columns.tolist()):
+                            cols.insert(0, 'DateTime')
+                            df_export = df_export[cols]
+                        elif 'Evn_Code_Label' in df_export.columns.tolist():
+                            del df_export['Evn_Code_Label']
+                        elif 'Alm_Code_Label' in df_export.columns.tolist():
+                            del df_export['Alm_Code_Label']
+
+                        df_export.to_excel(writer, sheet_name=sheetNames[i], index=False)
+
+                    else:
+                        logger.debug('df empty')
+            
+            tk.messagebox.showinfo(title='Excel File saved!', message="Excel file saved in destination folder") # type: ignore
+            logger.debug('--- export_excel finished')
+
+        except Exception as e:
+            logger.error("--- Error saving excel file")
+            logger.error(e, exc_info=True)
+            tk.messagebox.showwarning(title='Error creating excel file', message="Error creating excel file, check permissions") # type: ignore
+            self.hide_progress_bar()
 

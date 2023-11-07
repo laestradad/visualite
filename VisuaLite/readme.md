@@ -43,5 +43,5 @@ With the virtual environment activated and dependencies installed, you can now r
 ## Deactivating the Virtual Environment
 When you're done working on your project, deactivate the virtual environment to return to your system's default Python environment:
    ```sh
-   deactivate
+   .\venv\Scripts\deactivate
    ```

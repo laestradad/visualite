@@ -15,6 +15,7 @@ cd ..\..\_projects\_repo\_otherrepo\_visualite\visualite
 
 for venv:
 .\venv\Scripts\activate
+.\venv\Scripts\deactivate
 
 to run:
 python main.py
