@@ -21,7 +21,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='V0.00.04',
+    name='Visualite_V1.00.00',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

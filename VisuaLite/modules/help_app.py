@@ -9,7 +9,7 @@ logger.info("help_app.py imported")
 SCRIPT_PATH = os.path.dirname(os.path.abspath(__file__))
 RESOURCES = os.path.join(SCRIPT_PATH, '..', 'resources')
 APP_ICON = os.path.join(RESOURCES, 'ad_logo.ico')
-VERSION = "V0.00.04"
+VERSION = "V1.00.00"
 
 class overview_frame(ctk.CTkFrame):
 
@@ -25,36 +25,24 @@ class overview_frame(ctk.CTkFrame):
 		self.scroll_frame.grid_columnconfigure(0, weight=1)
 
 		# Import images
-		self.overview1 = ctk.CTkImage(Image.open(os.path.join(RESOURCES, "1_overview1.jpg")), size=(155, 179))
-		self.overview2 = ctk.CTkImage(Image.open(os.path.join(RESOURCES, "1_overview2.jpg")), size=(273, 91))
-		self.overview3 = ctk.CTkImage(Image.open(os.path.join(RESOURCES, "1_overview3.jpg")), size=(614, 69))
+		self.overview1 = ctk.CTkImage(Image.open(os.path.join(RESOURCES, "1_overview1.jpg")), size=(155, 173))
 
 		# Title
 		self.title = ctk.CTkLabel(self.scroll_frame, text="Overview", font=ctk.CTkFont(size=22, weight="bold"))
 
 		# Text 1
-		self.text_1 = ctk.CTkTextbox(self.scroll_frame, fg_color="transparent", height=360, font=ctk.CTkFont(size=16), corner_radius=0, 
+		self.text_1 = ctk.CTkTextbox(self.scroll_frame, fg_color="transparent", height=380, font=ctk.CTkFont(size=16), corner_radius=0, 
 					activate_scrollbars=False, wrap="word")
 		self.text_1.insert("end", self.import_text("1_overview1.txt"))
 		self.text_1.configure(state="disabled") 
-		# Text 2
-		self.text_2 = ctk.CTkTextbox(self.scroll_frame, fg_color="transparent", height=120, font=ctk.CTkFont(size=16), corner_radius=0, 
-					activate_scrollbars=False, wrap="word")
-		self.text_2.insert("end", self.import_text("1_overview2.txt"))
-		self.text_2.configure(state="disabled") 
 
 		# Images
 		self.img_1 = ctk.CTkLabel(self.scroll_frame, text="", image=self.overview1)
-		self.img_2 = ctk.CTkLabel(self.scroll_frame, text="", image=self.overview2)
-		self.img_3 = ctk.CTkLabel(self.scroll_frame, text="", image=self.overview3)
 		
 		# Positioning of widgets
 		self.title.grid(row=0, column=0, padx=30, pady=(30,10), sticky="nw")
 		self.text_1.grid(row=1, column=0,  padx=30, pady=5, sticky="nsew")
 		self.img_1.grid(row=2, column=0,  padx=30, pady=0, sticky="nw")
-		self.text_2.grid(row=3, column=0,  padx=30, pady=5, sticky="nsew")
-		self.img_2.grid(row=4, column=0,  padx=30, pady=0, sticky="nw")
-		self.img_3.grid(row=5, column=0,  padx=30, pady=(5,30), sticky="nw")
 
 	def import_text(self, file_name):
 		with open(os.path.join(RESOURCES, file_name), 'r', encoding='utf-8') as text_file:
@@ -86,7 +74,7 @@ class gettingSt_frame(ctk.CTkFrame):
 		self.text_1.insert("end", self.import_text("2_gettingSt1.txt"))
 		self.text_1.configure(state="disabled") 
 		# Text 2
-		self.text_2 = ctk.CTkTextbox(self.scroll_frame, fg_color="transparent", height=135, font=ctk.CTkFont(size=16), corner_radius=0, 
+		self.text_2 = ctk.CTkTextbox(self.scroll_frame, fg_color="transparent", height=150, font=ctk.CTkFont(size=16), corner_radius=0, 
 					activate_scrollbars=False, wrap="word")
 		self.text_2.insert("end", self.import_text("2_gettingSt2.txt"))
 		self.text_2.configure(state="disabled") 
@@ -208,7 +196,7 @@ class changeover_frame(ctk.CTkFrame):
 
 		# Import images
 		self.changeover1 = ctk.CTkImage(Image.open(os.path.join(RESOURCES, "4-1_changeover1.png")), size=(600, 354))
-		self.changeover2 = ctk.CTkImage(Image.open(os.path.join(RESOURCES, "4-1_changeover2.jpg")), size=(520, 158))
+		self.changeover2 = ctk.CTkImage(Image.open(os.path.join(RESOURCES, "4-1_changeover2.jpg")), size=(619, 136))
 
 		# Title
 		self.title = ctk.CTkLabel(self.scroll_frame, text="Change Over", font=ctk.CTkFont(size=22, weight="bold"))
@@ -219,7 +207,7 @@ class changeover_frame(ctk.CTkFrame):
 		self.text_1.insert("end", self.import_text("4-1_changeover1.txt"))
 		self.text_1.configure(state="disabled") 
 		# Text 2
-		self.text_2 = ctk.CTkTextbox(self.scroll_frame, fg_color="transparent", height=70, font=ctk.CTkFont(size=16), corner_radius=0, 
+		self.text_2 = ctk.CTkTextbox(self.scroll_frame, fg_color="transparent", height=110, font=ctk.CTkFont(size=16), corner_radius=0, 
 					activate_scrollbars=False, wrap="word")
 		self.text_2.insert("end", self.import_text("4-1_changeover2.txt"))
 		self.text_2.configure(state="disabled") 
@@ -259,7 +247,7 @@ class search_frame(ctk.CTkFrame):
 		self.title = ctk.CTkLabel(self.scroll_frame, text="Search for an Alarm or Event", font=ctk.CTkFont(size=22, weight="bold"))
 
 		# Text 1
-		self.text_1 = ctk.CTkTextbox(self.scroll_frame, fg_color="transparent", height=260, font=ctk.CTkFont(size=16), corner_radius=0, 
+		self.text_1 = ctk.CTkTextbox(self.scroll_frame, fg_color="transparent", height=300, font=ctk.CTkFont(size=16), corner_radius=0, 
 					activate_scrollbars=False, wrap="word")
 		self.text_1.insert("end", self.import_text("4-2_search.txt"))
 		self.text_1.configure(state="disabled") 
@@ -302,7 +290,7 @@ class custom_frame(ctk.CTkFrame):
 		self.text_1.insert("end", self.import_text("4-3_custom1.txt"))
 		self.text_1.configure(state="disabled") 
 		# Text 2
-		self.text_2 = ctk.CTkTextbox(self.scroll_frame, fg_color="transparent", height=60, font=ctk.CTkFont(size=16), corner_radius=0, 
+		self.text_2 = ctk.CTkTextbox(self.scroll_frame, fg_color="transparent", height=90, font=ctk.CTkFont(size=16), corner_radius=0, 
 					activate_scrollbars=False, wrap="word")
 		self.text_2.insert("end", self.import_text("4-3_custom2.txt"))
 		self.text_2.configure(state="disabled") 
@@ -363,6 +351,48 @@ class output_frame(ctk.CTkFrame):
 			contents = text_file.read()
 		return contents
 
+class repair_frame(ctk.CTkFrame):
+
+	def __init__(self, master, **kwargs):
+		super().__init__(master, **kwargs)
+		
+		# Config of Frame
+		self.grid_rowconfigure(0, weight=1)
+		self.grid_columnconfigure(0, weight=1)
+		self.scroll_frame = ctk.CTkScrollableFrame(self, corner_radius=0)
+		self.scroll_frame.grid(row=0, column=0, sticky="nsew")
+		self.scroll_frame.grid_rowconfigure(6, weight=1)
+		self.scroll_frame.grid_columnconfigure(0, weight=1)
+
+		# Import images
+		self.overview2 = ctk.CTkImage(Image.open(os.path.join(RESOURCES, "6_repair1.jpg")), size=(246, 161))
+		self.overview3 = ctk.CTkImage(Image.open(os.path.join(RESOURCES, "6_repair2.jpg")), size=(235, 112))
+
+		# Title
+		self.title = ctk.CTkLabel(self.scroll_frame, text="Troubleshooting and feedback", font=ctk.CTkFont(size=22, weight="bold"))
+
+		# Text 2
+		self.text_1 = ctk.CTkTextbox(self.scroll_frame, fg_color="transparent", height=220, font=ctk.CTkFont(size=16), corner_radius=0, 
+					activate_scrollbars=False, wrap="word")
+		self.text_1.insert("end", self.import_text("6_repair1.txt"))
+		self.text_1.configure(state="disabled") 
+
+		# Images
+		self.img_1 = ctk.CTkLabel(self.scroll_frame, text="", image=self.overview2)
+		self.img_2 = ctk.CTkLabel(self.scroll_frame, text="", image=self.overview3)
+		
+		# Positioning of widgets
+		self.title.grid(row=0, column=0, padx=30, pady=(30,10), sticky="nw")
+		self.text_1.grid(row=1, column=0,  padx=30, pady=5, sticky="nsew")
+		self.img_1.grid(row=2, column=0,  padx=30, pady=0, sticky="nw")
+		self.img_2.grid(row=3, column=0,  padx=30, pady=(5,30), sticky="nw")
+
+	def import_text(self, file_name):
+		with open(os.path.join(RESOURCES, file_name), 'r', encoding='utf-8') as text_file:
+			contents = text_file.read()
+		return contents
+
+
 class App(ctk.CTkToplevel):
 	# Version
 	version = VERSION
@@ -377,7 +407,7 @@ class App(ctk.CTkToplevel):
 		logger.info("help_app init")
 
 		self.title("Help")
-		self.geometry("900x720")
+		self.geometry("950x720")
 		self.iconbitmap(APP_ICON)
 
 		# set grid layout 1x2
@@ -385,7 +415,7 @@ class App(ctk.CTkToplevel):
 		self.grid_columnconfigure(1, weight=1)
 
 		# load images with light and dark mode image
-		self.logo_image = ctk.CTkImage(Image.open(os.path.join(RESOURCES, "CustomTkinter_logo_single.png")), size=(26, 26))
+		self.logo_image = ctk.CTkImage(Image.open(os.path.join(RESOURCES, "ad_logo.png")), size=(26, 26))
 		self.overview_img = ctk.CTkImage(light_image=Image.open(os.path.join(RESOURCES, "overview_light.png")),
 											 dark_image=Image.open(os.path.join(RESOURCES, "overview_dark.png")), size=(20, 20))
 		self.gettingSt_img = ctk.CTkImage(light_image=Image.open(os.path.join(RESOURCES, "gettingSt_light.png")),
@@ -402,11 +432,13 @@ class App(ctk.CTkToplevel):
 											 dark_image=Image.open(os.path.join(RESOURCES, "custom_dark.png")), size=(20, 20))
 		self.output_img = ctk.CTkImage(light_image=Image.open(os.path.join(RESOURCES, "output_light.png")),
 											 dark_image=Image.open(os.path.join(RESOURCES, "output_dark.png")), size=(20, 20))
+		self.repair_img = ctk.CTkImage(light_image=Image.open(os.path.join(RESOURCES, "repair_light.png")),
+											 dark_image=Image.open(os.path.join(RESOURCES, "repair_dark.png")), size=(20, 20))
 
 		# create navigation frame
 		self.navigation_frame = ctk.CTkFrame(self, corner_radius=0)
 		self.navigation_frame.grid(row=0, column=0, sticky="nsew")
-		self.navigation_frame.grid_rowconfigure(10, weight=1)
+		self.navigation_frame.grid_rowconfigure(11, weight=1)
 
 		self.navigation_frame_label = ctk.CTkLabel(self.navigation_frame, text="  VisuaLite Help", image=self.logo_image,
 													compound="left", font=ctk.CTkFont(size=18, weight="bold"))
@@ -455,6 +487,11 @@ class App(ctk.CTkToplevel):
 											command=lambda: self.change_frame("output"), font=ctk.CTkFont(size=14, weight="bold"))
 		self.output_button.grid(row=9, column=0, sticky="ew")
 
+		self.repair_button = ctk.CTkButton(self.navigation_frame, corner_radius=0, height=40, border_spacing=10, text="6. Troubleshooting and feedback", 
+											fg_color="transparent", text_color=("gray10", "gray90"), hover_color=("gray70", "gray30"), image=self.repair_img, anchor="w", 
+											command=lambda: self.change_frame("repair"), font=ctk.CTkFont(size=14, weight="bold"))
+		self.repair_button.grid(row=10, column=0, sticky="ew")
+
 		# Help contents
 		App.frames['overview'] = overview_frame(self)
 		App.frames['gettingSt'] = gettingSt_frame(self)
@@ -464,15 +501,16 @@ class App(ctk.CTkToplevel):
 		App.frames['search'] = search_frame(self)
 		App.frames['custom'] = custom_frame(self)
 		App.frames['output'] = output_frame(self)
+		App.frames['repair'] = repair_frame(self)
 
 		App.frames['overview'].grid(row=0, column=1, sticky="nsew")
 		App.current = 'overview'
 
 		# Window appearance
 		self.appearance_mode_menu = ctk.CTkOptionMenu(self.navigation_frame, values=["Dark", "Light"],command=self.change_appearance_mode_event)
-		self.appearance_mode_menu.grid(row=10, column=0, padx=20, pady=10, sticky="s")
+		self.appearance_mode_menu.grid(row=11, column=0, padx=20, pady=10, sticky="s")
 		self.scaling_optionemenu = ctk.CTkOptionMenu(self.navigation_frame, values=["80%", "90%", "100%", "110%", "120%"],command=self.change_scaling_event)
-		self.scaling_optionemenu.grid(row=11, column=0, padx=20, pady=(10,20), sticky="s")
+		self.scaling_optionemenu.grid(row=12, column=0, padx=20, pady=(10,20), sticky="s")
 		self.scaling_optionemenu.set("100%")
 
 

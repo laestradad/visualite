@@ -5,3 +5,4 @@ pandas==2.0.3
 plotly==5.16.1
 pyinstaller==6.0.0
 kaleido==0.1.0post1
+openpyxl==3.1.2

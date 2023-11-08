@@ -1,1 +1,2 @@
 The auxiliary plot contains the imported logs date range (1) and the trend of main variables (2): Temperature, Viscosity, Flow.
+Be aware that the process variables are present in the "Standard Logs".

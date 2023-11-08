@@ -1,1 +1,0 @@
-Similar to section 4.2, you can generate custom plots in this case without the search function. To do so, manually select the date-time interval (2) and variables to plot (3). Utilize the auxiliary plot (1) to visualize the trends of the most significant variables and the date range of imported logs.

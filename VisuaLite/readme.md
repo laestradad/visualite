@@ -3,9 +3,13 @@
 ## Pyinstaller
 To create the application, these were the pyinstaller attributes used:
    ```sh
-   pyinstaller --onefile --windowed --noconsole --add-data "resources/*;resources/" --hidden-import babel.numbers --icon=resources/ad_logo.ico main.py
+   pyi-makespec --onefile --windowed --noconsole --add-data "resources/*;resources/" --hidden-import babel.numbers --icon=resources/ad_logo.ico main.py
+
+   pyinstaller main.spec
    ```
 Note that ```--hidden-import babel.numbers``` was added as a bugfix of ```tkcalendar``` library
+Also pandas is explicitly declared in main.spec: ```hiddenimports=['babel.numbers', 'pandas'],``` 
+Finally also the name of the resulting .exe file ```name='Visualite_V1.00.00'``` 
 
 ## Setting Up a Virtual Environment
 

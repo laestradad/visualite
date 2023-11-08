@@ -5,3 +5,5 @@ VisuaLite allows you to search for an Alarm or Event (2) (if Alarm or Event logs
 After clicking “Search,” the tool will locate all occurrences of the selected event in the results.
 
 Customize the analysis by choosing variables of interest from the right panel (5) and specifying the time interval before and after the event (6).
+
+Lastly, you can generate a plot or export the data in excel format (7).

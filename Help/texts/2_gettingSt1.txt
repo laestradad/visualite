@@ -1,1 +1,0 @@
-To begin using the tool effectively, ensure that the log files you wish to analyze are accessible and stored in a single folder on your PC. Then, select the folder where the logs are stored.

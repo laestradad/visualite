@@ -18,7 +18,7 @@ from modules.logging_cfg import setup_logger
 logger = setup_logger()
 logger.info("gui.py imported")
 
-VERSION = "V0.00.04"
+VERSION = "V1.00.00"
 #Execution path
 PATH = os.getcwd()
 logger.info(f"{PATH=}")
@@ -389,7 +389,7 @@ class App(ctk.CTk):
         logger.debug("App init")
 
         # configure window
-        self.title("VisuaLite " + self.version)
+        self.title("VisuaLite " + self.version + " | Data analysis for FCS Oil Modules")
         # set the dimensions of the screen 
         w = 1380 # width
         h = 900 # height
