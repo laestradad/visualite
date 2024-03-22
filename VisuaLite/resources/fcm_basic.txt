@@ -146,9 +146,9 @@
 
     "cv4_labels" : {
         "0": "Both LS activated",
-        "1": "Cooler Position",
+        "1": "Bypass Position",
         "2": "No LS activated",
-        "3": "Bypass Position"
+        "3": "Cooler Position"
     },
 
     "cv5_labels" : {},
