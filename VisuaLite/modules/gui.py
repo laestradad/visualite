@@ -347,11 +347,12 @@ class App(ctk.CTk):
         # create dropdown of machine type
         self.mt_label = ctk.CTkLabel(parent, text="Machine type:", font=ctk.CTkFont(size=16))
         self.mt_label.grid(row=1, column=0, padx=20, pady=(20, 5))
-        self.mch_type = ctk.StringVar(value="FCM One | 1.5")
+        self.mch_type = ctk.StringVar(value="FCM LPG")
         self.mch_type_dropdown = ctk.CTkOptionMenu(parent, dynamic_resizing=False, 
-                                    variable=self.mch_type, values=["FCM One | 1.5", "FCM Oil 2b"])
+                                    variable=self.mch_type, values=["FCM LPG"])
         self.mch_type_dropdown.grid(row=2, column=0, padx=20, pady=0)
-        self.mch_type_dropdown.set("FCM One | 1.5")
+        self.mch_type_dropdown.set("FCM LPG")
+        self.mch_type_dropdown.configure(state="disabled")
 
         # make middle "empty" row have the priority
         parent.grid_rowconfigure(3, weight=1)
@@ -361,10 +362,10 @@ class App(ctk.CTk):
         self.progress.start()
 
         #Help button
-        self.help_img = ctk.CTkImage(Image.open(os.path.join(RESOURCES, 'help1_dark.png')), size=(20, 20))
-        self.btn_help = ctk.CTkButton(parent, text="Help", image=self.help_img, font=ctk.CTkFont(size=12), height=30, width=110,
-            compound="right", command=self.help_cmd)
-        self.btn_help.grid(row=4, column=0, padx=20, pady=10)
+        #self.help_img = ctk.CTkImage(Image.open(os.path.join(RESOURCES, 'help1_dark.png')), size=(20, 20))
+        #self.btn_help = ctk.CTkButton(parent, text="Help", image=self.help_img, font=ctk.CTkFont(size=12), height=30, width=110,
+        #    compound="right", command=self.help_cmd)
+        #self.btn_help.grid(row=4, column=0, padx=20, pady=10)
 
         # create app controls of appearance and scaling
         self.appearance_mode_label = ctk.CTkLabel(parent, text="Appearance Mode:", anchor="w")
@@ -552,7 +553,7 @@ class App(ctk.CTk):
 
         # Call Data Analysis function and assign outputs to App variables
         try:
-            self.import_success, self.mch_info, self.COs,self.LogsStandard, self.LogsAlarms, self.LogsEvents = fcm_da.import_data(self.dirname, self.selected_files, self.mch_type.get())
+            self.import_success, self.LogsStandard, self.LogsAlarms = fcm_da.import_LPGdata(self.dirname, self.selected_files, self.mch_type.get())
             logger.debug(f"{self.import_success=}")
 
         except Exception as e:
@@ -615,45 +616,36 @@ class TabsFrame(ctk.CTkFrame):
         self.grid_columnconfigure(1, weight=1)
         self.grid_rowconfigure(1, weight=1)
 
+        # Get arrays from txt file
+        self.columns = list(fcm_da.DATA['units'].keys())
+        self.columns.append('Alarms')
+
         # Get arrays of options from dataframes
-        self.columns = []
-        if not self.app.LogsAlarms.empty:
-            # Alarms for Tab2 dropdown
-            self.alm_list = self.app.LogsAlarms['Alm_Code_Label'].unique().tolist()
+        # if not self.app.LogsAlarms.empty:
+        #     # Alarms for Tab2 dropdown
+        #     self.alm_list = self.app.LogsAlarms['Alm_Code_Label'].unique().tolist()
 
-            # Variables for Tab2 and Tab3 switches
-            self.columns = self.columns + self.app.LogsAlarms.columns.tolist()
-            remove_cols = ['DateTime', 'Alm_Code_Label', 'Label']
-            for col in remove_cols:
-                self.columns.remove(col)
-        else:
-            self.alm_list = []
-
-        if not self.app.LogsEvents.empty:
-            # Events for Tab2 dropdown
-            self.eve_list = self.app.LogsEvents['Evn_Code_Label'].unique().tolist()
+        #     # Variables for Tab2 and Tab3 switches
+        #     self.columns = self.columns + self.app.LogsAlarms.columns.tolist()
+        #     remove_cols = ['DateTime', 'Alm_Code_Label', 'Label']
+        #     for col in remove_cols:
+        #         self.columns.remove(col)
+        # else:
+        #     self.alm_list = []
             
-            # Variables for Tab2 and Tab3 switches
-            self.columns = self.columns + self.app.LogsEvents.columns.tolist()
-            remove_cols = ['DateTime', 'Evn_Code_Label', 'Label', 'Data', 'GpsPos']
-            for col in remove_cols:
-                self.columns.remove(col)
-        else:
-            self.eve_list = []
+        # if not self.app.LogsStandard.empty:
+        #     # Variables for Tab2 and Tab3
+        #     self.columns = self.columns + self.app.LogsStandard.columns.tolist()
 
-        if not self.app.LogsStandard.empty:
-            # Variables for Tab2 and Tab3
-            self.columns = self.columns + self.app.LogsStandard.columns.tolist()
-
-            # Remove columns not eligible to plot according to machine type
-            if self.app.mch_type.get() == "FCM One | 1.5":
-                remove_cols = ['DateTime', 'GpsPos', 'CV1_Label', 'CV2_Label', 'CV3_Label', 
-                                'CV4_Label', 'CV5_Label', 'ChangeoverCMDchange', 'CC_Label']
-            elif self.app.mch_type.get() == "FCM Oil 2b":
-                remove_cols = ['DateTime', 'CV1_Label', 'CV2_Label', 'CV3_Label', 
-                                'CV4_Label', 'STS_Label', 'ChangeoverCMDchange', 'CC_Label']
-            for col in remove_cols:
-                self.columns.remove(col)
+        #     # Remove columns not eligible to plot according to machine type
+        #     if self.app.mch_type.get() == "FCM One | 1.5":
+        #         remove_cols = ['DateTime', 'GpsPos', 'CV1_Label', 'CV2_Label', 'CV3_Label', 
+        #                         'CV4_Label', 'CV5_Label', 'ChangeoverCMDchange', 'CC_Label']
+        #     elif self.app.mch_type.get() == "FCM Oil 2b":
+        #         remove_cols = ['DateTime', 'CV1_Label', 'CV2_Label', 'CV3_Label', 
+        #                         'CV4_Label', 'STS_Label', 'ChangeoverCMDchange', 'CC_Label']
+        #     for col in remove_cols:
+        #         self.columns.remove(col)
 
         #Aux plot button
         #self.aux_plot.grid(row=0, column=1, padx=20, pady=10, sticky="ne")
@@ -697,18 +689,9 @@ class TabsFrame(ctk.CTkFrame):
         else:
             a_text = '\n'
 
-        if not self.app.LogsEvents.empty:
-            mindateE = self.app.LogsEvents['DateTime'].min()
-            maxdateE = self.app.LogsEvents['DateTime'].max()
-            e_text = '  - Event Logs:           ' + str(mindateE) + '  ---  ' + str(maxdateE) + '\n\n'
-        else:
-            e_text = '\n\n'
-
         self.dates_info = ctk.CTkLabel(self.frame_left_t3, 
                                        text='* Be aware of date range of the logs imported:\n\n' +
-                                            s_text + a_text + e_text +
-                                            'For more details, use Auxiliary Plot (top right button)',
-                                       justify='left')
+                                            s_text + a_text, justify='left')
         self.dates_info.grid(row=3, column=0, columnspan=2, padx=20, pady=5, sticky="nw") 
 
         #Variables right side
@@ -725,194 +708,6 @@ class TabsFrame(ctk.CTkFrame):
         self.plot_t3 = ctk.CTkButton(self, text="Generate and save plot",
                                          command=self.generate_personalized_plot)
         self.plot_t3.grid(row=2, column=1, padx=10, pady=(5,10), sticky="w")
-
-    #TAB2 functions
-    def update_optionmenu(self): 
-        # Change options in optionmenu if Radio button choice change
-        if self.sel_ae.get() == 0:
-            logger.debug("Tab2 - Alarm radiobutton selected")
-            self.optionmenu_1.configure(values=self.alm_list)
-        elif self.sel_ae.get() == 1:
-            logger.debug("Tab2 - Event radiobutton selected")
-            self.optionmenu_1.configure(values=self.eve_list)
-
-        # Set default value
-        self.optionmenu_1.set("Search value")
-
-    def searchAE(self):
-        logger.debug("Tab2 - Search function started ---")
-        if self.search_var.get() == "Search value":
-            logger.debug("deafault 'Search Value' selected -> Stop")
-            tk.messagebox.showwarning(title='No option selected!', message='Select an Alarm o Event to search') # type: ignore
-            return #Stop
-        else:
-            self.plot_t2.configure(state="enabled")
-            self.export_t2.configure(state="enabled")
-
-            selected_item = self.search_var.get()
-            logger.debug("%s selected", selected_item)
-
-            self.ae_number= int(selected_item[1:selected_item.index('_')]) 
-            #text.index('_') returns position of _ char / or int(text.split('_')[0][1:]) this function splits string by _
-            
-            self.timestamps = []
-            if selected_item[0] == 'A':
-                logger.debug("Searching for AlarmNumber %s", self.ae_number)
-                self.timestamps = self.app.LogsAlarms[self.app.LogsAlarms['AlarmNumber'] == self.ae_number]['DateTime'].tolist()
-                
-            elif selected_item[0] == 'E':
-                logger.debug("Searching for EventNumber %s", self.ae_number)
-                self.timestamps = self.app.LogsEvents[self.app.LogsEvents['EventNumber'] == self.ae_number]['DateTime'].tolist()
-            
-            logger.debug("Search results:")
-            logger.debug(self.timestamps)
-            
-            logger.debug("Creating results' widgets")
-            self.result_selection = tk.IntVar(value=0)
-            if self.timestamps:
-
-                # Clean previous results
-                if self.radiobtn_list:
-                    for radiobtn in self.radiobtn_list:
-                        radiobtn.grid_forget()
-                    self.radiobtn_list = []
-
-                self.label_results_t2.configure(text="In the imported logs there are " + str(len(self.timestamps)) + " occurrences of " + selected_item + "." +
-                                                "\n\nPlease select the occurence you want to plot:", justify='left')
-                
-                for i, t in enumerate(self.timestamps):
-                    text= str(i+1) + ". " + str(t.date()) + " at " + str(t.time())
-                    self.add_radiobtn_t2(text, i)
-            
-            logger.debug("--- Results' widgets created")
-            tk.messagebox.showinfo(title='Search results', message="Found " + str(len(self.timestamps)) + " occurrences of " + selected_item) # type: ignore
-
-    def add_radiobtn_t2(self, item, i):
-        # Occurences of search, radiobutton because user can only choose one
-        radiobtn = ctk.CTkRadioButton(self.results_t2, text=item, variable=self.result_selection, value=i)
-        radiobtn.grid(row=len(self.radiobtn_list)+1, column=0, padx=15, pady=5, sticky="w")
-        self.radiobtn_list.append(radiobtn)
-
-    def add_switch_t2(self, label):
-        # Loop to add variables switches
-        switch = ctk.CTkSwitch(self.var_sel, text=label)
-        switch.grid(row=len(self.switch_list_t2), column=0, padx=10, pady=5, sticky="w")
-        self.switch_list_t2.append(switch)
-
-    def get_selected_vars_t2(self):
-        return [switch.cget("text") for switch in self.switch_list_t2 if switch.get() == 1]
-
-    def generate_search_ae_plot (self):
-        logger.debug("Tab2 - Generation search_AE plot started ---")
-        self.show_progress_bar() 
-
-        logger.debug("Limits selected:")
-        logger.debug(self.high_limit.get())
-        logger.debug(self.low_limit.get())
-
-        if (self.high_limit.get() == "Select") or (self.low_limit.get()== "Select"):
-            tk.messagebox.showwarning(title='No option selected!', message='Select time boundaries for the report') # type: ignore
-            logger.debug("default values selected -> Stop")
-            self.hide_progress_bar()
-            return #Stop
-        
-        # from "1hour" type input to exact datetime
-        date1, date2 = fcm_da.date_limits(self.timestamps[self.result_selection.get()],self.low_limit.get(), self.high_limit.get())
-        logger.debug("Dates to filter:")
-        logger.debug(f"{date1=}, {date2=}")
-        
-        cols = self.get_selected_vars_t2()
-        logger.debug("Variables selected:")
-        logger.debug(cols)
-        if cols == []:
-            logger.debug("no variable selected -> Stop")
-            tk.messagebox.showwarning(title='No variable selected', message='Please select at least one variable to plot') # type: ignore
-            self.hide_progress_bar()
-            return #Stop:
-
-        # Current datetime to create personalized file name
-        now_dt = datetime.datetime.now()
-        format_dt = now_dt.strftime('%Y.%m.%d_%H%M%S')
-        
-        self.name_file = ""
-        if self.sel_ae.get() == 0:
-            self.name_file="Custom_Plot_A{}_{}".format(self.ae_number, format_dt)
-        elif self.sel_ae.get() == 1:
-            self.name_file="Custom_Plot_E{}_{}".format(self.ae_number, format_dt)
-
-        #Create plot
-        self.fig = fcm_plt.custom_plot_divided(self.app.LogsStandard, self.app.LogsAlarms, self.app.LogsEvents, cols, date1, date2, self.name_file)
-        logger.debug("Tab2 - fig created")
-
-        # Save png preview
-        png_path = os.path.join(PATH, '__vl.log', 'preview.png')
-        try:
-            logger.debug("saving image")
-            self.fig.write_image(png_path)
-            logger.debug("--- png saved")
-    
-        except Exception as e:
-            logger.error("--- Error saving file")
-            logger.error(e, exc_info=True)
-            tk.messagebox.showwarning(title='Error creating preview png', message="Error creating preview png") # type: ignore
-            # Load an image for the popup
-
-        # Load image file
-        self.image_preview = ctk.CTkImage(Image.open(png_path), size=(700, 500))
-        # Create PopUp with preview / In popup save html or abort
-        self.create_preview_popup()        
-        # Delete image file
-        os.remove(png_path)
-
-        self.hide_progress_bar()
-
-    def export_excel_T2(self):
-        logger.debug("Tab2 - export_excel_T2 plot started ---")
-        self.show_progress_bar() 
-
-        logger.debug("Limits selected:")
-        logger.debug(self.high_limit.get())
-        logger.debug(self.low_limit.get())
-
-        if (self.high_limit.get() == "Select") or (self.low_limit.get()== "Select"):
-            tk.messagebox.showwarning(title='No option selected!', message='Select time boundaries for the report') # type: ignore
-            logger.debug("default values selected -> Stop")
-            self.hide_progress_bar()
-            return #Stop
-        
-        # from "1hour" type input to exact datetime
-        date1, date2 = fcm_da.date_limits(self.timestamps[self.result_selection.get()],self.low_limit.get(), self.high_limit.get())
-        logger.debug("Dates to filter:")
-        logger.debug(f"{date1=}, {date2=}")
-        
-        cols = self.get_selected_vars_t2()
-        logger.debug("Variables selected:")
-        logger.debug(cols)
-        if cols == []:
-            logger.debug("no variable selected -> Stop")
-            tk.messagebox.showwarning(title='No variable selected', message='Please select at least one variable to plot') # type: ignore
-            self.hide_progress_bar()
-            return #Stop:
-
-        # Current datetime to create personalized file name
-        now_dt = datetime.datetime.now()
-        format_dt = now_dt.strftime('%Y.%m.%d_%H%M%S')
-        
-        self.name_file = ""
-        if self.sel_ae.get() == 0:
-            self.name_file="Filtered_Logs_A{}_{}".format(self.ae_number, format_dt)
-        elif self.sel_ae.get() == 1:
-            self.name_file="Filtered_Logs_E{}_{}".format(self.ae_number, format_dt)
-
-        # Filter DFs and save excel
-        self.export_excel(
-            dfs = [self.app.LogsStandard, self.app.LogsAlarms, self.app.LogsEvents],
-            sheetNames = ['Standard', 'Alarms', 'Events'],
-            date1 = date1, date2 = date2,
-            cols = cols,
-            fileName = self.name_file)
-
-        self.hide_progress_bar()
 
     #TAB3 functions
     def show_plot(self):

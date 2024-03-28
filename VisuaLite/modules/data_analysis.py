@@ -137,11 +137,6 @@ def concat_files(AllFilesNames):
     # Concatenate the files in the list in unique dataframe
     DF_Data = pd.concat(ListDataframe, axis=0, ignore_index=True)
 
-    # DateTime
-    DF_Data['DateTime'] = pd.to_datetime(DF_Data['DateTime'], format="%Y-%m-%d %H:%M:%S")
-    # ordering ascending
-    DF_Data = DF_Data.sort_values(by='DateTime', ascending=True).reset_index(drop=True)
-
     #Remove duplicates
     DF_Data.drop_duplicates(keep=False, inplace=True)
     
@@ -150,6 +145,86 @@ def concat_files(AllFilesNames):
     logger.debug(DF_Data.columns.tolist())
 
     return(DF_Data)
+
+@custom_callback # wrapper to catch errors
+def import_LPGdata(dirname,file_list):
+    logger.debug("--- import_LPGdata started ---")
+
+    LogsStandard = pd.DataFrame()
+    LogsAlarms = pd.DataFrame()
+
+    #Create paths joining folder and file names
+    if dirname != None:
+        DataFiles = [dirname + '/' + x for x in file_list if x.startswith('ProcessLog')]
+        AlarmFiles = [dirname + '/' + x for x in file_list if x.startswith('Alarms')]
+    else:
+        logger.debug("dirname == None -> Stop")
+        return 4, None, None
+    
+    # Check file names first
+    if len(DataFiles + AlarmFiles) == 0:
+        logger.debug("no .csv files starting with ProcessLog* or Alarms* --> Stop")
+        return 2, None, None
+    
+    #Check file missing
+
+    # Import process logs
+    logger.debug("Importing LPG Process Logs ---")
+    LogsStandard = Format_LPG_PLogs(DataFiles)
+    LogsAlarms = Format_LPG_ALogs(AlarmFiles)
+
+    return 1, LogsStandard, LogsAlarms
+
+
+# Formatting of DataFrames
+def Format_LPG_PLogs(list_files):
+    LogsStandard = concat_files(list_files)
+
+    # Change datatypes
+    LogsStandard['Timestamp'] = pd.to_datetime(LogsStandard['Timestamp'], format='%Y %m %d %H:%M:%S:%f')
+    # ordering ascending
+    LogsStandard = LogsStandard.sort_values(by='Timestamp', ascending=True)
+
+    logger.debug("--- LPG Process Logs formatted")
+    logger.debug(LogsStandard.shape)
+    logger.debug(LogsStandard.columns.tolist())
+    logger.debug(LogsStandard.dtypes)
+
+    return(LogsStandard)
+
+# Formatting of DataFrames
+def Format_LPG_ALogs(list_files):
+    LogsAlarms = concat_files(list_files)
+
+    # there should be only 1 Alarm file
+    LogsAlarms = pd.read_csv(list_files[0], sep=',', decimal='.', encoding='unicode_escape')
+
+    # Rename Time
+    LogsAlarms.rename(columns = {'Time':'Timestamp',' Change':'Change',
+                            ' Instance':'Instance', ' Name':'Name',
+                            ' Code':'Code', ' Severity':'Severity',
+                            ' AdditionalInformation1':'AdditionalInformation1',
+                            ' AdditionalInformation2':'AdditionalInformation2',
+                            ' Message':'Message'}, inplace = True)
+
+
+    # Change datatypes
+    LogsAlarms['Timestamp'] = pd.to_datetime(LogsAlarms['Timestamp'], format='%Y-%m-%d %H:%M:%S:%f')
+    # ordering ascending
+    LogsAlarms = LogsAlarms.sort_values(by='Timestamp', ascending=True)
+    # translate values
+    LogsAlarms['Change_val'] = LogsAlarms['Change'].replace({' Active -> Inactive' : '0',
+                                                    ' Inactive -> Active' : '1',
+                                                    ' Unacknowledged -> Acknowledged': '2'})
+    LogsAlarms['Change_val'] = LogsAlarms['Change_val'].astype(int)
+
+
+    logger.debug("--- LPG Process Logs formatted")
+    logger.debug(LogsAlarms.shape)
+    logger.debug(LogsAlarms.columns.tolist())
+    logger.debug(LogsAlarms.dtypes)
+
+    return(LogsAlarms)
 
 @custom_callback # wrapper to catch errors
 def import_data(dirname, file_list, mch_type):
@@ -219,6 +294,11 @@ def import_data(dirname, file_list, mch_type):
 def Format_DF_SLogs(list_files):
 
     LogsStandard = concat_files(list_files)
+    
+    # DateTime
+    LogsStandard['DateTime'] = pd.to_datetime(LogsStandard['DateTime'], format="%Y-%m-%d %H:%M:%S")
+    # ordering ascending
+    LogsStandard = LogsStandard.sort_values(by='DateTime', ascending=True).reset_index(drop=True)
     
     logger.debug("Formatting Standard Logs ---")
 
@@ -294,6 +374,11 @@ def Format_DF_ALogs(list_files):
     LogsAlarms = concat_files(list_files)
     logger.debug("Formatting Alarm Logs ---")
 
+    # DateTime
+    LogsAlarms['DateTime'] = pd.to_datetime(LogsAlarms['DateTime'], format="%Y-%m-%d %H:%M:%S")
+    # ordering ascending
+    LogsAlarms = LogsAlarms.sort_values(by='DateTime', ascending=True).reset_index(drop=True)
+
     LogsAlarms = LogsAlarms[['DateTime', 'AlarmNumber']]
 
     # Create Labels of the Alarms
@@ -312,6 +397,11 @@ def Format_DF_ALogs(list_files):
 def Format_DF_ELogs(list_files):
     LogsEvents = concat_files(list_files)
     logger.debug("Formatting Event Logs ---")
+
+    # DateTime
+    LogsEvents['DateTime'] = pd.to_datetime(LogsEvents['DateTime'], format="%Y-%m-%d %H:%M:%S")
+    # ordering ascending
+    LogsEvents = LogsEvents.sort_values(by='DateTime', ascending=True).reset_index(drop=True)
 
     LogsEvents = LogsEvents[['DateTime', 'GpsPos', 'EventNumber', 'Data']]
     LogsEvents['Label'] = LogsEvents['EventNumber'].astype(str) 
