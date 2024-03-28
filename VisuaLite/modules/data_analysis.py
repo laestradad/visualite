@@ -16,6 +16,7 @@ AL_LOGO = os.path.join(SCRIPT_PATH, '..', 'resources', 'ALlogo.png')
 # Construct the path to the file.txt in the resources directory
 FCM_BASIC = os.path.join(SCRIPT_PATH, '..', 'resources', 'fcm_basic.txt')
 FCM_ONE = os.path.join(SCRIPT_PATH, '..', 'resources', 'fcm_one.txt')
+FCM_LPG = os.path.join(SCRIPT_PATH, '..', 'resources', 'LPG.txt')
 # Empty variable to load data of txt files
 DATA = None
 # Empty variable to save Machine Type
@@ -52,6 +53,9 @@ def load_data(mch_type):
 
     elif mch_type == "FCM Oil 2b":
         txt_file = FCM_BASIC
+    
+    elif mch_type == "FCM LPG":
+        txt_file = FCM_LPG
 
     global DATA
     with open(txt_file, 'r') as file:
@@ -147,8 +151,18 @@ def concat_files(AllFilesNames):
     return(DF_Data)
 
 @custom_callback # wrapper to catch errors
-def import_LPGdata(dirname,file_list):
+def import_LPGdata(dirname,file_list, mch_type):
     logger.debug("--- import_LPGdata started ---")
+    logger.debug(f"{dirname=}")
+    logger.debug(f"{file_list=}")
+
+    # Save machine type
+    global MT
+    MT = mch_type
+    logger.debug(f"{mch_type=}")
+
+    # Load data from txt files
+    load_data(MT)
 
     LogsStandard = pd.DataFrame()
     LogsAlarms = pd.DataFrame()
@@ -161,6 +175,9 @@ def import_LPGdata(dirname,file_list):
         logger.debug("dirname == None -> Stop")
         return 4, None, None
     
+    logger.debug(f"{DataFiles=}")
+    logger.debug(f"{AlarmFiles=}")
+
     # Check file names first
     if len(DataFiles + AlarmFiles) == 0:
         logger.debug("no .csv files starting with ProcessLog* or Alarms* --> Stop")
@@ -170,14 +187,19 @@ def import_LPGdata(dirname,file_list):
 
     # Import process logs
     logger.debug("Importing LPG Process Logs ---")
-    LogsStandard = Format_LPG_PLogs(DataFiles)
-    LogsAlarms = Format_LPG_ALogs(AlarmFiles)
+    if DataFiles != []:
+        LogsStandard = Format_LPG_PLogs(DataFiles)
+    if AlarmFiles != []:
+        LogsAlarms = Format_LPG_ALogs(AlarmFiles)
 
     return 1, LogsStandard, LogsAlarms
 
 
 # Formatting of DataFrames
 def Format_LPG_PLogs(list_files):
+    logger.debug("Format_LPG_PLogs ---")
+    logger.debug(f"{list_files=}")
+                 
     LogsStandard = concat_files(list_files)
 
     # Change datatypes
@@ -194,6 +216,8 @@ def Format_LPG_PLogs(list_files):
 
 # Formatting of DataFrames
 def Format_LPG_ALogs(list_files):
+    logger.debug("Format_LPG_ALogs ---")
+    logger.debug(list_files)
     LogsAlarms = concat_files(list_files)
 
     # there should be only 1 Alarm file

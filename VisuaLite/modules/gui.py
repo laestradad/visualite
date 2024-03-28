@@ -244,7 +244,7 @@ class App(ctk.CTk):
         App.frames["CSFrame"].action_bt.grid(row=1, column=2, padx=20, pady=10, sticky="se")
 
         # Machine Type dropdown
-        self.mch_type_dropdown.configure(state="enabled")
+        #self.mch_type_dropdown.configure(state="enabled")
 
         #WorkSpace: Empty
         self.show_frame("WSFrame")
@@ -269,7 +269,7 @@ class App(ctk.CTk):
         App.frames["CSFrame"].action_bt.grid(row=1, column=2, padx=20, pady=10, sticky="se")
 
         # Machine Type dropdown
-        self.mch_type_dropdown.configure(state="enabled")
+        #self.mch_type_dropdown.configure(state="enabled")
 
         #WorkSpace: Scrollable frame
         App.frames["FilesUpload"] = CheckBoxFrame(self.right_side_panel, command=self.checkbox_frame_event,
@@ -294,7 +294,7 @@ class App(ctk.CTk):
         App.frames["BCFrame"].grid_columnconfigure(0, weight=1)
 
         # Machine Type dropdown
-        self.mch_type_dropdown.configure(state="disabled")
+        #self.mch_type_dropdown.configure(state="disabled")
 
         #Update texts
         App.frames["CSFrame"].title.configure(text="Importing data")
@@ -319,7 +319,7 @@ class App(ctk.CTk):
         App.frames["BCFrame"].step2_label.configure(font=ctk.CTkFont(size=18, weight="bold"), image=App.frames["BCFrame"].step2_img_tk)
 
         # Machine Type dropdown
-        self.mch_type_dropdown.configure(state="disabled")
+        #self.mch_type_dropdown.configure(state="disabled")
 
         #Update texts
         App.frames["CSFrame"].title.configure(text="Select Analysis type")
@@ -617,8 +617,12 @@ class TabsFrame(ctk.CTkFrame):
         self.grid_rowconfigure(1, weight=1)
 
         # Get arrays from txt file
-        self.columns = list(fcm_da.DATA['units'].keys())
-        self.columns.append('Alarms')
+        if not self.app.LogsStandard.empty:
+            self.columns = list(fcm_da.DATA['units'].keys())
+            self.columns.remove('Alarms')
+
+        if not self.app.LogsAlarms.empty:
+            self.columns.append('Alarms')
 
         # Get arrays of options from dataframes
         # if not self.app.LogsAlarms.empty:
@@ -676,15 +680,15 @@ class TabsFrame(ctk.CTkFrame):
 
         #Information of date limits
         if not self.app.LogsStandard.empty:
-            mindateS = self.app.LogsStandard['DateTime'].min()
-            maxdateS = self.app.LogsStandard['DateTime'].max()
+            mindateS = self.app.LogsStandard['Timestamp'].min()
+            maxdateS = self.app.LogsStandard['Timestamp'].max()
             s_text = '  - Standard Logs:    ' + str(mindateS) + '  ---  ' + str(maxdateS) + '\n'
         else:
             s_text = '\n'
 
         if not self.app.LogsAlarms.empty:
-            mindateA = self.app.LogsAlarms['DateTime'].min()
-            maxdateA = self.app.LogsAlarms['DateTime'].max()
+            mindateA = self.app.LogsAlarms['Timestamp'].min()
+            maxdateA = self.app.LogsAlarms['Timestamp'].max()
             a_text = '  - Alarm Logs:          ' + str(mindateA) + '  ---  ' + str(maxdateA) + '\n'
         else:
             a_text = '\n'
@@ -798,7 +802,7 @@ class TabsFrame(ctk.CTkFrame):
         self.name_file = self.get_file_name()
 
         # Create plot
-        self.fig = fcm_plt.custom_plot_divided(self.app.LogsStandard, self.app.LogsAlarms, self.app.LogsEvents, cols, datetime1, datetime2, self.name_file)
+        self.fig = fcm_plt.custom_LPGplot_divided(self.app.LogsStandard, self.app.LogsAlarms, cols, datetime1, datetime2, self.name_file)
         logger.debug("Tab3 - fig created")
         
         # Save png preview
@@ -813,7 +817,7 @@ class TabsFrame(ctk.CTkFrame):
             logger.error(e, exc_info=True)
             tk.messagebox.showwarning(title='Error creating preview png', message="Error creating preview png") # type: ignore
             # Load an image for the popup
-        
+
         # Load image file
         self.image_preview = ctk.CTkImage(Image.open(png_path), size=(700, 500))
         # Create PopUp with preview / In popup save html or abort
@@ -1016,7 +1020,7 @@ class TabsFrame(ctk.CTkFrame):
                         logger.debug(i)
                         logger.debug(sheetNames[i])
 
-                        df_export = df[(df['DateTime'] >= date1) & (df['DateTime'] <= date2)]
+                        df_export = df[(df['Timestamp'] >= date1) & (df['Timestamp'] <= date2)]
 
                         if 'AlarmNumber' in cols:
                             cols.remove('AlarmNumber')
@@ -1024,7 +1028,7 @@ class TabsFrame(ctk.CTkFrame):
                             cols.remove('EventNumber')
 
                         if set(cols).issubset(df_export.columns.tolist()):
-                            cols.insert(0, 'DateTime')
+                            cols.insert(0, 'Timestamp')
                             df_export = df_export[cols]
                         elif 'Evn_Code_Label' in df_export.columns.tolist():
                             del df_export['Evn_Code_Label']

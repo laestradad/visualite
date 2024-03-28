@@ -949,6 +949,105 @@ def custom_plot_divided(dfs, dfa, dfe, cols, date1, date2, tittle): # n rows, on
     logger.debug("fig done")
     return fig
 
+@custom_callback # wrapper to catch errors
+def custom_LPGplot_divided(dfs, dfa, cols, date1, date2, tittle): # n rows, one for each unit
+    logger.debug("custom_plot1 started ---")
+    print("date limits:")
+    print(f"{date1=},{date2=}")
+    
+    # filter dataframes for date interval selected
+    if not dfs.empty:
+        dfs = dfs[(dfs['Timestamp'] >= date1) & (dfs['Timestamp'] <= date2)]
+    else:
+        dfs = pd.DataFrame()
+        print("Standard Logs empty in date range selected")
+
+    if not dfa.empty:
+        dfa = dfa[(dfa['Timestamp'] >= date1) & (dfa['Timestamp'] <= date2)]
+    else:
+        dfa = pd.DataFrame()
+        print("Alarm Logs empty in date range selected")
+
+    #returns an empty plot if no data to plot
+    if dfs.empty and dfa.empty:
+        fig = go.Figure()
+        fig.update_layout(title_text=tittle)
+        print("--- no data to plot")
+        return fig
+
+    # From column list, get a dictionary with cols classified by unit type
+    cols2 = fcm.classify_cols(cols)
+    print("selected units and columns:")
+    print(cols2)
+
+    print("fig init")
+    fig = make_subplots(rows=len(cols2), cols=1, shared_xaxes=True, vertical_spacing=0.02)
+
+    # Iterate classified cols and create traces
+    for i, (unit, cols) in enumerate(cols2.items()):
+        print(f"{i=}, {unit=}, {cols=}")
+
+        fig.update_yaxes(title_text=unit,row=i+1)
+
+        for col in cols:
+            print(f"{col=}")
+
+            if col == 'Alarms':
+                # Pivot the DataFrame
+                pivot_df = dfa.pivot(index='Timestamp', columns='Name', values='Change')
+                # Reset index to have Timestamp as a column
+                pivot_df = pivot_df.reset_index()
+
+                # Iterate over the columns of the pivot DataFrame
+                for column in pivot_df.columns[1:]:
+                    # Create a DataFrame for each column without NaN values
+                    df_col = pivot_df[['Timestamp', column]].dropna()
+                    # Create a trace for the current column
+                    trace = go.Scatter(x=df_col['Timestamp'], y=df_col[column], line_shape='hv', name=column)
+                    # Append the trace to the list of traces
+                    fig.add_trace(trace, row=i+1, col=1)
+
+            else:
+                if not dfs.empty:
+                    # If unit is a bool, int or valve_pos(int), create a square line trace instead of spline
+                    if unit in ['Bool', 'Step']:
+                        trace = square_line_trace(
+                            x=dfs['Timestamp'],
+                            y=dfs[col],
+                            name=col,
+                            cat=unit)
+                    else:
+                        trace = line_trace(
+                            x=dfs['Timestamp'],
+                            y=dfs[col],
+                            name=col,
+                            cat=unit)
+
+                    fig.add_trace(trace, row=i+1, col=1)
+
+    print("fig config")
+
+    # Update layout properties
+    fig.update_layout(hovermode="x unified", hoverlabel=dict(bgcolor='rgba(255,255,255,0.75)', namelength = -1, font=dict(color='black')),  
+        legend=dict(groupclick="toggleitem"), #avoid grouping all traces
+        title_text=tittle , title_x=0.5
+    )
+
+    # Add image
+    alLogo = Image.open(AL_LOGO)
+    fig.add_layout_image(
+        dict(
+            source=alLogo,
+            xref="paper", yref="paper",
+            x=0, y=1.025,
+            sizex=0.14, sizey=0.14,
+            xanchor="left", yanchor="bottom"
+        )
+    )
+    
+    print("fig done")
+    return fig
+
 #----------------------------------------------------------- MATPLOTLIB
 def create_aux_plot(LogsStandard, LogsAlarms, LogsEvents):
     logger.debug("create_aux_plot started ---")

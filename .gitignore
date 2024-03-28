@@ -7,3 +7,5 @@ VisuaLite/build/
 VisuaLite/venv/
 .ipynb_checkpoints/
 *.log
+/venv/
+/build/
