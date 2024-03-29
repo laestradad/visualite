@@ -1,3 +1,0 @@
-After clicking "Import Logs," the tool will attempt to import data from the selected .csv files that adhere to the naming standard. If the machine type does not match or the files are not from the same machine, a pop-up will display the first incorrect file found.
-
-If all prerequisites are met, but the app does not respond after more than 2 minutes, close the app and follow the “Feedback and Troubleshooting” instructions in section 1. Alternatively, try selecting fewer .csv files during the next startup of the application.

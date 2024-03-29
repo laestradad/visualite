@@ -1,5 +1,0 @@
-If you encounter any issue using VisuaLite, please take note of how to properly report this issue.
-
-VisuaLite creates a folder “__vl.log” in the same location where the app is saved. If you encounter any issue you want to report, please save the visualite_debug.log file in another location and share it with your contact person in the PD FCS & Modules Team.
-
-Otherwise, save anyway visualite_debug.log file in another location, and use the Feedback form present in the .zip package distributed with the application.

@@ -536,7 +536,7 @@ def split_df(LogsStandard):
     # Legacy function to divide dataframes in 5 days slices to minimize plot.html file size
     mindate = LogsStandard['DateTime'].min()
     maxdate = LogsStandard['DateTime'].max()
-    print(mindate,maxdate)
+    logger.debug(mindate,maxdate)
 
     step = 5
 
@@ -556,7 +556,7 @@ def split_df(LogsStandard):
     
     # Show Results
     for item in limits:
-        print (item)
+        logger.debug (item)
 
     # Divide all data in slices of 5 days
     dfs = []
@@ -568,12 +568,12 @@ def split_df(LogsStandard):
         dfs.append(df)
         
         totalshape = totalshape + df.shape[0]
-        print(df.shape)
+        logger.debug(df.shape)
         
-    print (totalshape)
+    logger.debug (totalshape)
 
     for df in dfs:
         mindate = df['DateTime'].min()
         maxdate = df['DateTime'].max()
-        print(mindate, maxdate)
-        print('--')
+        logger.debug(mindate, maxdate)
+        logger.debug('--')

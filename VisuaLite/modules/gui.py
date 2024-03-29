@@ -11,14 +11,13 @@ import customtkinter as ctk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 from modules import data_analysis as fcm_da
-from modules import help_app
 from modules import plots as fcm_plt
 
 from modules.logging_cfg import setup_logger
 logger = setup_logger()
 logger.info("gui.py imported")
 
-VERSION = "V1.00.00"
+VERSION = "V1.01.00"
 #Execution path
 PATH = os.getcwd()
 logger.info(f"{PATH=}")
@@ -390,7 +389,7 @@ class App(ctk.CTk):
         logger.debug("App init")
 
         # configure window
-        self.title("VisuaLite " + self.version + " | Data analysis for FCS Oil Modules")
+        self.title("VisuaLite " + self.version + " | Data analysis for FCM LPG")
         # set the dimensions of the screen 
         w = 1380 # width
         h = 900 # height
@@ -617,6 +616,7 @@ class TabsFrame(ctk.CTkFrame):
         self.grid_rowconfigure(1, weight=1)
 
         # Get arrays from txt file
+        self.columns = []
         if not self.app.LogsStandard.empty:
             self.columns = list(fcm_da.DATA['units'].keys())
             self.columns.remove('Alarms')
@@ -987,8 +987,8 @@ class TabsFrame(ctk.CTkFrame):
 
         # Filter DFs and save excel
         self.export_excel(
-            dfs = [self.app.LogsStandard, self.app.LogsAlarms, self.app.LogsEvents],
-            sheetNames = ['Standard', 'Alarms', 'Events'],
+            dfs = [self.app.LogsStandard, self.app.LogsAlarms],
+            sheetNames = ['Standard', 'Alarms'],
             date1 = datetime1, date2 = datetime2,
             cols = cols,
             fileName = name_file)
@@ -1022,18 +1022,12 @@ class TabsFrame(ctk.CTkFrame):
 
                         df_export = df[(df['Timestamp'] >= date1) & (df['Timestamp'] <= date2)]
 
-                        if 'AlarmNumber' in cols:
-                            cols.remove('AlarmNumber')
-                        if 'EventNumber' in cols:
-                            cols.remove('EventNumber')
+                        if 'Alarms' in cols:
+                            cols.remove('Alarms')
 
                         if set(cols).issubset(df_export.columns.tolist()):
                             cols.insert(0, 'Timestamp')
                             df_export = df_export[cols]
-                        elif 'Evn_Code_Label' in df_export.columns.tolist():
-                            del df_export['Evn_Code_Label']
-                        elif 'Alm_Code_Label' in df_export.columns.tolist():
-                            del df_export['Alm_Code_Label']
 
                         df_export.to_excel(writer, sheet_name=sheetNames[i], index=False)
 
