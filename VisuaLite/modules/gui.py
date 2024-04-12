@@ -18,7 +18,7 @@ from modules.logging_cfg import setup_logger
 logger = setup_logger()
 logger.info("gui.py imported")
 
-VERSION = "V1.00.00"
+VERSION = "V1.00.01"
 #Execution path
 PATH = os.getcwd()
 logger.info(f"{PATH=}")
