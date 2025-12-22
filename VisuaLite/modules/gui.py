@@ -30,6 +30,7 @@ APP_ICON = os.path.join(SCRIPT_PATH, '..', 'resources', 'ad_logo.ico')
 #Resources path
 RESOURCES = os.path.join(SCRIPT_PATH, '..', 'resources')
 #Options for dropdowns
+MCH_TYPES = ["FCM One | 1.5", "FCM Oil 2b", "Custom Logs"]
 TIMES = ['00:00', '01:00', '02:00', '03:00', '04:00', '05:00',
          '06:00', '07:00', '08:00', '09:00', '10:00', '11:00',
          '12:00', '13:00', '14:00', '15:00', '16:00', '17:00',
@@ -204,6 +205,65 @@ class NavFrame(ctk.CTkFrame):
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
 
+class SettingsPopup(ctk.CTkToplevel):
+    def __init__(self, parent, settings_dict, default_settings, on_save):
+
+        super().__init__(parent)
+        self.title("Settings")
+        self.geometry("550x340")
+        self.resizable(False, False)
+        self.grab_set()  # modal
+
+        self.on_save = on_save
+        self.settings_dict = settings_dict
+        self.default_settings = default_settings
+        self.entries = {}  # store references to textboxes
+
+        # Create label + textbox for each field
+        for i, (key, value) in enumerate(settings_dict.items()):
+            lbl = ctk.CTkLabel(self, text=key.replace("_", " ").title() + ":")
+            lbl.grid(row=i, column=0, padx=10, pady=5, sticky="e")
+
+            entry = ctk.CTkEntry(self)
+            entry.grid(row=i, column=1, padx=10, pady=5, sticky="we")
+            entry.insert(0, str(value))
+
+            self.entries[key] = entry  # save reference
+
+        # Make column 1 expand to fill width
+        self.grid_columnconfigure(1, weight=1)
+
+        # Buttons frame
+        btn_frame = ctk.CTkFrame(self, fg_color="transparent")
+        btn_frame.grid(row=len(settings_dict), column=0, columnspan=2, pady=20)
+
+        btn_save = ctk.CTkButton(btn_frame, text="Save", command=self.save)
+        btn_save.grid(row=0, column=0, padx=5)
+
+        btn_cancel = ctk.CTkButton(btn_frame, text="Cancel", command=self.destroy)
+        btn_cancel.grid(row=0, column=1, padx=5)
+
+        btn_restore = ctk.CTkButton(btn_frame, text="Restore Defaults", command=self.restore_defaults)
+        btn_restore.grid(row=0, column=2, padx=5)
+
+        # Handle window close button
+        self.protocol("WM_DELETE_WINDOW", self.destroy)
+
+    def save(self):
+        # Update dictionary from textboxes
+        for key, entry in self.entries.items():
+            self.settings_dict[key] = entry.get()
+        self.on_save(self.settings_dict)
+        self.destroy()
+    
+    def restore_defaults(self):
+        # Reset all fields to default values
+        for key, entry in self.entries.items():
+            if key in self.default_settings:
+                entry.delete(0, "end")
+                entry.insert(0, str(self.default_settings[key]))
+        self.save()
+
 #--------------------------------------------------------------------- Custom Tkinter App
 class App(ctk.CTk):
 
@@ -347,14 +407,19 @@ class App(ctk.CTk):
         # create dropdown of machine type
         self.mt_label = ctk.CTkLabel(parent, text="Machine type:", font=ctk.CTkFont(size=16))
         self.mt_label.grid(row=1, column=0, padx=20, pady=(20, 5))
-        self.mch_type = ctk.StringVar(value="FCM One | 1.5")
+        self.mch_type = ctk.StringVar(value=MCH_TYPES[0])
         self.mch_type_dropdown = ctk.CTkOptionMenu(parent, dynamic_resizing=False, 
-                                    variable=self.mch_type, values=["FCM One | 1.5", "FCM Oil 2b"])
+                                    variable=self.mch_type, values=MCH_TYPES, command=self.on_machine_type_change)
         self.mch_type_dropdown.grid(row=2, column=0, padx=20, pady=0)
-        self.mch_type_dropdown.set("FCM One | 1.5")
+        self.mch_type_dropdown.set(MCH_TYPES[0])    
+        
+        #Custom logs settings
+        self.set_img = ctk.CTkImage(Image.open(os.path.join(RESOURCES, 'repair_dark.png')), size=(20, 20))
+        self.btn_settings = ctk.CTkButton(parent, text="Settings", image=self.set_img, font=ctk.CTkFont(size=12), height=30, width=110,
+            compound="right", command=self.open_settings)
 
         # make middle "empty" row have the priority
-        parent.grid_rowconfigure(3, weight=1)
+        parent.grid_rowconfigure(4, weight=1)
         # Progress bar (not positioned, only declared)
         self.progress = ctk.CTkProgressBar(parent, width=100)
         self.progress.configure(mode="indeterminate")
@@ -364,19 +429,19 @@ class App(ctk.CTk):
         self.help_img = ctk.CTkImage(Image.open(os.path.join(RESOURCES, 'help1_dark.png')), size=(20, 20))
         self.btn_help = ctk.CTkButton(parent, text="Help", image=self.help_img, font=ctk.CTkFont(size=12), height=30, width=110,
             compound="right", command=self.help_cmd)
-        self.btn_help.grid(row=4, column=0, padx=20, pady=10)
+        self.btn_help.grid(row=5, column=0, padx=20, pady=10)
 
         # create app controls of appearance and scaling
         self.appearance_mode_label = ctk.CTkLabel(parent, text="Appearance Mode:", anchor="w")
-        self.appearance_mode_label.grid(row=5, column=0, padx=20, pady=(10, 0))
+        self.appearance_mode_label.grid(row=6, column=0, padx=20, pady=(10, 0))
         self.appearance_mode_optionemenu = ctk.CTkOptionMenu(parent, values=["Light", "Dark"],command=self.change_appearance_mode_event)
-        self.appearance_mode_optionemenu.grid(row=6, column=0, padx=20, pady=(5, 10))
+        self.appearance_mode_optionemenu.grid(row=7, column=0, padx=20, pady=(5, 10))
         self.appearance_mode_optionemenu.set("Dark")
 
         self.scaling_label = ctk.CTkLabel(parent, text="UI Scaling:", anchor="w")
-        self.scaling_label.grid(row=7, column=0, padx=20, pady=(10, 0))
+        self.scaling_label.grid(row=8, column=0, padx=20, pady=(10, 0))
         self.scaling_optionemenu = ctk.CTkOptionMenu(parent, values=["80%", "90%", "100%", "110%", "120%"],command=self.change_scaling_event)
-        self.scaling_optionemenu.grid(row=8, column=0, padx=20, pady=(5, 20))
+        self.scaling_optionemenu.grid(row=9, column=0, padx=20, pady=(5, 20))
         self.scaling_optionemenu.set("100%")
 
     def help_cmd(self):
@@ -384,12 +449,34 @@ class App(ctk.CTk):
         self.app2 = help_app.App()
         self.app2.mainloop()
 
+    def on_machine_type_change(self, value):
+        if value == "Custom Logs":
+            self.btn_settings.grid(row=3, column=0, padx=20, pady=10)
+        else:
+            self.btn_settings.grid_remove()
+
+    def open_settings(self):
+        # Prevent multiple popups
+        if hasattr(self, "settings_popup") and self.settings_popup.winfo_exists():
+            self.settings_popup.focus()
+            return
+
+        self.settings_popup = SettingsPopup(
+            parent=self,
+            settings_dict=self.settings.copy(),
+            default_settings=self.default_settings,
+            on_save=self.save_settings
+        )
+
+    def save_settings(self, new_settings):
+        self.settings.update(new_settings)
+
     def __init__(self):
         super().__init__()
         logger.debug("App init")
 
         # configure window
-        self.title("VisuaLite " + self.version + " | Data analysis for FCS Oil Modules")
+        self.title("VisuaLite " + self.version + " | Data analysis for FSS Log files")
         # set the dimensions of the screen 
         w = 1380 # width
         h = 900 # height
@@ -410,13 +497,26 @@ class App(ctk.CTk):
         # Function to be executed when app is closed
         self.protocol("WM_DELETE_WINDOW", self.before_close)
 
+        # Default settings
+        self.default_settings = {
+            "file_name_prefix": "ProcessLog",
+            "datetime_column": "Timestamp",
+            "date_format": "%Y %m %d %H:%M:%S:%f",
+            "skip_rows": 4,
+            "csv_separator": ";",
+            "csv_decimal": ","
+        }
+
+        # Current settings (initially same as default)
+        self.settings = self.default_settings.copy()
+
         # Make right side (column 1) the main part of the App
         self.grid_columnconfigure(0, weight=0)
-        self.grid_columnconfigure(1, weight=1)
+        self.grid_columnconfigure(1, weight=1)  
 
         # Left side panel
         self.left_side_panel = ctk.CTkFrame(self, corner_radius=8, width=300)
-        self.left_side_panel.grid(row=0, column=0, rowspan=8, sticky="nsew", padx=(20, 10), pady=20)
+        self.left_side_panel.grid(row=0, column=0, rowspan=9, sticky="nsew", padx=(20, 10), pady=20)
         self.left_side_widgets(self.left_side_panel)
 
         self.grid_rowconfigure(0, weight=1)
