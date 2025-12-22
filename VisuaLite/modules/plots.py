@@ -949,6 +949,92 @@ def custom_plot_divided(dfs, dfa, dfe, cols, date1, date2, tittle): # n rows, on
     logger.debug("fig done")
     return fig
 
+def custom_plot_custom_logs(dfs, cols, date1, date2, tittle, dateCol):
+    logger.debug("custom_plot_custom_logs started ---")
+
+    logger.debug("date limits:")
+    logger.debug(f"{date1=},{date2=}")
+    
+    # filter dataframes for date interval selected
+    if not dfs.empty:
+        dfs = dfs[(dfs[dateCol] >= date1) & (dfs[dateCol] <= date2)]
+    else:
+        dfs = pd.DataFrame()
+        logger.debug("Standard Logs empty in date range selected")
+
+    #returns an empty plot if no data to plot
+    if dfs.empty:
+        fig = go.Figure()
+        fig.update_layout(title_text=tittle)
+        logger.debug("--- no data to plot")
+        return fig
+    
+    # From column list, get a dictionary with cols classified by unit type
+    logger.debug("selected units and columns:")
+    logger.debug(cols)
+
+    # Dictionary to store arrays of column names per unit
+    cols_by_type = {}
+
+    for item in cols:
+        t = item['type']
+        col_name = item['column']
+        
+        if t not in cols_by_type:
+            cols_by_type[t] = []
+        cols_by_type[t].append(col_name)
+
+    logger.debug("fig init")
+    fig = make_subplots(rows=len(cols_by_type), cols=1, shared_xaxes=True, vertical_spacing=0.02)
+
+    if not dfs.empty:
+        # Iterate classified cols and create traces
+        for i, (unit, columns) in enumerate(cols_by_type.items()):
+            logger.debug(f"Unit: {unit}")
+
+            # Inner loop: iterate each column in the array
+            for col in columns:
+                logger.debug(f"  Column: {col}")
+            
+                # If unit is a bool or int create a square line trace instead of spline
+                if unit in ['bool', 'int']:
+                    trace = square_line_trace(
+                        x=dfs[dateCol],
+                        y=dfs[col],
+                        name=col,
+                        cat=unit)
+                else:
+                    trace = line_trace(
+                        x=dfs[dateCol],
+                        y=dfs[col],
+                        name=col,
+                        cat=unit)
+
+                fig.add_trace(trace, row=i+1, col=1)
+
+    logger.debug("fig config")
+
+    # Update layout properties
+    fig.update_layout(hovermode="x unified", hoverlabel=dict(bgcolor='rgba(255,255,255,0.75)', namelength = -1, font=dict(color='black')),  
+        legend=dict(groupclick="toggleitem"), #avoid grouping all traces
+        title_text=tittle , title_x=0.5
+    )
+
+    # Add image
+    alLogo = Image.open(AL_LOGO)
+    fig.add_layout_image(
+        dict(
+            source=alLogo,
+            xref="paper", yref="paper",
+            x=0, y=1.025,
+            sizex=0.14, sizey=0.14,
+            xanchor="left", yanchor="bottom"
+        )
+    )
+    
+    logger.debug("fig done")
+    return fig
+
 #----------------------------------------------------------- MATPLOTLIB
 def create_aux_plot(LogsStandard, LogsAlarms, LogsEvents):
     logger.debug("create_aux_plot started ---")

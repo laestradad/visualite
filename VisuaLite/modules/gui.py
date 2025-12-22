@@ -35,6 +35,7 @@ TIMES = ['00:00', '01:00', '02:00', '03:00', '04:00', '05:00',
          '06:00', '07:00', '08:00', '09:00', '10:00', '11:00',
          '12:00', '13:00', '14:00', '15:00', '16:00', '17:00',
          '18:00', '19:00', '20:00', '21:00', '22:00', '23:00']
+TYPE_OPTIONS = [ "bool", "float", "int", "bar", "degreesC", "percentage", "rpm", "kg/h", "l/h", "cSt", "density"]
 
 #Custom Tkinter theme
 ctk.set_appearance_mode("dark")
@@ -305,6 +306,7 @@ class App(ctk.CTk):
 
         # Machine Type dropdown
         self.mch_type_dropdown.configure(state="enabled")
+        self.btn_settings.configure(state="disabled")
 
         #WorkSpace: Empty
         self.show_frame("WSFrame")
@@ -355,6 +357,7 @@ class App(ctk.CTk):
 
         # Machine Type dropdown
         self.mch_type_dropdown.configure(state="disabled")
+        self.btn_settings.configure(state="disabled")
 
         #Update texts
         App.frames["CSFrame"].title.configure(text="Importing data")
@@ -407,6 +410,7 @@ class App(ctk.CTk):
 
         # Machine Type dropdown
         self.mch_type_dropdown.configure(state="disabled")
+        self.btn_settings.configure(state="disabled")
 
         #Update texts
         App.frames["CSFrame"].title.configure(text="Select Analysis type")
@@ -444,6 +448,7 @@ class App(ctk.CTk):
         self.set_img = ctk.CTkImage(Image.open(os.path.join(RESOURCES, 'repair_dark.png')), size=(20, 20))
         self.btn_settings = ctk.CTkButton(parent, text="Settings", image=self.set_img, font=ctk.CTkFont(size=12), height=30, width=110,
             compound="right", command=self.open_settings)
+        self.btn_settings.grid(row=3, column=0, padx=20, pady=10)
 
         # make middle "empty" row have the priority
         parent.grid_rowconfigure(4, weight=1)
@@ -478,9 +483,9 @@ class App(ctk.CTk):
 
     def on_machine_type_change(self, value):
         if value == "Custom Logs":
-            self.btn_settings.grid(row=3, column=0, padx=20, pady=10)
+            self.btn_settings.configure(state="enabled")
         else:
-            self.btn_settings.grid_remove()
+            self.btn_settings.configure(state="disabled")
 
     def open_settings(self):
         # Prevent multiple popups
@@ -1740,12 +1745,16 @@ class CustomTabsFrame(ctk.CTkFrame):
         self.alm_list = []
         self.eve_list = []
 
+        #Plot declaration
+        self.plot_fig = None
+        self.fig1 = None
+
         if not self.app.LogsStandard.empty:
             # Variables for Tab2 and Tab3
             self.columns = self.columns + self.app.LogsStandard.columns.tolist()
 
             # Remove columns not eligible to plot according to machine type
-            remove_cols = [app_instance.settings['datetime_column']]
+            remove_cols = [self.app.settings['datetime_column']]
             
             for col in remove_cols:
                 self.columns.remove(col)
@@ -1756,14 +1765,6 @@ class CustomTabsFrame(ctk.CTkFrame):
         self.tabview.add("Personalized Analysis")
         self.tabview.tab("Personalized Analysis").grid_columnconfigure(1, weight=1)
         self.tabview.tab("Personalized Analysis").grid_rowconfigure(1, weight=1)
-
-        #Aux plot button
-        self.plot_fig = None
-        self.aux_plot = ctk.CTkButton(self.tabview.tab("Personalized Analysis"), text="Show Auxiliary Plot", 
-                                        command=self.show_plot)
-        self.aux_plot.grid(row=0, column=1, padx=20, pady=10, sticky="ne")
-        self.label_tab_3 = ctk.CTkLabel(self.tabview.tab("Personalized Analysis"), text="Select the desired time interval and variables you want to plot:")
-        self.label_tab_3.grid(row=0, column=0, padx=20, columnspan=2, pady=5, sticky="sw")
 
         #Frame for calendars
         self.frame_left_t3 = ctk.CTkFrame(self.tabview.tab("Personalized Analysis"))
@@ -1781,7 +1782,7 @@ class CustomTabsFrame(ctk.CTkFrame):
 
         self.cal1_text = ctk.CTkLabel(self.frame_left_t3, text='To:')
         self.cal1_text.grid(row=0, column=1, padx=20, pady=2, sticky="nw")
-        # TODO: set default date to max StdLogs date, if no StdLogs then max of Alm or Eve
+        # TODO: set default date to max StdLogs date
         self.cal2d = tkcalendar.Calendar(self.frame_left_t3, selectmode="day", date_pattern="yyyy/MM/dd")
         self.cal2d.grid(row=1, column=1, padx=(10,20), pady=2)
         self.cal2t = ctk.CTkOptionMenu(self.frame_left_t3, dynamic_resizing=False, values=TIMES)
@@ -1790,8 +1791,8 @@ class CustomTabsFrame(ctk.CTkFrame):
 
         #Information of date limits
         if not self.app.LogsStandard.empty:
-            mindateS = self.app.LogsStandard[app_instance.settings['datetime_column']].min()
-            maxdateS = self.app.LogsStandard[app_instance.settings['datetime_column']].max()
+            mindateS = self.app.LogsStandard[self.app.settings['datetime_column']].min()
+            maxdateS = self.app.LogsStandard[self.app.settings['datetime_column']].max()
             s_text = '  - Standard Logs:    ' + str(mindateS) + '  ---  ' + str(maxdateS) + '\n'
         else:
             s_text = '\n'
@@ -1809,8 +1810,8 @@ class CustomTabsFrame(ctk.CTkFrame):
 
         #Variables right side
         self.var_sel_t3 = ctk.CTkScrollableFrame(self.tabview.tab("Personalized Analysis"))
-        self.var_sel_t3.grid(row=1, column=1, padx=(10,20), pady=10, sticky="nsew")
-        self.switch_list_t3 = []
+        self.var_sel_t3.grid(row=1, column=1, padx=(10, 20), pady=10, sticky="nsew")
+        self.controls_t3 = []  # stores switch + dropdown + value
         for column_name in self.columns:
             self.add_switch_t3(column_name)
 
@@ -1823,44 +1824,47 @@ class CustomTabsFrame(ctk.CTkFrame):
         self.plot_t3.grid(row=2, column=1, padx=10, pady=(5,10), sticky="w")
 
     #TAB3 functions
-    def show_plot(self):
-        #Create aux plot if it does not exit
-        if self.plot_fig is None:
-            self.plot_fig = fcm_plt.create_aux_plot(self.app.LogsStandard, self.app.LogsAlarms, self.app.LogsEvents)
-            
-            #Create popup
-            self.plot_window = ctk.CTkToplevel(self.app)
-            self.plot_window.resizable(width=False, height=False)
-            self.plot_window.title("Auxiliary Plot")
-            # Keep the toplevel window in front of the root window
-            self.plot_window.wm_transient(self.app)
-            
-            #Place plot in popup
-            self.canvas = FigureCanvasTkAgg(self.plot_fig, master=self.plot_window)
-            self.canvas.draw()
-            self.canvas.get_tk_widget().pack()
-
-            # Ensure figures are closed properly when the window is closed
-            self.plot_window.protocol("WM_DELETE_WINDOW", lambda: self.close_plot(self.plot_fig, self.plot_window))
-        else:
-            logger.debug("Plot already exists")
-            return #Stop
-
-    def close_plot(self, fig, window):
-        fig.clf()  # Clear the figure
-        fcm_plt.plt.close(fig)  # Close the figure
-        window.destroy()  # Destroy the Toplevel window
-        # Init plot
-        self.plot_fig = None
-
     def add_switch_t3(self, label):
-        # Add variable swithces 
-        switch = ctk.CTkSwitch(self.var_sel_t3, text=label)
-        switch.grid(row=len(self.switch_list_t3), column=0, padx=10, pady=5, sticky="w")
-        self.switch_list_t3.append(switch)
+        row = len(self.controls_t3)
 
-    def get_selected_vars_t3(self):
-        return [switch.cget("text") for switch in self.switch_list_t3 if switch.get() == 1]
+        # Switch
+        switch = ctk.CTkSwitch(self.var_sel_t3,text=label,command=lambda r=row: self.toggle_dropdown_t3(r))
+        switch.grid(row=row, column=0, padx=10, pady=5, sticky="w")
+
+        # Dropdown variable (default = "bool")
+        dropdown_var = ctk.StringVar(value="bool")
+
+        # Dropdown menu
+        dropdown = ctk.CTkOptionMenu(self.var_sel_t3,values=TYPE_OPTIONS,variable=dropdown_var,width=110)
+        dropdown.grid(row=row, column=1, padx=10, pady=5, sticky="w")
+        dropdown.configure(state="disabled")
+
+        self.controls_t3.append({
+            "label": label,
+            "switch": switch,
+            "dropdown": dropdown,
+            "value": dropdown_var
+        })
+
+    def get_selections_t3(self):
+        selections = []
+
+        for control in self.controls_t3:
+            if control["switch"].get():
+                selections.append({
+                    "column": control["label"],
+                    "type": control["value"].get()
+                })
+
+        return selections
+
+    def toggle_dropdown_t3(self, index):
+        control = self.controls_t3[index]
+
+        if control["switch"].get():
+            control["dropdown"].configure(state="normal")
+        else:
+            control["dropdown"].configure(state="disabled")
 
     def generate_personalized_plot(self):
         logger.debug("Tab3 - PersonalizedPlot function started ---")
@@ -1899,7 +1903,7 @@ class CustomTabsFrame(ctk.CTkFrame):
             self.hide_progress_bar()
             return #Stop
         
-        cols = self.get_selected_vars_t3()
+        cols = self.get_selections_t3()
         logger.debug(f"{cols=}")
 
         if cols == []:
@@ -1911,7 +1915,7 @@ class CustomTabsFrame(ctk.CTkFrame):
         self.name_file = self.get_file_name()
 
         # Create plot
-        self.fig = fcm_plt.custom_plot_divided(self.app.LogsStandard, self.app.LogsAlarms, self.app.LogsEvents, cols, datetime1, datetime2, self.name_file)
+        self.fig = fcm_plt.custom_plot_custom_logs(self.app.LogsStandard, cols, datetime1, datetime2, self.name_file, self.app.settings['datetime_column'])
         logger.debug("Tab3 - fig created")
         
         # Save png preview
@@ -2039,7 +2043,7 @@ class CustomTabsFrame(ctk.CTkFrame):
         return re.match(pattern, filename) is not None
 
     def show_progress_bar(self):
-        self.app.progress.grid(row=3, column=0, padx=10, pady=50, sticky="ew") 
+        self.app.progress.grid(row=4, column=0, padx=10, pady=50, sticky="ew") 
     
     def hide_progress_bar(self):
         self.app.progress.grid_forget()
@@ -2081,7 +2085,7 @@ class CustomTabsFrame(ctk.CTkFrame):
             self.hide_progress_bar()
             return #Stop
         
-        cols = self.get_selected_vars_t3()
+        cols = self.get_selections_t3()
         logger.debug(f"{cols=}")
 
         if cols == []:
@@ -2095,16 +2099,17 @@ class CustomTabsFrame(ctk.CTkFrame):
         name_file="Filtered_Logs_{}".format(format_dt)
 
         # Filter DFs and save excel
-        self.export_excel(
-            dfs = [self.app.LogsStandard, self.app.LogsAlarms, self.app.LogsEvents],
-            sheetNames = ['Standard', 'Alarms', 'Events'],
+        self.export_excel_custom(
+            dfs = self.app.LogsStandard,
+            sheetName = 'Standard',
             date1 = datetime1, date2 = datetime2,
             cols = cols,
-            fileName = name_file)
+            fileName = name_file,
+            dateCol = self.app.settings['datetime_column'])
 
         self.hide_progress_bar()
 
-    def export_excel(self, dfs, sheetNames, date1, date2, cols, fileName):
+    def export_excel_custom(self, dfs, sheetName, date1, date2, cols, fileName, dateCol):
         logger.debug('export_excel started ---')
 
         dest_folder = fd.askdirectory(parent=self, title='Select a destination directory')
@@ -2124,30 +2129,26 @@ class CustomTabsFrame(ctk.CTkFrame):
 
         try:
             with pd.ExcelWriter(file_path) as writer:  
-                for i, df in enumerate(dfs):
-                    if not df.empty:
-                        logger.debug(i)
-                        logger.debug(sheetNames[i])
+                
+                if not dfs.empty:
+                    logger.debug(sheetName)
 
-                        df_export = df[(df[self.app_instance.settings['datetime_column']] >= date1) & (df[self.app_instance.settings['datetime_column']] <= date2)]
+                    df_export = dfs[(dfs[self.app.settings['datetime_column']] >= date1) & (dfs[self.app.settings['datetime_column']] <= date2)]
+                    
+                    # Extract column names from the dicts
+                    col_names = [item['column'] for item in cols]
 
-                        if 'AlarmNumber' in cols:
-                            cols.remove('AlarmNumber')
-                        if 'EventNumber' in cols:
-                            cols.remove('EventNumber')
+                    # Check if all columns exist in the DataFrame
+                    if set(col_names).issubset(df_export.columns.tolist()):
+                        # Insert dateCol at the beginning
+                        col_names.insert(0, dateCol)
+                        # Select only the relevant columns
+                        df_export = df_export[col_names]
 
-                        if set(cols).issubset(df_export.columns.tolist()):
-                            cols.insert(0, 'DateTime')
-                            df_export = df_export[cols]
-                        elif 'Evn_Code_Label' in df_export.columns.tolist():
-                            del df_export['Evn_Code_Label']
-                        elif 'Alm_Code_Label' in df_export.columns.tolist():
-                            del df_export['Alm_Code_Label']
+                    df_export.to_excel(writer, sheet_name=sheetName, index=False)
 
-                        df_export.to_excel(writer, sheet_name=sheetNames[i], index=False)
-
-                    else:
-                        logger.debug('df empty')
+                else:
+                    logger.debug('df empty')
             
             tk.messagebox.showinfo(title='Excel File saved!', message="Excel file saved in destination folder") # type: ignore
             logger.debug('--- export_excel finished')
