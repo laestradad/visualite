@@ -214,6 +214,51 @@ def import_data(dirname, file_list, mch_type):
     else:
         logger.debug("--- import_data aborted")
         return 0, mch_info, None, None, None, None  
+    
+# Import data custom
+def concat_files_custom(AllFilesNames, settings):
+    
+    logger.debug("concat_files_custom started ---")
+   # Create an empty list to store the dataframes
+    ListDataframe = list()
+
+    # For each file in the specified directory import the data and add it in the list
+    for Filename in AllFilesNames:
+        ListDataframe.append(pd.read_csv(Filename, sep=settings['csv_separator'], skiprows=int(settings['skip_rows']), decimal=settings['csv_decimal'], encoding='unicode_escape'))
+
+    # Concatenate the files in the list in unique dataframe
+    DF_Data = pd.concat(ListDataframe, axis=0, ignore_index=True)
+
+    # DateTime
+    DF_Data[settings['datetime_column']] = pd.to_datetime(DF_Data[settings['datetime_column']], format=settings['date_format'])
+    # ordering ascending
+    DF_Data = DF_Data.sort_values(by=settings['datetime_column'], ascending=True).reset_index(drop=True)
+
+    #Remove duplicates
+    DF_Data.drop_duplicates(keep=False, inplace=True)
+
+    # Drop empty columns
+    DF_Data = DF_Data.drop(DF_Data.filter(regex="^Unnamed").columns, axis=1)
+    
+    logger.debug("--- raw data imported:")
+    logger.debug(DF_Data.shape)
+    logger.debug(DF_Data.columns.tolist())
+
+    return(DF_Data)
+
+@custom_callback 
+def import_data_custom(dirname, file_list, settings):
+    logger.debug("--- import_data_custom started ---")
+    
+    if dirname != None:
+        list_files = [dirname + '/' + x for x in file_list if x.startswith(settings['file_name_prefix'])]
+    else:
+        logger.debug("dirname == None -> Stop")
+        return 4, None, None, None, None, None 
+
+    Logs = concat_files_custom(list_files, settings)
+
+    return 5, Logs
 
 # Formatting of DataFrames
 def Format_DF_SLogs(list_files):

@@ -396,6 +396,33 @@ class App(ctk.CTk):
         App.frames["NFrame"].bt_navigation1.configure(command= self.back_to_selectfolder)
         App.frames["NFrame"].bt_navigation2.grid_forget()
 
+    def step_40_CustomDataImported(self):
+        logger.debug("Widgets update step_30_dataImported()")
+
+        #Update breadcrumb
+        App.frames["BCFrame"].grid_columnconfigure(0, weight=0)
+        App.frames["BCFrame"].grid_columnconfigure(1, weight=1)
+        App.frames["BCFrame"].step1_label.configure(font=ctk.CTkFont(size=15, weight="normal"), image=App.frames["BCFrame"].step1g_img_tk)
+        App.frames["BCFrame"].step2_label.configure(font=ctk.CTkFont(size=18, weight="bold"), image=App.frames["BCFrame"].step2_img_tk)
+
+        # Machine Type dropdown
+        self.mch_type_dropdown.configure(state="disabled")
+
+        #Update texts
+        App.frames["CSFrame"].title.configure(text="Select Analysis type")
+        App.frames["CSFrame"].text.configure(text="In each type you can generate plots to make your own analysis")
+        App.frames["CSFrame"].action_bt.grid_forget()
+        
+        #WorkSpace: TabFrame
+        App.frames["TFrame"] = CustomTabsFrame(self.right_side_panel, self) # Pass the instance of App to TabsFrame
+        self.show_frame("TFrame")
+
+        #Update Buttons
+        App.frames["NFrame"].bt_navigation1.grid(row=0, column=0, padx=20, pady=10, sticky="w")
+        App.frames["NFrame"].bt_navigation1.configure(text= "Clear all and Go back")
+        App.frames["NFrame"].bt_navigation1.configure(command= self.back_to_selectfolder)
+        App.frames["NFrame"].bt_navigation2.grid_forget()
+
     def left_side_widgets(self, parent):
         # Left side panel / does not change during App execution
         logger.debug("Widgets update left_side_widgets()")
@@ -656,7 +683,10 @@ class App(ctk.CTk):
 
         # Call Data Analysis function and assign outputs to App variables
         try:
-            self.import_success, self.mch_info, self.COs,self.LogsStandard, self.LogsAlarms, self.LogsEvents = fcm_da.import_data(self.dirname, self.selected_files, self.mch_type.get())
+            if self.mch_type.get() == 'Custom Logs':
+                self.import_success, self.LogsStandard = fcm_da.import_data_custom(self.dirname, self.selected_files, self.settings)
+            else:
+                self.import_success, self.mch_info, self.COs,self.LogsStandard, self.LogsAlarms, self.LogsEvents = fcm_da.import_data(self.dirname, self.selected_files, self.mch_type.get())
             logger.debug(f"{self.import_success=}")
 
         except Exception as e:
@@ -683,6 +713,9 @@ class App(ctk.CTk):
             self.step_10_folderSelected()
             tk.messagebox.showerror(title='Import failed', message='Visualite could not find log files in the .csv files selected') # type: ignore
 
+        elif self.import_success == 5: #Custom Logs
+            self.step_40_CustomDataImported()
+            tk.messagebox.showinfo(title='Information', message='Import procedure successful!') # type: ignore
         else:
             self.step_10_folderSelected()
             tk.messagebox.showerror(title='Import failed', message='Unknown error. Please restart the application and try again') # type: ignore
@@ -1656,6 +1689,447 @@ class TabsFrame(ctk.CTkFrame):
                         logger.debug(sheetNames[i])
 
                         df_export = df[(df['DateTime'] >= date1) & (df['DateTime'] <= date2)]
+
+                        if 'AlarmNumber' in cols:
+                            cols.remove('AlarmNumber')
+                        if 'EventNumber' in cols:
+                            cols.remove('EventNumber')
+
+                        if set(cols).issubset(df_export.columns.tolist()):
+                            cols.insert(0, 'DateTime')
+                            df_export = df_export[cols]
+                        elif 'Evn_Code_Label' in df_export.columns.tolist():
+                            del df_export['Evn_Code_Label']
+                        elif 'Alm_Code_Label' in df_export.columns.tolist():
+                            del df_export['Alm_Code_Label']
+
+                        df_export.to_excel(writer, sheet_name=sheetNames[i], index=False)
+
+                    else:
+                        logger.debug('df empty')
+            
+            tk.messagebox.showinfo(title='Excel File saved!', message="Excel file saved in destination folder") # type: ignore
+            logger.debug('--- export_excel finished')
+
+        except Exception as e:
+            logger.error("--- Error saving excel file")
+            logger.error(e, exc_info=True)
+            tk.messagebox.showwarning(title='Error creating excel file', message="Error creating excel file, check permissions") # type: ignore
+            self.hide_progress_bar()
+
+class CustomTabsFrame(ctk.CTkFrame):
+    # Data Analysis Frame with 1 Tab for custom data export
+    def __init__(self, master, app_instance, **kwargs):
+        super().__init__(master, **kwargs)
+
+        logger.debug("TabsFrame init")
+
+        # Receive all App attributes and methods
+        self.app = app_instance
+
+        # Make it of the entire width and height
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(0, weight=1)
+
+        # create tabview
+        self.tabview = ctk.CTkTabview(self, width=250)
+        self.tabview.grid(row=0, column=0, padx=20, pady=20, sticky="nsew")
+
+        # Get arrays of options from dataframes
+        self.columns = []
+        self.alm_list = []
+        self.eve_list = []
+
+        if not self.app.LogsStandard.empty:
+            # Variables for Tab2 and Tab3
+            self.columns = self.columns + self.app.LogsStandard.columns.tolist()
+
+            # Remove columns not eligible to plot according to machine type
+            remove_cols = [app_instance.settings['datetime_column']]
+            
+            for col in remove_cols:
+                self.columns.remove(col)
+
+        #-----------------------------------TAB3
+        logger.debug("tab3 init")
+
+        self.tabview.add("Personalized Analysis")
+        self.tabview.tab("Personalized Analysis").grid_columnconfigure(1, weight=1)
+        self.tabview.tab("Personalized Analysis").grid_rowconfigure(1, weight=1)
+
+        #Aux plot button
+        self.plot_fig = None
+        self.aux_plot = ctk.CTkButton(self.tabview.tab("Personalized Analysis"), text="Show Auxiliary Plot", 
+                                        command=self.show_plot)
+        self.aux_plot.grid(row=0, column=1, padx=20, pady=10, sticky="ne")
+        self.label_tab_3 = ctk.CTkLabel(self.tabview.tab("Personalized Analysis"), text="Select the desired time interval and variables you want to plot:")
+        self.label_tab_3.grid(row=0, column=0, padx=20, columnspan=2, pady=5, sticky="sw")
+
+        #Frame for calendars
+        self.frame_left_t3 = ctk.CTkFrame(self.tabview.tab("Personalized Analysis"))
+        self.frame_left_t3.grid(row=1, column=0, padx=(20,10), pady=10, sticky="nsew")
+
+        #Labels and Calendars left side
+        self.cal1_text = ctk.CTkLabel(self.frame_left_t3, text='From:')
+        self.cal1_text.grid(row=0, column=0, padx=20, pady=2, sticky="nw") 
+        # TODO: set default date to min StdLogs date, if no StdLogs then min of Alm or Eve
+        self.cal1d = tkcalendar.Calendar(self.frame_left_t3, selectmode="day", date_pattern="yyyy/MM/dd")
+        self.cal1d.grid(row=1, column=0, padx=(20,10), pady=2)
+        self.cal1t = ctk.CTkOptionMenu(self.frame_left_t3, dynamic_resizing=False, values=TIMES)
+        self.cal1t.grid(row=2, column=0, padx=20, pady=10)
+        self.cal1t.set("00:00")
+
+        self.cal1_text = ctk.CTkLabel(self.frame_left_t3, text='To:')
+        self.cal1_text.grid(row=0, column=1, padx=20, pady=2, sticky="nw")
+        # TODO: set default date to max StdLogs date, if no StdLogs then max of Alm or Eve
+        self.cal2d = tkcalendar.Calendar(self.frame_left_t3, selectmode="day", date_pattern="yyyy/MM/dd")
+        self.cal2d.grid(row=1, column=1, padx=(10,20), pady=2)
+        self.cal2t = ctk.CTkOptionMenu(self.frame_left_t3, dynamic_resizing=False, values=TIMES)
+        self.cal2t.grid(row=2, column=1, padx=20, pady=10)
+        self.cal2t.set("00:00")
+
+        #Information of date limits
+        if not self.app.LogsStandard.empty:
+            mindateS = self.app.LogsStandard[app_instance.settings['datetime_column']].min()
+            maxdateS = self.app.LogsStandard[app_instance.settings['datetime_column']].max()
+            s_text = '  - Standard Logs:    ' + str(mindateS) + '  ---  ' + str(maxdateS) + '\n'
+        else:
+            s_text = '\n'
+
+        a_text = '\n'
+
+        e_text = '\n\n'
+
+        self.dates_info = ctk.CTkLabel(self.frame_left_t3, 
+                                       text='* Be aware of date range of the logs imported:\n\n' +
+                                            s_text + a_text + e_text +
+                                            'For more details, use Auxiliary Plot (top right button)',
+                                       justify='left')
+        self.dates_info.grid(row=3, column=0, columnspan=2, padx=20, pady=5, sticky="nw") 
+
+        #Variables right side
+        self.var_sel_t3 = ctk.CTkScrollableFrame(self.tabview.tab("Personalized Analysis"))
+        self.var_sel_t3.grid(row=1, column=1, padx=(10,20), pady=10, sticky="nsew")
+        self.switch_list_t3 = []
+        for column_name in self.columns:
+            self.add_switch_t3(column_name)
+
+        #Action button Tab3
+        self.export_t3 = ctk.CTkButton(self.tabview.tab("Personalized Analysis"), text="Export data",
+                                         command=self.export_excel_T3)
+        self.export_t3.grid(row=2, column=0, padx=10, pady=(5,10), sticky="e")
+        self.plot_t3 = ctk.CTkButton(self.tabview.tab("Personalized Analysis"), text="Generate and save plot",
+                                         command=self.generate_personalized_plot)
+        self.plot_t3.grid(row=2, column=1, padx=10, pady=(5,10), sticky="w")
+
+    #TAB3 functions
+    def show_plot(self):
+        #Create aux plot if it does not exit
+        if self.plot_fig is None:
+            self.plot_fig = fcm_plt.create_aux_plot(self.app.LogsStandard, self.app.LogsAlarms, self.app.LogsEvents)
+            
+            #Create popup
+            self.plot_window = ctk.CTkToplevel(self.app)
+            self.plot_window.resizable(width=False, height=False)
+            self.plot_window.title("Auxiliary Plot")
+            # Keep the toplevel window in front of the root window
+            self.plot_window.wm_transient(self.app)
+            
+            #Place plot in popup
+            self.canvas = FigureCanvasTkAgg(self.plot_fig, master=self.plot_window)
+            self.canvas.draw()
+            self.canvas.get_tk_widget().pack()
+
+            # Ensure figures are closed properly when the window is closed
+            self.plot_window.protocol("WM_DELETE_WINDOW", lambda: self.close_plot(self.plot_fig, self.plot_window))
+        else:
+            logger.debug("Plot already exists")
+            return #Stop
+
+    def close_plot(self, fig, window):
+        fig.clf()  # Clear the figure
+        fcm_plt.plt.close(fig)  # Close the figure
+        window.destroy()  # Destroy the Toplevel window
+        # Init plot
+        self.plot_fig = None
+
+    def add_switch_t3(self, label):
+        # Add variable swithces 
+        switch = ctk.CTkSwitch(self.var_sel_t3, text=label)
+        switch.grid(row=len(self.switch_list_t3), column=0, padx=10, pady=5, sticky="w")
+        self.switch_list_t3.append(switch)
+
+    def get_selected_vars_t3(self):
+        return [switch.cget("text") for switch in self.switch_list_t3 if switch.get() == 1]
+
+    def generate_personalized_plot(self):
+        logger.debug("Tab3 - PersonalizedPlot function started ---")
+        self.show_progress_bar() 
+
+        date1 = self.cal1d.get_date()
+        time1 = self.cal1t.get()
+        date2 = self.cal2d.get_date()
+        time2 = self.cal2t.get() 
+
+        logger.debug("User selections:")
+        logger.debug(f"{date1=}, {time1=}, {date2=}, {time2=}")
+        
+        # Convert inputs to exact datetimes
+        datetime1 = datetime.datetime(int(date1.split('/')[0]), int(date1.split('/')[1]), int(date1.split('/')[2]),
+                                          int(time1.split(':')[0]), 0, 0)  # Year, month, day, hour, minute, second
+        datetime2 = datetime.datetime(int(date2.split('/')[0]), int(date2.split('/')[1]), int(date2.split('/')[2]),
+                                          int(time2.split(':')[0]), 0, 0)  # Year, month, day, hour, minute, second
+
+        time_difference = datetime2 - datetime1
+
+        # Input verification
+        if (time_difference.days < 0):
+            logger.debug("date range not valid -> Stop")
+            tk.messagebox.showwarning(title='Incorrect dates', message='"From:" date is bigger than "To:" date') # type: ignore
+            self.hide_progress_bar()
+            return #Stop
+        elif (time_difference.days > 5):
+            logger.debug("date range bigger than 5 days -> Stop")
+            tk.messagebox.showwarning(title='Date range too big', message='Please select a date range smaller than 5 days') # type: ignore
+            self.hide_progress_bar()
+            return #Stop
+        elif time_difference.days == 0 and time_difference.seconds // 3600 == 0: #//integer division
+            logger.debug("date range = 0 hours -> Stop")
+            tk.messagebox.showwarning(title='Date range = 0', message='Please select a valid date range') # type: ignore
+            self.hide_progress_bar()
+            return #Stop
+        
+        cols = self.get_selected_vars_t3()
+        logger.debug(f"{cols=}")
+
+        if cols == []:
+            logger.debug("no variable selected -> Stop")
+            tk.messagebox.showwarning(title='No variable selected', message='Please select at least one variable to plot') # type: ignore
+            return #Stop:
+
+        # Ask user for personalized title
+        self.name_file = self.get_file_name()
+
+        # Create plot
+        self.fig = fcm_plt.custom_plot_divided(self.app.LogsStandard, self.app.LogsAlarms, self.app.LogsEvents, cols, datetime1, datetime2, self.name_file)
+        logger.debug("Tab3 - fig created")
+        
+        # Save png preview
+        png_path = os.path.join(PATH, '__vl.log', 'preview.png')
+        try:
+            logger.debug("saving image")
+            self.fig.write_image(png_path)
+            logger.debug("--- png saved")
+    
+        except Exception as e:
+            logger.error("--- Error saving file")
+            logger.error(e, exc_info=True)
+            tk.messagebox.showwarning(title='Error creating preview png', message="Error creating preview png") # type: ignore
+            # Load an image for the popup
+        
+        # Load image file
+        self.image_preview = ctk.CTkImage(Image.open(png_path), size=(700, 500))
+        # Create PopUp with preview / In popup save html or abort
+        self.create_preview_popup()        
+        # Delete image file
+        os.remove(png_path)
+
+        self.hide_progress_bar()
+
+    def create_preview_popup(self):
+        logger.debug("creating popup")
+        
+        # Create a new TopLevel window for the popup
+        self.preview = ctk.CTkToplevel(self.app)
+        self.preview.title("Preview Plot")
+        self.preview.grab_set()
+
+        # TopLevel widgets
+        self.popup_label = ctk.CTkLabel(self.preview, text="Do you want to save the following plot?", font=ctk.CTkFont(size=18))
+        self.popup_label.grid(row=0, column=0, padx=10, pady=(20,10))
+        self.popup_img = ctk.CTkLabel(self.preview, text="", image=self.image_preview)
+        self.popup_img.grid(row=1, column=0, padx=20, pady=10)
+        self.popup_btn1 = ctk.CTkButton(self.preview, text="Confirm", command= lambda: self.save_html(self.fig, self.name_file))
+        self.popup_btn1.grid(row=2, column=0, padx=30, pady=(10,20), sticky="nw")
+        self.popup_btn2 = ctk.CTkButton(self.preview, text="Abort", command=self.close_preview)
+        self.popup_btn2.grid(row=2, column=0, padx=30, pady=(10,20), sticky="ne")
+
+    def close_preview(self):
+        self.preview.grab_release()
+        self.preview.destroy()
+
+    def save_html (self, fig, name_file):
+        logger.debug("save_html started ---")
+        self.show_progress_bar() 
+
+        dest_folder = fd.askdirectory(parent=self, title='Select a destination directory')
+        if dest_folder =='':
+            logger.debug("no folder selected")
+            tk.messagebox.showwarning(title='No folder selected', message="Figure not saved as no folder was selected.\nPlease try again.") # type: ignore
+            self.hide_progress_bar()    
+            self.close_preview()
+            logger.debug("--- save_html finished")
+            self.fig = None
+            return
+
+        logger.debug("Folder selected:")
+        logger.debug(dest_folder)
+
+        file_path = os.path.join(dest_folder, (name_file + ".html"))
+        logger.debug("File to be saved:")
+        logger.debug(file_path)
+
+        try:
+            fig.write_html(file_path, config={'displaylogo': False})
+            logger.debug("--- save_html successful")
+            tk.messagebox.showinfo(title='Plot saved!', message="Plot saved in destination folder") # type: ignore
+            self.hide_progress_bar()
+            self.close_preview()
+            self.fig = None
+
+        except Exception as e:
+            logger.error("--- Error saving file")
+            logger.error(e, exc_info=True)
+            tk.messagebox.showwarning(title='Error creating html', message="Error creating figure, check permissions") # type: ignore
+            self.hide_progress_bar()
+            self.close_preview()
+            self.fig = None
+
+    def get_file_name(self):
+        dialog = ctk.CTkInputDialog(text="Plot Title without special characters\n(Optional)", title="Plot title / File name (Optional)")
+        input_text = dialog.get_input()
+
+        if input_text is not None:
+            # Check input from user
+            if self.is_valid_filename(input_text):
+                name_file = input_text
+            else:
+                #default name
+                now_dt = datetime.datetime.now()
+                format_dt = now_dt.strftime('%Y.%m.%d_%H%M%S')
+                name_file = "Custom_Plot_{}".format(format_dt)
+        else:
+            #default name
+            now_dt = datetime.datetime.now()
+            format_dt = now_dt.strftime('%Y.%m.%d_%H%M%S')
+            name_file = "Custom_Plot_{}".format(format_dt)
+
+        return name_file
+
+    def is_valid_filename(self, filename):
+        # Define a regular expression pattern for valid filenames
+        # This pattern allows letters, digits, spaces, underscores, and hyphens
+        pattern = r'^[a-zA-Z0-9 _-]+$'
+        """
+        ^: start of the string
+        [a-zA-Z0-9 _-]: defines the allowed characters in the string
+
+        a-z: Any lowercase letter from 'a' to 'z'.
+        A-Z: Any uppercase letter from 'A' to 'Z'.
+        0-9: Any digit from '0' to '9'.
+        _: The underscore character.
+        -: The hyphen character.
+        (space): A space character.
+        +: This quantifier indicates that the previous character set can appear one or more times
+
+        $: This indicates the end of the string
+        """
+        
+        # Use re.match to check if the filename matches the pattern
+        return re.match(pattern, filename) is not None
+
+    def show_progress_bar(self):
+        self.app.progress.grid(row=3, column=0, padx=10, pady=50, sticky="ew") 
+    
+    def hide_progress_bar(self):
+        self.app.progress.grid_forget()
+
+    def export_excel_T3(self):
+        logger.debug("Tab3 - export_excel_T3 function started ---")
+        self.show_progress_bar() 
+
+        date1 = self.cal1d.get_date()
+        time1 = self.cal1t.get()
+        date2 = self.cal2d.get_date()
+        time2 = self.cal2t.get() 
+
+        logger.debug("User selections:")
+        logger.debug(f"{date1=}, {time1=}, {date2=}, {time2=}")
+        
+        # Convert inputs to exact datetimes
+        datetime1 = datetime.datetime(int(date1.split('/')[0]), int(date1.split('/')[1]), int(date1.split('/')[2]),
+                                          int(time1.split(':')[0]), 0, 0)  # Year, month, day, hour, minute, second
+        datetime2 = datetime.datetime(int(date2.split('/')[0]), int(date2.split('/')[1]), int(date2.split('/')[2]),
+                                          int(time2.split(':')[0]), 0, 0)  # Year, month, day, hour, minute, second
+
+        time_difference = datetime2 - datetime1
+
+        # Input verification
+        if (time_difference.days < 0):
+            logger.debug("date range not valid -> Stop")
+            tk.messagebox.showwarning(title='Incorrect dates', message='"From:" date is bigger than "To:" date') # type: ignore
+            self.hide_progress_bar()
+            return #Stop
+        elif (time_difference.days > 5):
+            logger.debug("date range bigger than 5 days -> Stop")
+            tk.messagebox.showwarning(title='Date range too big', message='Please select a date range smaller than 5 days') # type: ignore
+            self.hide_progress_bar()
+            return #Stop
+        elif time_difference.days == 0 and time_difference.seconds // 3600 == 0: #//integer division
+            logger.debug("date range = 0 hours -> Stop")
+            tk.messagebox.showwarning(title='Date range = 0', message='Please select a valid date range') # type: ignore
+            self.hide_progress_bar()
+            return #Stop
+        
+        cols = self.get_selected_vars_t3()
+        logger.debug(f"{cols=}")
+
+        if cols == []:
+            logger.debug("no variable selected -> Stop")
+            tk.messagebox.showwarning(title='No variable selected', message='Please select at least one variable to plot') # type: ignore
+            return #Stop:
+
+        # Current datetime to create personalized file name
+        now_dt = datetime.datetime.now()
+        format_dt = now_dt.strftime('%Y.%m.%d_%H%M%S')
+        name_file="Filtered_Logs_{}".format(format_dt)
+
+        # Filter DFs and save excel
+        self.export_excel(
+            dfs = [self.app.LogsStandard, self.app.LogsAlarms, self.app.LogsEvents],
+            sheetNames = ['Standard', 'Alarms', 'Events'],
+            date1 = datetime1, date2 = datetime2,
+            cols = cols,
+            fileName = name_file)
+
+        self.hide_progress_bar()
+
+    def export_excel(self, dfs, sheetNames, date1, date2, cols, fileName):
+        logger.debug('export_excel started ---')
+
+        dest_folder = fd.askdirectory(parent=self, title='Select a destination directory')
+        if dest_folder =='':
+            logger.debug("no folder selected")
+            tk.messagebox.showwarning(title='No folder selected', message="File not saved as no folder was selected.\nPlease try again.") # type: ignore
+            self.hide_progress_bar()
+            logger.debug("--- export_excel finished")
+            return
+
+        logger.debug("Folder selected:")
+        logger.debug(dest_folder)
+
+        file_path = os.path.join(dest_folder, (fileName + ".xlsx"))
+        logger.debug("File to be saved:")
+        logger.debug(file_path)
+
+        try:
+            with pd.ExcelWriter(file_path) as writer:  
+                for i, df in enumerate(dfs):
+                    if not df.empty:
+                        logger.debug(i)
+                        logger.debug(sheetNames[i])
+
+                        df_export = df[(df[self.app_instance.settings['datetime_column']] >= date1) & (df[self.app_instance.settings['datetime_column']] <= date2)]
 
                         if 'AlarmNumber' in cols:
                             cols.remove('AlarmNumber')
