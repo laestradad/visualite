@@ -3,7 +3,7 @@
 ## Pyinstaller
 To create the application, these were the pyinstaller attributes used:
    ```sh
-   pyi-makespec --onefile --windowed --noconsole --add-data "resources/*;resources/" --hidden-import babel.numbers --icon=resources/ad_logo.ico main.py
+   pyi-makespec --onefile --windowed --noconsole --add-data "resources/*;resources/" --hidden-import babel.numbers --hidden-import _ctypes --icon=resources/ad_logo.ico main.py
 
    pyinstaller main.spec
    ```

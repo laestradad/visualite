@@ -6,12 +6,13 @@ a = Analysis(
     pathex=[],
     binaries=[],
     datas=[('resources/*', 'resources/')],
-    hiddenimports=['babel.numbers', 'pandas'],
+    hiddenimports=['babel.numbers', '_ctypes'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
     excludes=[],
     noarchive=False,
+    optimize=0,
 )
 pyz = PYZ(a.pure)
 
@@ -21,7 +22,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='Visualite_V1.00.01',
+    name='main',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
